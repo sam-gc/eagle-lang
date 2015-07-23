@@ -30,8 +30,8 @@ clean:
 	rm -f src/grammar/eagle.tab.* src/grammar/tokens.c
 
 deep_clean: clean
-	rm *.s
-	rm *.ll
+	rm -f *.s
+	rm -f *.ll
 
 obj/compiler/%.o: src/compiler/%.c
 	$(MKDIR) obj/compiler/

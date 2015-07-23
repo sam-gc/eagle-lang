@@ -1,0 +1,46 @@
+use ccore
+
+-- Classes can be heap allocated using the new keyword (and reference counting kicks in)
+-- Classes may also be stack allocated using the stack keyword
+class Foo {
+    proto int x
+    proto int y
+
+    func Foo(int x, int y) {
+        self.x = x
+        self.y = y
+    }
+
+    proto func sum() : int {
+        return self.x + self.y
+    }
+
+    static func Bar() {
+        puts "Baz"
+    }
+}
+
+-- The following maps an OO-style C library
+-- to Eagle's class type
+extern func hst_make() : void *
+extern class HashTable {
+    proto prefix hst_
+
+    func HashTable() {
+        self = hst_make()
+    }
+    
+    proto func put(void *key, void *val)
+    proto func *get(void *key)
+}
+
+func main() : int {
+    auto tab = new HashTable()          -- Same as hst_make()
+    tab.put("hello", new Foo(10, 20))   -- Same as hst_put(tab, "hello", new Foo(10, 20))
+
+    Foo *f = tab.get("hello")           -- Same as hst_get(tab, "hello")
+    puts f.sum()                        -- Eagle built in class; everything under hood
+
+    return 0
+}
+
