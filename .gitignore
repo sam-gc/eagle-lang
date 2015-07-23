@@ -2,6 +2,8 @@ src/grammar/*.c
 src/grammar/*.h
 src/grammar/eagle.output
 
+*.ll
+
 obj/
 eagle
 

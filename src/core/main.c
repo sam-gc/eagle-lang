@@ -1,11 +1,3 @@
-//
-//  main.c
-//  Eagle
-//
-//  Created by Sam Olsen on 7/22/15.
-//  Copyright (c) 2015 Sam Olsen. All rights reserved.
-//
-
 #include <stdio.h>
 #include "compiler/ast_compiler.h"
 
@@ -16,14 +8,16 @@ extern int yylex();
 
 extern AST *ast_root;
 
-int main(int argc, const char * argv[]) {
-    // insert code here...
-    printf("Hello, World!\n");
-    
+int main(int argc, const char * argv[])
+{
     yyparse();
 
     LLVMModuleRef module = ac_compile(ast_root);
-    LLVMDumpModule(module);
+     LLVMDumpModule(module);
+
+    LLVMInitializeNativeTarget();
+    LLVMInitializeNativeAsmPrinter();
+
     LLVMDisposeModule(module);
     
 //    int token;

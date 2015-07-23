@@ -45,6 +45,7 @@ semi (";"|";"{whitechar}*"\n")
 {lbrace}    return SET(TLBRACE);
 {rbrace}    return SET(TRBRACE);
 "return"    return SET(TRETURN);
+"puts"      return SET(TPUTS);
 "int"       { SAVE_TOKEN; return TTYPE; }
 "double"    { SAVE_TOKEN; return TTYPE; }
 "void"      { SAVE_TOKEN; return TTYPE; }

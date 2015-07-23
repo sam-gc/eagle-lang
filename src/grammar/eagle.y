@@ -17,7 +17,7 @@
 %token <string> TIDENTIFIER TINT TDOUBLE TTYPE
 %token <token> TPLUS TMINUS
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE
-%token <token> TFUNC TRETURN
+%token <token> TFUNC TRETURN TPUTS
 %token <token> TCOLON TSEMI TNEWLINE
 
 %type <node> program declarations declaration statements statement block funcdecl expression
@@ -40,12 +40,14 @@ funcdecl            : TFUNC TIDENTIFIER TLPAREN TRPAREN TCOLON TTYPE block { $$ 
 block               : TLBRACE statements TRBRACE { $$ = $2; };
 
 statements          : statement { if($1) $$ = $1; else $$ = ast_make(); }
-                    | statement statements { if($1) ast_append($2, $1); $$ = $2; };
+                    | statement statements { if($1) $1->next = $2; $$ = $1 ? $1 : $2; };
 
 statement           : expression TSEMI { $$ = $1; }
                     | expression TNEWLINE { $$ = $1; }
                     | TRETURN expression TSEMI { $$ = ast_make_unary($2, 'r'); }
                     | TRETURN expression TNEWLINE { $$ = ast_make_unary($2, 'r'); }
+                    | TPUTS expression TSEMI { $$ = ast_make_unary($2, 'p'); }
+                    | TPUTS expression TNEWLINE { $$ = ast_make_unary($2, 'p'); }
                     | TNEWLINE { $$ = NULL; };
 
 expression          : TINT { $$ = ast_make_int32($1); }

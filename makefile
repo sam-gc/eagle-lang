@@ -7,7 +7,7 @@ COMPILER_OBJ_FILES=$(addprefix obj/compiler/,$(notdir $(COMPILER_SOURCES:.c=.o))
 GRAMMAR_OBJ_FILES=$(addprefix obj/grammar/,$(notdir $(GRAMMAR_SOURCES:.c=.o)))
 
 CFLAGS=-g -Isrc -std=c99 -O0 -Wall `llvm-config --cflags`
-LDFLAGS=`llvm-config --ldflags --system-libs --libs core support analysis`
+LDFLAGS=`llvm-config --ldflags --system-libs --libs core support analysis native`
 
 CC=gcc
 MKDIR=mkdir -p
@@ -28,6 +28,10 @@ clean:
 	rm -f eagle
 	rm -rf obj
 	rm -f src/grammar/eagle.tab.* src/grammar/tokens.c
+
+deep_clean: clean
+	rm *.s
+	rm *.ll
 
 obj/compiler/%.o: src/compiler/%.c
 	$(MKDIR) obj/compiler/

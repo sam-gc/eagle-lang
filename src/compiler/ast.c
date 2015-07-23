@@ -40,20 +40,9 @@ AST *ast_make_skip()
     return ast;
 }
 
-void ast_append(AST *old, AST *n)
+void ast_append(AST *n, AST *o)
 {
-    AST *prev = NULL;
-    for(; old->next; old = old->next) prev = old;
-
-    if(old->type == ASKIP)
-    {
-        if(prev)
-        {
-            prev->next = n;
-        }
-    }
-    else
-        old->next = n;
+    n->next = o;
 }
 
 AST *ast_make_binary(AST *left, AST *right, char op)

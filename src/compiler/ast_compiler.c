@@ -72,15 +72,39 @@ LLVMValueRef ac_compile_binary(AST *ast, CompilerBundle *cb)
     }
 }
 
-/*
 LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
 {
     ASTUnary *a = (ASTUnary *)ast;
     LLVMValueRef v = ac_dispatch_expression(a->val, cb);
 
-    retur
+    switch(a->op)
+    {
+        case 'p':
+            {
+                LLVMValueRef fmt = NULL;
+                switch(a->val->resultantType)
+                {
+                    case ETDouble:
+                        fmt = LLVMBuildGlobalStringPtr(cb->builder, "%lf\n", "prfLF");
+                        break;
+                    case ETInt32:
+                        fmt = LLVMBuildGlobalStringPtr(cb->builder, "%d\n", "prfI");
+                        break;
+                    default:
+                        break;
+                }
+
+                LLVMValueRef func = LLVMGetNamedFunction(cb->module, "printf");
+                LLVMValueRef args[] = {fmt, v};
+                LLVMBuildCall(cb->builder, func, args, 2, "putsout");
+                return NULL;
+            }
+        default:
+            break;
+    }
+
+    return NULL;
 }
-*/
 
 LLVMValueRef ac_dispatch_expression(AST *ast, CompilerBundle *cb)
 {
@@ -105,6 +129,8 @@ void ac_dispatch_statement(AST *ast, CompilerBundle *cb)
         case ABINARY:
             ac_compile_binary(ast, cb);
             break;
+        case AUNARY:
+            ac_compile_unary(ast, cb);
         default:
             return;
     }
@@ -163,11 +189,20 @@ void ac_compile_function(AST *ast, CompilerBundle *cb)
         LLVMBuildRetVoid(cb->builder);
 }
 
+void ac_prepare_module(LLVMModuleRef module)
+{
+    LLVMTypeRef param_types[] = {LLVMPointerType(LLVMInt8Type(), 0)};
+    LLVMTypeRef func_type = LLVMFunctionType(LLVMInt32Type(), param_types, 1, 1);
+    LLVMAddFunction(module, "printf", func_type);
+}
+
 LLVMModuleRef ac_compile(AST *ast)
 {
     CompilerBundle cb;
     cb.module = LLVMModuleCreateWithName("main-module");
     cb.builder = LLVMCreateBuilder();
+
+    ac_prepare_module(cb.module);
 
     for(; ast; ast = ast->next)
     {
