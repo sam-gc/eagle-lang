@@ -88,13 +88,34 @@ AST *ast_make_double(char *text)
     return (AST *)ast;
 }
 
-AST *ast_make_func_decl(char *type, char *ident, AST *body)
+AST *ast_make_identifier(char *ident)
+{
+    ASTValue *ast = ast_malloc(sizeof(ASTValue));
+    ast->type = AIDENT;
+    ast->etype = ETNone;
+    ast->value.id = ident;
+
+    return (AST *)ast;
+}
+
+AST *ast_make_func_decl(char *type, char *ident, AST *body, AST *params)
 {
     ASTFuncDecl *ast = ast_malloc(sizeof(ASTFuncDecl));
     ast->type = AFUNCDECL;
     ast->retType = et_parse_string(type);
     ast->body = body;
     ast->ident = ident;
+    ast->params = params;
     
+    return (AST *)ast;
+}
+
+AST *ast_make_var_decl(char *type, char *ident)
+{
+    ASTVarDecl *ast = ast_malloc(sizeof(ASTVarDecl));
+    ast->type = AVARDECL;
+    ast->etype = et_parse_string(type);
+    ast->ident = ident;
+
     return (AST *)ast;
 }

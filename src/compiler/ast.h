@@ -19,7 +19,9 @@ typedef enum {
     ABINARY,
     AUNARY,
     AVALUE,
-    AFUNCDECL
+    AFUNCDECL,
+    AVARDECL,
+    AIDENT
 } ASTType;
 
 typedef struct AST {
@@ -56,6 +58,7 @@ typedef struct {
     union {
         int32_t i;
         double d;
+        char *id;
     } value;
 } ASTValue;
 
@@ -66,8 +69,18 @@ typedef struct {
     
     EagleType retType;
     struct AST *body;
+    struct AST *params;
     char *ident;
 } ASTFuncDecl;
+
+typedef struct {
+    ASTType type;
+    EagleType resultantType;
+    struct AST *next;
+
+    EagleType etype;
+    char *ident;
+} ASTVarDecl;
 
 AST *ast_make();
 void ast_append(AST *old, AST *n);
@@ -75,7 +88,8 @@ AST *ast_make_binary(AST *left, AST *right, char op);
 AST *ast_make_unary(AST *val, char op);
 AST *ast_make_int32(char *text);
 AST *ast_make_double(char *text);
-AST *ast_make_func_decl(char *type, char *ident, AST *body);
-AST *ast_make_skip();
+AST *ast_make_identifier(char *ident);
+AST *ast_make_func_decl(char *type, char *ident, AST *body, AST *params);
+AST *ast_make_var_decl(char *type, char *ident);
 
 #endif /* defined(__Eagle__ast__) */
