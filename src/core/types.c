@@ -11,6 +11,7 @@
 #include "types.h"
 
 #define TTEST(t, targ, out) if(!strcmp(t, targ)) return out
+#define ETEST(t, a, b) if(a == b) return t
 
 EagleType et_parse_string(char *text)
 {
@@ -46,14 +47,9 @@ LLVMTypeRef et_llvm_type(EagleType type)
 
 EagleType et_eagle_type(LLVMTypeRef ty)
 {
-    switch(LLVMGetTypeKind(ty))
-    {
-        case LLVMDoubleTypeKind:
-            return ETDouble;
-        case LLVMIntegerTypeKind:
-            return ETInt32;
-        default:
-            return ETNone;
-    }
+    ETEST(ETDouble, ty, LLVMDoubleType());
+    ETEST(ETInt32, ty, LLVMInt32Type());
+
+    return ETNone;
 }
 

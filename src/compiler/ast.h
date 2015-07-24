@@ -20,6 +20,7 @@ typedef enum {
     AUNARY,
     AVALUE,
     AFUNCDECL,
+    AFUNCCALL,
     AVARDECL,
     AIDENT
 } ASTType;
@@ -78,6 +79,15 @@ typedef struct {
     EagleType resultantType;
     struct AST *next;
 
+    struct AST *callee;
+    struct AST *params;
+} ASTFuncCall;
+
+typedef struct {
+    ASTType type;
+    EagleType resultantType;
+    struct AST *next;
+
     EagleType etype;
     char *ident;
 } ASTVarDecl;
@@ -90,6 +100,7 @@ AST *ast_make_int32(char *text);
 AST *ast_make_double(char *text);
 AST *ast_make_identifier(char *ident);
 AST *ast_make_func_decl(char *type, char *ident, AST *body, AST *params);
+AST *ast_make_func_call(AST *callee, AST *params);
 AST *ast_make_var_decl(char *type, char *ident);
 
 #endif /* defined(__Eagle__ast__) */

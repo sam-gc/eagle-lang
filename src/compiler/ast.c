@@ -110,6 +110,17 @@ AST *ast_make_func_decl(char *type, char *ident, AST *body, AST *params)
     return (AST *)ast;
 }
 
+AST *ast_make_func_call(AST *callee, AST *params)
+{
+    ASTFuncCall *ast = ast_malloc(sizeof(ASTFuncCall));
+    ast->type = AFUNCCALL;
+
+    ast->callee = callee;
+    ast->params = params;
+
+    return (AST *)ast;
+}
+
 AST *ast_make_var_decl(char *type, char *ident)
 {
     ASTVarDecl *ast = ast_malloc(sizeof(ASTVarDecl));

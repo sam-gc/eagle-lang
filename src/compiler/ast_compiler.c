@@ -20,6 +20,7 @@ void ac_dispatch_declaration(AST *ast, CompilerBundle *cb);
 
 void ac_compile_function(AST *ast, CompilerBundle *cb);
 int ac_compile_block(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb);
+LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb);
 
 LLVMValueRef ac_compile_value(AST *ast, CompilerBundle *cb)
 {
@@ -42,8 +43,20 @@ LLVMValueRef ac_compile_identifier(AST *ast, CompilerBundle *cb)
     ASTValue *a = (ASTValue *)ast;
     VarBundle *b = vs_get(cb->varScope, a->value.id);
 
-    a->resultantType = b->type;
-    return LLVMBuildLoad(cb->builder, b->value, "loadtmp");
+    if(b) // We are dealing with a local variable
+    {
+        a->resultantType = b->type;
+        return LLVMBuildLoad(cb->builder, b->value, "loadtmp");
+    }
+
+    LLVMValueRef func = LLVMGetNamedFunction(cb->module, a->value.id);
+    if(func) // We are dealing with a function
+    {
+        a->resultantType = ETFunction;
+        return func;
+    }
+    
+    return NULL;
 }
 
 LLVMValueRef ac_compile_var_decl(AST *ast, CompilerBundle *cb)
@@ -183,6 +196,8 @@ LLVMValueRef ac_dispatch_expression(AST *ast, CompilerBundle *cb)
             return ac_compile_var_decl(ast, cb);
         case AIDENT:
             return ac_compile_identifier(ast, cb);
+        case AFUNCCALL:
+            return ac_compile_function_call(ast, cb);
         default:
             return NULL;
     }
@@ -206,6 +221,9 @@ void ac_dispatch_statement(AST *ast, CompilerBundle *cb)
             break;
         case AIDENT:
             ac_compile_identifier(ast, cb);
+            break;
+        case AFUNCCALL:
+            ac_compile_function_call(ast, cb);
             break;
         default:
             return;
@@ -234,8 +252,6 @@ int ac_compile_block(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
             EagleType t = ((ASTUnary *)ast)->val->resultantType;
             EagleType o = cb->currentFunctionReturnType;
 
-            printf("%d %d\n", t, o);
-
             if(t != o)
                 val = ac_build_conversion(cb->builder, val, t, o);
 
@@ -247,6 +263,31 @@ int ac_compile_block(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
     }
 
     return 0;
+}
+
+LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
+{
+    ASTFuncCall *a = (ASTFuncCall *)ast;
+
+    LLVMValueRef func = ac_dispatch_expression(a->callee, cb);
+    LLVMTypeRef retType = LLVMGetReturnType(LLVMGetElementType(LLVMTypeOf(func)));
+
+    EagleType retEtype = et_eagle_type(retType);
+
+    a->resultantType = retEtype;
+
+    int i;
+    AST *p;
+    for(p = a->params, i = 0; p; p = p->next, i++);
+    int ct = i;
+
+    LLVMValueRef args[ct];
+    for(p = a->params, i = 0; p; p = p->next, i++)
+    {
+        args[i] = ac_dispatch_expression(p, cb);
+    }
+
+    return LLVMBuildCall(cb->builder, func, args, ct, "callout");
 }
 
 void ac_compile_function(AST *ast, CompilerBundle *cb)
@@ -266,6 +307,7 @@ void ac_compile_function(AST *ast, CompilerBundle *cb)
     }
 
     LLVMTypeRef func_type = LLVMFunctionType(et_llvm_type(a->retType), param_types, ct, 0);
+
     LLVMValueRef func = LLVMAddFunction(cb->module, a->ident, func_type);
 
     cb->currentFunctionReturnType = a->retType;

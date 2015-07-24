@@ -19,12 +19,12 @@
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE
 %token <token> TFUNC TRETURN TPUTS
 %token <token> TCOLON TSEMI TNEWLINE TCOMMA
-
 %type <node> program declarations declaration statements statement block funcdecl expression
-%type <node> variabledecl vardecllist
+%type <node> variabledecl vardecllist funccall calllist
 
 %right TEQUALS;
 %left TPLUS;
+%nonassoc TLPAREN;
 
 %start program
 
@@ -58,12 +58,19 @@ statement           : expression TSEMI { $$ = $1; }
 
 variabledecl        : TTYPE TIDENTIFIER { $$ = ast_make_var_decl($1, $2); };
 
+funccall            : expression TLPAREN TRPAREN { $$ = ast_make_func_call($1, NULL); }
+                    | expression TLPAREN calllist TRPAREN { $$ = ast_make_func_call($1, $3); };
+
+calllist            : expression { $$ = $1; }
+                    | expression TCOMMA calllist { $1->next = $3; $$ = $1; };
+
 expression          : TINT { $$ = ast_make_int32($1); }
                     | TDOUBLE { $$ = ast_make_double($1); }
                     | expression TPLUS expression { $$ = ast_make_binary($1, $3, '+'); }
                     | variabledecl { $$ = $1; }
                     | variabledecl TEQUALS expression { $$ = ast_make_binary($1, $3, '='); }
                     | TIDENTIFIER TEQUALS expression { $$ = ast_make_binary(ast_make_identifier($1), $3, '='); }
-                    | TIDENTIFIER { $$ = ast_make_identifier($1); };
+                    | TIDENTIFIER { $$ = ast_make_identifier($1); }
+                    | funccall { $$ = $1; };
 
 %%

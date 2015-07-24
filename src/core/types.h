@@ -16,7 +16,8 @@ typedef enum {
     ETNone,
     ETInt32,
     ETDouble,
-    ETVoid
+    ETVoid,
+    ETFunction
 } EagleType;
 
 EagleType et_parse_string(char *text);
