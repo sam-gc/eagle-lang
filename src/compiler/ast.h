@@ -69,7 +69,7 @@ typedef struct {
     EagleType resultantType;
     struct AST *next;
     
-    EagleType retType;
+    struct AST *retType;
     struct AST *body;
     struct AST *params;
     char *ident;
@@ -89,9 +89,17 @@ typedef struct {
     EagleType resultantType;
     struct AST *next;
 
-    EagleType etype;
+    struct AST *atype;
     char *ident;
 } ASTVarDecl;
+
+typedef struct {
+    ASTType type;
+    EagleType resultantType;
+    struct AST *next;
+
+    EagleType etype;
+} ASTTypeDecl;
 
 AST *ast_make();
 void ast_append(AST *old, AST *n);
@@ -100,8 +108,9 @@ AST *ast_make_unary(AST *val, char op);
 AST *ast_make_int32(char *text);
 AST *ast_make_double(char *text);
 AST *ast_make_identifier(char *ident);
-AST *ast_make_func_decl(char *type, char *ident, AST *body, AST *params);
+AST *ast_make_func_decl(AST *type, char *ident, AST *body, AST *params);
 AST *ast_make_func_call(AST *callee, AST *params);
-AST *ast_make_var_decl(char *type, char *ident);
+AST *ast_make_var_decl(AST *type, char *ident);
+AST *ast_make_type(char *type);
 
 #endif /* defined(__Eagle__ast__) */

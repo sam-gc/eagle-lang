@@ -98,11 +98,11 @@ AST *ast_make_identifier(char *ident)
     return (AST *)ast;
 }
 
-AST *ast_make_func_decl(char *type, char *ident, AST *body, AST *params)
+AST *ast_make_func_decl(AST *type, char *ident, AST *body, AST *params)
 {
     ASTFuncDecl *ast = ast_malloc(sizeof(ASTFuncDecl));
     ast->type = AFUNCDECL;
-    ast->retType = et_parse_string(type);
+    ast->retType = type;
     ast->body = body;
     ast->ident = ident;
     ast->params = params;
@@ -121,12 +121,21 @@ AST *ast_make_func_call(AST *callee, AST *params)
     return (AST *)ast;
 }
 
-AST *ast_make_var_decl(char *type, char *ident)
+AST *ast_make_var_decl(AST *atype, char *ident)
 {
     ASTVarDecl *ast = ast_malloc(sizeof(ASTVarDecl));
     ast->type = AVARDECL;
-    ast->etype = et_parse_string(type);
+    ast->atype = atype;
     ast->ident = ident;
+
+    return (AST *)ast;
+}
+
+AST *ast_make_type(char *type)
+{
+    ASTTypeDecl *ast = ast_malloc(sizeof(ASTTypeDecl));
+    ast->type = ATYPE;
+    ast->etype = et_parse_string(type);
 
     return (AST *)ast;
 }

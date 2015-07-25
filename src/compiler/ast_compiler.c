@@ -65,8 +65,10 @@ LLVMValueRef ac_compile_var_decl(AST *ast, CompilerBundle *cb)
     LLVMBasicBlockRef curblock = LLVMGetInsertBlock(cb->builder);
     LLVMPositionBuilderAtEnd(cb->builder, cb->currentFunctionEntry);
 
-    LLVMValueRef pos = LLVMBuildAlloca(cb->builder, et_llvm_type(a->etype), a->ident);
-    vs_put(cb->varScope, a->ident, pos, a->etype);
+    ASTTypeDecl *type = (ASTTypeDecl *)a->atype;
+
+    LLVMValueRef pos = LLVMBuildAlloca(cb->builder, et_llvm_type(type->etype), a->ident);
+    vs_put(cb->varScope, a->ident, pos, type->etype);
 
     LLVMPositionBuilderAtEnd(cb->builder, curblock);
 
@@ -104,7 +106,8 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb)
     {
         ASTVarDecl *l = (ASTVarDecl *)a->left;
         
-        totype = l->etype;
+        ASTTypeDecl *type = (ASTTypeDecl *)l->atype;
+        totype = type->etype;
         pos = ac_compile_var_decl(a->left, cb);
     }
 
@@ -300,7 +303,7 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
         args[i] = val;
     }
 
-    return LLVMBuildCall(cb->builder, func, args, ct, "callout");
+    return LLVMBuildCall(cb->builder, func, args, ct, retEtype == ETVoid ? "" : "callout");
 }
 
 void ac_compile_function(AST *ast, CompilerBundle *cb)
@@ -319,10 +322,12 @@ void ac_compile_function(AST *ast, CompilerBundle *cb)
     LLVMTypeRef param_types[ct];
     for(i = 0, p = a->params; i < ct; p = p->next, i++)
     {
-        param_types[i] = et_llvm_type(((ASTVarDecl *)p)->etype);
+        ASTTypeDecl *type = (ASTTypeDecl *)((ASTVarDecl *)p)->atype;
+        param_types[i] = et_llvm_type(type->etype);
     }
 
-    LLVMTypeRef func_type = LLVMFunctionType(et_llvm_type(a->retType), param_types, ct, 0);
+    ASTTypeDecl *retType = (ASTTypeDecl *)a->retType;
+    LLVMTypeRef func_type = LLVMFunctionType(et_llvm_type(retType->etype), param_types, ct, 0);
 
     LLVMValueRef func = NULL;
 
@@ -332,7 +337,7 @@ void ac_compile_function(AST *ast, CompilerBundle *cb)
         func = LLVMAddFunction(cb->module, a->ident, func_type);
     }
 
-    cb->currentFunctionReturnType = a->retType;
+    cb->currentFunctionReturnType = retType->etype;
 
     LLVMBasicBlockRef entry = LLVMAppendBasicBlock(func, "entry");
     LLVMPositionBuilderAtEnd(cb->builder, entry);
@@ -381,9 +386,14 @@ void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
 
     LLVMTypeRef param_types[ct];
     for(i = 0, p = a->params; p; p = p->next, i++)
-        param_types[i] = et_llvm_type(((ASTVarDecl *)p)->etype);
+    {
+        ASTTypeDecl *type = (ASTTypeDecl *)((ASTVarDecl *)p)->atype;
 
-    LLVMTypeRef func_type = LLVMFunctionType(et_llvm_type(a->retType), param_types, ct, 0);
+        param_types[i] = et_llvm_type(type->etype);
+    }
+
+    ASTTypeDecl *retType = (ASTTypeDecl *)a->retType;
+    LLVMTypeRef func_type = LLVMFunctionType(et_llvm_type(retType->etype), param_types, ct, 0);
     LLVMAddFunction(cb->module, a->ident, func_type);
 }
 

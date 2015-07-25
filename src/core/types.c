@@ -49,6 +49,7 @@ EagleType et_eagle_type(LLVMTypeRef ty)
 {
     ETEST(ETDouble, ty, LLVMDoubleType());
     ETEST(ETInt32, ty, LLVMInt32Type());
+    ETEST(ETVoid, ty, LLVMVoidType());
 
     return ETNone;
 }

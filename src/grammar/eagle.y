@@ -20,7 +20,7 @@
 %token <token> TFUNC TRETURN TPUTS TEXTERN
 %token <token> TCOLON TSEMI TNEWLINE TCOMMA
 %type <node> program declarations declaration statements statement block funcdecl expression
-%type <node> variabledecl vardecllist funccall calllist funcident funcsident externdecl typelist
+%type <node> variabledecl vardecllist funccall calllist funcident funcsident externdecl typelist type
 
 %right TEQUALS;
 %left TPLUS;
@@ -38,18 +38,21 @@ declarations        : declaration { $$ = $1; }
 declaration         : funcdecl { $$ = $1; }
                     | externdecl { $$ = $1; };
 
+type                : TIDENTIFIER { $$ = ast_make_type($1); }
+                    | TTYPE { $$ = ast_make_type($1); };
+
 funcdecl            : funcident block { ((ASTFuncDecl *)$1)->body = $2; $$ = $1; };
 
 externdecl          : TEXTERN funcident TNEWLINE { $$ = $2; }
                     | TEXTERN funcsident TNEWLINE { $$ = $2; };
 
-funcident           : TFUNC TIDENTIFIER TLPAREN TRPAREN TCOLON TTYPE { $$ = ast_make_func_decl($6, $2, NULL, NULL); }
-                    | TFUNC TIDENTIFIER TLPAREN vardecllist TRPAREN TCOLON TTYPE { $$ = ast_make_func_decl($7, $2, NULL, $4); };
+funcident           : TFUNC TIDENTIFIER TLPAREN TRPAREN TCOLON type { $$ = ast_make_func_decl($6, $2, NULL, NULL); }
+                    | TFUNC TIDENTIFIER TLPAREN vardecllist TRPAREN TCOLON type { $$ = ast_make_func_decl($7, $2, NULL, $4); };
 
-funcsident          : TFUNC TIDENTIFIER TLPAREN typelist TRPAREN TCOLON TTYPE { $$ = ast_make_func_decl($7, $2, NULL, $4); };
+funcsident          : TFUNC TIDENTIFIER TLPAREN typelist TRPAREN TCOLON type { $$ = ast_make_func_decl($7, $2, NULL, $4); };
 
-typelist            : TTYPE { $$ = ast_make_var_decl($1, NULL); }
-                    | TTYPE TCOMMA typelist { AST *a = ast_make_var_decl($1, NULL); a->next = $3; $$ = a; };
+typelist            : type { $$ = ast_make_var_decl($1, NULL); }
+                    | type TCOMMA typelist { AST *a = ast_make_var_decl($1, NULL); a->next = $3; $$ = a; };
 
 vardecllist         : variabledecl { $$ = $1; }
                     | variabledecl TCOMMA vardecllist { $1->next = $3; $$ = $1; };
@@ -67,7 +70,7 @@ statement           : expression TSEMI { $$ = $1; }
                     | TPUTS expression TNEWLINE { $$ = ast_make_unary($2, 'p'); }
                     | TNEWLINE { $$ = NULL; };
 
-variabledecl        : TTYPE TIDENTIFIER { $$ = ast_make_var_decl($1, $2); };
+variabledecl        : type TIDENTIFIER { $$ = ast_make_var_decl($1, $2); };
 
 funccall            : expression TLPAREN TRPAREN { $$ = ast_make_func_call($1, NULL); }
                     | expression TLPAREN calllist TRPAREN { $$ = ast_make_func_call($1, $3); };

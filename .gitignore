@@ -3,6 +3,7 @@ src/grammar/*.h
 src/grammar/eagle.output
 
 *.ll
+*.s
 
 obj/
 eagle
