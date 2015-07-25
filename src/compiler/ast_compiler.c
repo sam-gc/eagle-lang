@@ -270,13 +270,22 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
     ASTFuncCall *a = (ASTFuncCall *)ast;
 
     LLVMValueRef func = ac_dispatch_expression(a->callee, cb);
-    LLVMTypeRef retType = LLVMGetReturnType(LLVMGetElementType(LLVMTypeOf(func)));
+    LLVMTypeRef funcType = LLVMGetElementType(LLVMTypeOf(func));
+    LLVMTypeRef retType = LLVMGetReturnType(funcType);
+    int paramCount = LLVMCountParamTypes(funcType);
+    LLVMTypeRef types[paramCount];
+    EagleType tys[paramCount];
+
+    LLVMGetParamTypes(funcType, types);
+
+    int i;
+    for(i = 0; i < paramCount; i++)
+        tys[i] = et_eagle_type(types[i]);
 
     EagleType retEtype = et_eagle_type(retType);
 
     a->resultantType = retEtype;
 
-    int i;
     AST *p;
     for(p = a->params, i = 0; p; p = p->next, i++);
     int ct = i;
@@ -284,7 +293,11 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
     LLVMValueRef args[ct];
     for(p = a->params, i = 0; p; p = p->next, i++)
     {
-        args[i] = ac_dispatch_expression(p, cb);
+        LLVMValueRef val = ac_dispatch_expression(p, cb);
+        EagleType rt = p->resultantType;
+        if(rt != tys[i])
+            val = ac_build_conversion(cb->builder, val, rt, tys[i]);
+        args[i] = val;
     }
 
     return LLVMBuildCall(cb->builder, func, args, ct, "callout");
