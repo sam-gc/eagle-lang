@@ -293,6 +293,9 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
 void ac_compile_function(AST *ast, CompilerBundle *cb)
 {
     ASTFuncDecl *a = (ASTFuncDecl *)ast;
+
+    if(!a->body) // This is an extern definition
+        return;
     
     int i;
     AST *p = a->params;
@@ -308,7 +311,13 @@ void ac_compile_function(AST *ast, CompilerBundle *cb)
 
     LLVMTypeRef func_type = LLVMFunctionType(et_llvm_type(a->retType), param_types, ct, 0);
 
-    LLVMValueRef func = LLVMAddFunction(cb->module, a->ident, func_type);
+    LLVMValueRef func = NULL;
+
+    func = LLVMGetNamedFunction(cb->module, a->ident);
+    if(!func) // This really shouldn't happen
+    {
+        func = LLVMAddFunction(cb->module, a->ident, func_type);
+    }
 
     cb->currentFunctionReturnType = a->retType;
 
@@ -346,6 +355,25 @@ void ac_prepare_module(LLVMModuleRef module)
     LLVMAddFunction(module, "printf", func_type);
 }
 
+void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
+{
+    if(ast->type != AFUNCDECL)
+        return;
+
+    ASTFuncDecl *a = (ASTFuncDecl *)ast;
+    int i, ct;
+    AST *p;
+    for(p = a->params, i = 0; p; p = p->next, i++);
+    ct = i;
+
+    LLVMTypeRef param_types[ct];
+    for(i = 0, p = a->params; p; p = p->next, i++)
+        param_types[i] = et_llvm_type(((ASTVarDecl *)p)->etype);
+
+    LLVMTypeRef func_type = LLVMFunctionType(et_llvm_type(a->retType), param_types, ct, 0);
+    LLVMAddFunction(cb->module, a->ident, func_type);
+}
+
 LLVMModuleRef ac_compile(AST *ast)
 {
     CompilerBundle cb;
@@ -353,6 +381,12 @@ LLVMModuleRef ac_compile(AST *ast)
     cb.builder = LLVMCreateBuilder();
 
     ac_prepare_module(cb.module);
+
+    AST *old = ast;
+    for(; ast; ast = ast->next)
+        ac_add_early_declarations(ast, &cb);
+
+    ast = old;
 
     for(; ast; ast = ast->next)
     {

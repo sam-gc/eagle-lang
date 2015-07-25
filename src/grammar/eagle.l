@@ -48,6 +48,7 @@ semi (";"|";"{whitechar}*"\n")
 {rbrace}    return SET(TRBRACE);
 "return"    return SET(TRETURN);
 "puts"      return SET(TPUTS);
+"extern"    return SET(TEXTERN);
 "int"       { SAVE_TOKEN; return TTYPE; }
 "double"    { SAVE_TOKEN; return TTYPE; }
 "void"      { SAVE_TOKEN; return TTYPE; }

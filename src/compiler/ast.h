@@ -22,7 +22,8 @@ typedef enum {
     AFUNCDECL,
     AFUNCCALL,
     AVARDECL,
-    AIDENT
+    AIDENT,
+    ATYPE
 } ASTType;
 
 typedef struct AST {

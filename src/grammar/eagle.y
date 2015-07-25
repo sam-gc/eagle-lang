@@ -17,10 +17,10 @@
 %token <string> TIDENTIFIER TINT TDOUBLE TTYPE
 %token <token> TPLUS TMINUS TEQUALS
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE
-%token <token> TFUNC TRETURN TPUTS
+%token <token> TFUNC TRETURN TPUTS TEXTERN
 %token <token> TCOLON TSEMI TNEWLINE TCOMMA
 %type <node> program declarations declaration statements statement block funcdecl expression
-%type <node> variabledecl vardecllist funccall calllist
+%type <node> variabledecl vardecllist funccall calllist funcident funcsident externdecl typelist
 
 %right TEQUALS;
 %left TPLUS;
@@ -35,10 +35,21 @@ program             : declarations { ast_root = $1; };
 declarations        : declaration { $$ = $1; }
                     | declaration declarations { $1->next = $2; $$ = $1; };
 
-declaration         : funcdecl { $$ = $1; };
+declaration         : funcdecl { $$ = $1; }
+                    | externdecl { $$ = $1; };
 
-funcdecl            : TFUNC TIDENTIFIER TLPAREN TRPAREN TCOLON TTYPE block { $$ = ast_make_func_decl($6, $2, $7, NULL); }
-                    | TFUNC TIDENTIFIER TLPAREN vardecllist TRPAREN TCOLON TTYPE block { $$ = ast_make_func_decl($7, $2, $8, $4); };
+funcdecl            : funcident block { ((ASTFuncDecl *)$1)->body = $2; $$ = $1; };
+
+externdecl          : TEXTERN funcident TNEWLINE { $$ = $2; }
+                    | TEXTERN funcsident TNEWLINE { $$ = $2; };
+
+funcident           : TFUNC TIDENTIFIER TLPAREN TRPAREN TCOLON TTYPE { $$ = ast_make_func_decl($6, $2, NULL, NULL); }
+                    | TFUNC TIDENTIFIER TLPAREN vardecllist TRPAREN TCOLON TTYPE { $$ = ast_make_func_decl($7, $2, NULL, $4); };
+
+funcsident          : TFUNC TIDENTIFIER TLPAREN typelist TRPAREN TCOLON TTYPE { $$ = ast_make_func_decl($7, $2, NULL, $4); };
+
+typelist            : TTYPE { $$ = ast_make_var_decl($1, NULL); }
+                    | TTYPE TCOMMA typelist { AST *a = ast_make_var_decl($1, NULL); a->next = $3; $$ = a; };
 
 vardecllist         : variabledecl { $$ = $1; }
                     | variabledecl TCOMMA vardecllist { $1->next = $3; $$ = $1; };
