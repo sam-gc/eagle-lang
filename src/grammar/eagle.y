@@ -33,19 +33,20 @@
 
 program             : declarations { ast_root = $1; };
 
-declarations        : declaration { $$ = $1; }
-                    | declaration declarations { $1->next = $2; $$ = $1; };
+declarations        : declaration { if($1) $$ = $1; else $$ = ast_make(); }
+                    | declaration declarations { if($1) $1->next = $2; $$ = $1 ? $1 : $2; };
 
-declaration         : funcdecl { $$ = $1; }
-                    | externdecl { $$ = $1; };
+declaration         : externdecl TNEWLINE { $$ = $1; }
+                    | funcdecl TNEWLINE { $$ = $1; }
+                    | TNEWLINE { $$ = NULL; };
 
 type                : TIDENTIFIER { $$ = ast_make_type($1); }
                     | TTYPE { $$ = ast_make_type($1); };
 
 funcdecl            : funcident block { ((ASTFuncDecl *)$1)->body = $2; $$ = $1; };
 
-externdecl          : TEXTERN funcident TNEWLINE { $$ = $2; }
-                    | TEXTERN funcsident TNEWLINE { $$ = $2; };
+externdecl          : TEXTERN funcident { $$ = $2; }
+                    | TEXTERN funcsident { $$ = $2; };
 
 funcident           : TFUNC TIDENTIFIER TLPAREN TRPAREN TCOLON type { $$ = ast_make_func_decl($6, $2, NULL, NULL); }
                     | TFUNC TIDENTIFIER TLPAREN vardecllist TRPAREN TCOLON type { $$ = ast_make_func_decl($7, $2, NULL, $4); };

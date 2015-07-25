@@ -10,9 +10,10 @@
 #include <stdio.h>
 #include "ast.h"
 
+extern int yylineno;
 int yyerror(char *text)
 {
-    fprintf(stderr, "Error: %s\n", text);
+    fprintf(stderr, "%d: Error: %s\n", yylineno, text);
     return -1;
 }
 

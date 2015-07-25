@@ -26,6 +26,7 @@ strlit (\"(\\.|[^"])*\"|'(\\.|[^'])*')
 comment (\#|(\-\-)).*(\n)
 lbrace ("{"|"{"{whitechar}*"\n"|"\n"{whitechar}*"{")
 rbrace ("}"|"}"{whitechar}*"\n")
+func ("func"|"func"{whitechar}*"\n")
 semi (";"|";"{whitechar}*"\n")
 
 %%
@@ -41,14 +42,14 @@ semi (";"|";"{whitechar}*"\n")
 "*"         return SET(TMUL);
 "/"         return SET(TDIV);
 "="         return SET(TEQUALS);
-"func"      return SET(TFUNC);
+{func}      return SET(TFUNC);
 ":"         return SET(TCOLON);
 ","         return SET(TCOMMA);
 {semi}      return SET(TSEMI);
 "("         return SET(TLPAREN);
 ")"         return SET(TRPAREN);
 {lbrace}    return SET(TLBRACE);
-{rbrace}    return SET(TRBRACE);
+"}"    return SET(TRBRACE);
 "return"    return SET(TRETURN);
 "puts"      return SET(TPUTS);
 "extern"    return SET(TEXTERN);
