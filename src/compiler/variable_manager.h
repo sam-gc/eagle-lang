@@ -11,14 +11,21 @@ typedef struct {
     EagleType type;
 } VarBundle;
 
-typedef struct {
-    mempool pool;
+typedef struct VarScope {
+    struct VarScope *next;
     hashtable table;
 } VarScope;
 
-VarScope vs_make();
-void vs_free(VarScope *vs);
-VarBundle *vs_get(VarScope *vs, char *ident);
-void vs_put(VarScope *vs, char *ident, LLVMValueRef val, EagleType type);
+typedef struct {
+    mempool pool;
+    VarScope *scope;
+} VarScopeStack;
+
+VarScopeStack vs_make();
+void vs_free(VarScopeStack *vs);
+VarBundle *vs_get(VarScopeStack *vs, char *ident);
+void vs_put(VarScopeStack *vs, char *ident, LLVMValueRef val, EagleType type);
+void vs_push(VarScopeStack *vs);
+void vs_pop(VarScopeStack *vs);
 
 #endif

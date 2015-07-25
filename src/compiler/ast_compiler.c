@@ -8,7 +8,7 @@ typedef struct {
 
     EagleType currentFunctionReturnType;
     LLVMBasicBlockRef currentFunctionEntry;
-    VarScope *varScope;
+    VarScopeStack *varScope;
 } CompilerBundle;
 
 static inline LLVMValueRef ac_build_conversion(LLVMBuilderRef builder, LLVMValueRef val, EagleType from, EagleType to);
@@ -338,7 +338,8 @@ void ac_compile_function(AST *ast, CompilerBundle *cb)
     LLVMBasicBlockRef entry = LLVMAppendBasicBlock(func, "entry");
     LLVMPositionBuilderAtEnd(cb->builder, entry);
 
-    VarScope scope = vs_make();
+    VarScopeStack scope = vs_make();
+    vs_push(&scope);
 
     cb->currentFunctionEntry = entry;
     cb->varScope = &scope;
@@ -359,6 +360,8 @@ void ac_compile_function(AST *ast, CompilerBundle *cb)
 
     cb->currentFunctionEntry = NULL;
     cb->varScope = NULL;
+
+    vs_pop(&scope);
     vs_free(&scope);
 }
 
