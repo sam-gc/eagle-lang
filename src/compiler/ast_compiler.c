@@ -13,6 +13,9 @@ typedef struct {
 
 static inline LLVMValueRef ac_build_conversion(LLVMBuilderRef builder, LLVMValueRef val, EagleType from, EagleType to);
 static inline LLVMValueRef ac_make_add(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type);
+static inline LLVMValueRef ac_make_sub(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type);
+static inline LLVMValueRef ac_make_mul(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type);
+static inline LLVMValueRef ac_make_div(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type);
 
 LLVMValueRef ac_dispatch_expression(AST *ast, CompilerBundle *cb);
 void ac_dispatch_statement(AST *ast, CompilerBundle *cb);
@@ -75,19 +78,6 @@ LLVMValueRef ac_compile_var_decl(AST *ast, CompilerBundle *cb)
     return pos;
 }
 
-LLVMValueRef ac_make_add(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type)
-{
-    switch(type)
-    {
-        case ETDouble:
-            return LLVMBuildFAdd(builder, left, right, "addtmp");
-        case ETInt32:
-            return LLVMBuildAdd(builder, left, right, "addtmp");
-        default:
-            return NULL;
-    }
-}
-
 LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb)
 {
     ASTBinary *a = (ASTBinary *)ast;
@@ -148,6 +138,12 @@ LLVMValueRef ac_compile_binary(AST *ast, CompilerBundle *cb)
     {
         case '+':
             return ac_make_add(l, r, cb->builder, promo);
+        case '-':
+            return ac_make_sub(l, r, cb->builder, promo);
+        case '*':
+            return ac_make_mul(l, r, cb->builder, promo);
+        case '/':
+            return ac_make_div(l, r, cb->builder, promo);
         default:
             return NULL;
     }
@@ -453,3 +449,54 @@ LLVMValueRef ac_build_conversion(LLVMBuilderRef builder, LLVMValueRef val, Eagle
     return NULL;
 }
 
+LLVMValueRef ac_make_add(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type)
+{
+    switch(type)
+    {
+        case ETDouble:
+            return LLVMBuildFAdd(builder, left, right, "addtmp");
+        case ETInt32:
+            return LLVMBuildAdd(builder, left, right, "addtmp");
+        default:
+            return NULL;
+    }
+}
+
+LLVMValueRef ac_make_sub(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type)
+{
+    switch(type)
+    {
+        case ETDouble:
+            return LLVMBuildFSub(builder, left, right, "subtmp");
+        case ETInt32:
+            return LLVMBuildSub(builder, left, right, "subtmp");
+        default:
+            return NULL;
+    }
+}
+
+LLVMValueRef ac_make_mul(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type)
+{
+    switch(type)
+    {
+        case ETDouble:
+            return LLVMBuildFMul(builder, left, right, "multmp");
+        case ETInt32:
+            return LLVMBuildMul(builder, left, right, "multmp");
+        default:
+            return NULL;
+    }
+}
+
+LLVMValueRef ac_make_div(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type)
+{
+    switch(type)
+    {
+        case ETDouble:
+            return LLVMBuildFDiv(builder, left, right, "divtmp");
+        case ETInt32:
+            return LLVMBuildSDiv(builder, left, right, "divtmp");
+        default:
+            return NULL;
+    }
+}

@@ -37,6 +37,9 @@ semi (";"|";"{whitechar}*"\n")
 {integer}     { SAVE_TOKEN; return TINT; }
 {real}      {SAVE_TOKEN; return TDOUBLE; }
 "+"         return SET(TPLUS);
+"-"         return SET(TMINUS);
+"*"         return SET(TMUL);
+"/"         return SET(TDIV);
 "="         return SET(TEQUALS);
 "func"      return SET(TFUNC);
 ":"         return SET(TCOLON);

@@ -15,7 +15,7 @@
 }
 
 %token <string> TIDENTIFIER TINT TDOUBLE TTYPE
-%token <token> TPLUS TMINUS TEQUALS
+%token <token> TPLUS TMINUS TEQUALS TMUL TDIV
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE
 %token <token> TFUNC TRETURN TPUTS TEXTERN
 %token <token> TCOLON TSEMI TNEWLINE TCOMMA
@@ -23,7 +23,8 @@
 %type <node> variabledecl vardecllist funccall calllist funcident funcsident externdecl typelist type
 
 %right TEQUALS;
-%left TPLUS;
+%left TPLUS TMINUS;
+%left TMUL TDIV;
 %nonassoc TLPAREN;
 
 %start program
@@ -80,7 +81,11 @@ calllist            : expression { $$ = $1; }
 
 expression          : TINT { $$ = ast_make_int32($1); }
                     | TDOUBLE { $$ = ast_make_double($1); }
+                    | TLPAREN expression TRPAREN { $$ = $2; }
                     | expression TPLUS expression { $$ = ast_make_binary($1, $3, '+'); }
+                    | expression TMINUS expression { $$ = ast_make_binary($1, $3, '-'); }
+                    | expression TMUL expression { $$ = ast_make_binary($1, $3, '*'); }
+                    | expression TDIV expression { $$ = ast_make_binary($1, $3, '/'); }
                     | variabledecl { $$ = $1; }
                     | variabledecl TEQUALS expression { $$ = ast_make_binary($1, $3, '='); }
                     | TIDENTIFIER TEQUALS expression { $$ = ast_make_binary(ast_make_identifier($1), $3, '='); }
