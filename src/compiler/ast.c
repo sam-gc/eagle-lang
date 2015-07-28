@@ -140,3 +140,15 @@ AST *ast_make_type(char *type)
 
     return (AST *)ast;
 }
+
+AST *ast_make_if(AST *test, AST *block)
+{
+    ASTIfBlock *ast = ast_malloc(sizeof(ASTIfBlock));
+    ast->type = AIF;
+
+    ast->test = test;
+    ast->block = block;
+
+    return (AST *)ast;
+}
+

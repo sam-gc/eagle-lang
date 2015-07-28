@@ -17,9 +17,9 @@
 %token <string> TIDENTIFIER TINT TDOUBLE TTYPE
 %token <token> TPLUS TMINUS TEQUALS TMUL TDIV
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE
-%token <token> TFUNC TRETURN TPUTS TEXTERN
+%token <token> TFUNC TRETURN TPUTS TEXTERN TIF
 %token <token> TCOLON TSEMI TNEWLINE TCOMMA
-%type <node> program declarations declaration statements statement block funcdecl expression
+%type <node> program declarations declaration statements statement block funcdecl expression ifstatement
 %type <node> variabledecl vardecllist funccall calllist funcident funcsident externdecl typelist type
 
 %right TEQUALS;
@@ -70,7 +70,10 @@ statement           : expression TSEMI { $$ = $1; }
                     | TRETURN expression TNEWLINE { $$ = ast_make_unary($2, 'r'); }
                     | TPUTS expression TSEMI { $$ = ast_make_unary($2, 'p'); }
                     | TPUTS expression TNEWLINE { $$ = ast_make_unary($2, 'p'); }
+                    | ifstatement { $$ = $1; }
                     | TNEWLINE { $$ = NULL; };
+
+ifstatement         : TIF expression TNEWLINE statement { $$ = ast_make_if($2, $4); };
 
 variabledecl        : type TIDENTIFIER { $$ = ast_make_var_decl($1, $2); };
 

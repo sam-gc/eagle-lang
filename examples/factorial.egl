@@ -1,0 +1,12 @@
+func fact(long i) : long {
+    if i
+        return i * fact(i - 1)
+    return 1
+}
+
+func main() : int {
+    int num = 10
+    puts fact(num)
+    return 0
+}
+

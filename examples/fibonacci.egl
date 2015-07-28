@@ -1,0 +1,12 @@
+func fib(int i) : int {
+    if i
+        if i - 1
+            return fib(i - 1) + fib(i - 2)
+    return i
+}
+
+func main() : int {
+    puts fib(35)
+    return 0
+}
+

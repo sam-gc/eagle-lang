@@ -49,10 +49,11 @@ semi (";"|";"{whitechar}*"\n")
 "("         return SET(TLPAREN);
 ")"         return SET(TRPAREN);
 {lbrace}    return SET(TLBRACE);
-"}"    return SET(TRBRACE);
+"}"         return SET(TRBRACE);
 "return"    return SET(TRETURN);
 "puts"      return SET(TPUTS);
 "extern"    return SET(TEXTERN);
+"if"        return SET(TIF);
 "int"       { SAVE_TOKEN; return TTYPE; }
 "long"      { SAVE_TOKEN; return TTYPE; }
 "double"    { SAVE_TOKEN; return TTYPE; }

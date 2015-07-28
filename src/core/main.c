@@ -13,7 +13,7 @@ int main(int argc, const char * argv[])
     yyparse();
 
     LLVMModuleRef module = ac_compile(ast_root);
-     LLVMDumpModule(module);
+    LLVMDumpModule(module);
 
     LLVMInitializeNativeTarget();
     LLVMInitializeNativeAsmPrinter();

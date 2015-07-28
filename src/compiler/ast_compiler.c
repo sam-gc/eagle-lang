@@ -8,6 +8,7 @@ typedef struct {
 
     EagleType currentFunctionReturnType;
     LLVMBasicBlockRef currentFunctionEntry;
+    LLVMValueRef currentFunction;
     VarScopeStack *varScope;
 } CompilerBundle;
 
@@ -23,6 +24,7 @@ void ac_dispatch_declaration(AST *ast, CompilerBundle *cb);
 
 void ac_compile_function(AST *ast, CompilerBundle *cb);
 int ac_compile_block(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb);
+void ac_compile_if(AST *ast, CompilerBundle *cb);
 LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb);
 
 LLVMValueRef ac_compile_value(AST *ast, CompilerBundle *cb)
@@ -70,6 +72,9 @@ LLVMValueRef ac_compile_var_decl(AST *ast, CompilerBundle *cb)
 
     ASTTypeDecl *type = (ASTTypeDecl *)a->atype;
 
+    LLVMValueRef begin = LLVMGetFirstInstruction(cb->currentFunctionEntry);
+    if(begin)
+        LLVMPositionBuilderBefore(cb->builder, begin);
     LLVMValueRef pos = LLVMBuildAlloca(cb->builder, et_llvm_type(type->etype), a->ident);
     vs_put(cb->varScope, a->ident, pos, type->etype);
 
@@ -227,6 +232,9 @@ void ac_dispatch_statement(AST *ast, CompilerBundle *cb)
         case AFUNCCALL:
             ac_compile_function_call(ast, cb);
             break;
+        case AIF:
+            ac_compile_if(ast, cb);
+            break;
         default:
             return;
     }
@@ -244,6 +252,30 @@ void ac_dispatch_declaration(AST *ast, CompilerBundle *cb)
     }
 }
 
+void ac_compile_if(AST *ast, CompilerBundle *cb)
+{
+    ASTIfBlock *a = (ASTIfBlock *)ast;
+    LLVMValueRef val = ac_dispatch_expression(a->test, cb);
+
+    LLVMValueRef cmp = NULL;
+    if(a->test->resultantType == ETInt32)
+        cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstInt(LLVMInt32Type(), 0, 0), "cmp");
+    else if(a->test->resultantType == ETInt64)
+        cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstInt(LLVMInt64Type(), 0, 0), "cmp");
+    else
+        cmp = LLVMBuildFCmp(cb->builder, LLVMRealONE, val, LLVMConstReal(LLVMDoubleType(), 0.0), "cmp");
+
+    LLVMBasicBlockRef ifBB = LLVMAppendBasicBlock(cb->currentFunction, "if");
+    LLVMBasicBlockRef mergeBB = LLVMAppendBasicBlock(cb->currentFunction, "merge");
+
+    LLVMBuildCondBr(cb->builder, cmp, ifBB, mergeBB);
+    LLVMPositionBuilderAtEnd(cb->builder, ifBB);
+    if(!ac_compile_block(a->block, ifBB, cb))
+        LLVMBuildBr(cb->builder, mergeBB);
+
+    LLVMPositionBuilderAtEnd(cb->builder, mergeBB);
+}
+
 int ac_compile_block(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
 {
     for(; ast; ast = ast->next)
@@ -258,6 +290,7 @@ int ac_compile_block(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
                 val = ac_build_conversion(cb->builder, val, t, o);
 
             LLVMBuildRet(cb->builder, val);
+
             return 1;
         }
         
@@ -347,6 +380,8 @@ void ac_compile_function(AST *ast, CompilerBundle *cb)
     cb->currentFunctionEntry = entry;
     cb->varScope = &scope;
 
+    cb->currentFunction = func;
+
     if(a->params)
     {
         int i;
@@ -358,7 +393,9 @@ void ac_compile_function(AST *ast, CompilerBundle *cb)
         }
     }
 
-    if(!ac_compile_block(a->body, entry, cb))
+    ac_compile_block(a->body, entry, cb);
+
+    if(retType->etype == ETVoid)
         LLVMBuildRetVoid(cb->builder);
 
     cb->currentFunctionEntry = NULL;
@@ -479,6 +516,7 @@ LLVMValueRef ac_make_add(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
         case ETDouble:
             return LLVMBuildFAdd(builder, left, right, "addtmp");
         case ETInt32:
+        case ETInt64:
             return LLVMBuildAdd(builder, left, right, "addtmp");
         default:
             return NULL;
@@ -492,6 +530,7 @@ LLVMValueRef ac_make_sub(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
         case ETDouble:
             return LLVMBuildFSub(builder, left, right, "subtmp");
         case ETInt32:
+        case ETInt64:
             return LLVMBuildSub(builder, left, right, "subtmp");
         default:
             return NULL;
@@ -505,6 +544,7 @@ LLVMValueRef ac_make_mul(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
         case ETDouble:
             return LLVMBuildFMul(builder, left, right, "multmp");
         case ETInt32:
+        case ETInt64:
             return LLVMBuildMul(builder, left, right, "multmp");
         default:
             return NULL;
@@ -518,6 +558,7 @@ LLVMValueRef ac_make_div(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
         case ETDouble:
             return LLVMBuildFDiv(builder, left, right, "divtmp");
         case ETInt32:
+        case ETInt64:
             return LLVMBuildSDiv(builder, left, right, "divtmp");
         default:
             return NULL;

@@ -23,6 +23,7 @@ typedef enum {
     AFUNCCALL,
     AVARDECL,
     AIDENT,
+    AIF,
     ATYPE
 } ASTType;
 
@@ -101,6 +102,15 @@ typedef struct {
     EagleType etype;
 } ASTTypeDecl;
 
+typedef struct {
+    ASTType type;
+    EagleType resultantType;
+    struct AST *next;
+
+    struct AST *test;
+    struct AST *block;
+} ASTIfBlock;
+
 AST *ast_make();
 void ast_append(AST *old, AST *n);
 AST *ast_make_binary(AST *left, AST *right, char op);
@@ -112,5 +122,6 @@ AST *ast_make_func_decl(AST *type, char *ident, AST *body, AST *params);
 AST *ast_make_func_call(AST *callee, AST *params);
 AST *ast_make_var_decl(AST *type, char *ident);
 AST *ast_make_type(char *type);
+AST *ast_make_if(AST *test, AST *block);
 
 #endif /* defined(__Eagle__ast__) */
