@@ -73,7 +73,8 @@ statement           : expression TSEMI { $$ = $1; }
                     | ifstatement { $$ = $1; }
                     | TNEWLINE { $$ = NULL; };
 
-ifstatement         : TIF expression TNEWLINE statement { $$ = ast_make_if($2, $4); };
+ifstatement         : TIF expression TNEWLINE statement { $$ = ast_make_if($2, $4); }
+                    | TIF expression block { $$ = ast_make_if($2, $3); };
 
 variabledecl        : type TIDENTIFIER { $$ = ast_make_var_decl($1, $2); };
 

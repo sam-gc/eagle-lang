@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "ast_compiler.h"
 #include "variable_manager.h"
 #include "core/llvm_headers.h"
@@ -60,6 +61,9 @@ LLVMValueRef ac_compile_identifier(AST *ast, CompilerBundle *cb)
         a->resultantType = ETFunction;
         return func;
     }
+
+    fprintf(stderr, "Error: Undeclared Identifier (%s)\n", a->value.id);
+    exit(0);
     
     return NULL;
 }
@@ -268,10 +272,14 @@ void ac_compile_if(AST *ast, CompilerBundle *cb)
     LLVMBasicBlockRef ifBB = LLVMAppendBasicBlock(cb->currentFunction, "if");
     LLVMBasicBlockRef mergeBB = LLVMAppendBasicBlock(cb->currentFunction, "merge");
 
+
     LLVMBuildCondBr(cb->builder, cmp, ifBB, mergeBB);
     LLVMPositionBuilderAtEnd(cb->builder, ifBB);
+
+    vs_push(cb->varScope);
     if(!ac_compile_block(a->block, ifBB, cb))
         LLVMBuildBr(cb->builder, mergeBB);
+    vs_pop(cb->varScope);
 
     LLVMPositionBuilderAtEnd(cb->builder, mergeBB);
 }
