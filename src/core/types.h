@@ -15,6 +15,7 @@
 typedef enum {
     ETNone,
     ETInt32,
+    ETInt64,
     ETDouble,
     ETVoid,
     ETFunction

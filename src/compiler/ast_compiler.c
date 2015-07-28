@@ -167,6 +167,9 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
                     case ETInt32:
                         fmt = LLVMBuildGlobalStringPtr(cb->builder, "%d\n", "prfI");
                         break;
+                    case ETInt64:
+                        fmt = LLVMBuildGlobalStringPtr(cb->builder, "%ld\n", "prfLI");
+                        break;
                     default:
                         break;
                 }
@@ -428,6 +431,21 @@ LLVMValueRef ac_build_conversion(LLVMBuilderRef builder, LLVMValueRef val, Eagle
             {
                 case ETInt32:
                     return val;
+                case ETInt64:
+                    return LLVMBuildIntCast(builder, val, LLVMInt64Type(), "conv");
+                case ETDouble:
+                    return LLVMBuildSIToFP(builder, val, LLVMDoubleType(), "conv");
+                default:
+                    break;
+            }
+            break;
+        case ETInt64:
+            switch(to)
+            {
+                case ETInt64:
+                    return val;
+                case ETInt32:
+                    return LLVMBuildIntCast(builder, val, LLVMInt32Type(), "conv");
                 case ETDouble:
                     return LLVMBuildSIToFP(builder, val, LLVMDoubleType(), "conv");
                 default:
@@ -441,6 +459,8 @@ LLVMValueRef ac_build_conversion(LLVMBuilderRef builder, LLVMValueRef val, Eagle
                     return val;
                 case ETInt32:
                     return LLVMBuildFPToSI(builder, val, LLVMInt32Type(), "conv");
+                case ETInt64:
+                    return LLVMBuildFPToSI(builder, val, LLVMInt64Type(), "conv");
                 default:
                     break;
             }

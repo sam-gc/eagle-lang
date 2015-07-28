@@ -16,6 +16,7 @@
 EagleType et_parse_string(char *text)
 {
     TTEST(text, "int", ETInt32);
+    TTEST(text, "long", ETInt64);
     TTEST(text, "double", ETDouble);
     TTEST(text, "void", ETVoid);
     
@@ -40,6 +41,8 @@ LLVMTypeRef et_llvm_type(EagleType type)
             return LLVMDoubleType();
         case ETInt32:
             return LLVMInt32Type();
+        case ETInt64:
+            return LLVMInt64Type();
         default:
             return NULL;
     }
@@ -49,6 +52,7 @@ EagleType et_eagle_type(LLVMTypeRef ty)
 {
     ETEST(ETDouble, ty, LLVMDoubleType());
     ETEST(ETInt32, ty, LLVMInt32Type());
+    ETEST(ETInt64, ty, LLVMInt64Type());
     ETEST(ETVoid, ty, LLVMVoidType());
 
     return ETNone;
