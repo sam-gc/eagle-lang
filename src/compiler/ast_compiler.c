@@ -25,7 +25,7 @@ void ac_dispatch_declaration(AST *ast, CompilerBundle *cb);
 
 void ac_compile_function(AST *ast, CompilerBundle *cb);
 int ac_compile_block(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb);
-void ac_compile_if(AST *ast, CompilerBundle *cb);
+int ac_compile_if(AST *ast, CompilerBundle *cb, LLVMBasicBlockRef mergeBB);
 LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb);
 
 LLVMValueRef ac_compile_value(AST *ast, CompilerBundle *cb)
@@ -237,7 +237,7 @@ void ac_dispatch_statement(AST *ast, CompilerBundle *cb)
             ac_compile_function_call(ast, cb);
             break;
         case AIF:
-            ac_compile_if(ast, cb);
+            ac_compile_if(ast, cb, NULL);
             break;
         default:
             return;
@@ -256,8 +256,9 @@ void ac_dispatch_declaration(AST *ast, CompilerBundle *cb)
     }
 }
 
-void ac_compile_if(AST *ast, CompilerBundle *cb)
+int ac_compile_if(AST *ast, CompilerBundle *cb, LLVMBasicBlockRef mergeBB)
 {
+    int mergeBBIn = !!mergeBB;
     ASTIfBlock *a = (ASTIfBlock *)ast;
     LLVMValueRef val = ac_dispatch_expression(a->test, cb);
 
@@ -269,19 +270,52 @@ void ac_compile_if(AST *ast, CompilerBundle *cb)
     else
         cmp = LLVMBuildFCmp(cb->builder, LLVMRealONE, val, LLVMConstReal(LLVMDoubleType(), 0.0), "cmp");
 
+    int multiBlock = a->ifNext && ((ASTIfBlock *)a->ifNext)->test;
+    int threeBlock = !!a->ifNext && !multiBlock;
+
     LLVMBasicBlockRef ifBB = LLVMAppendBasicBlock(cb->currentFunction, "if");
-    LLVMBasicBlockRef mergeBB = LLVMAppendBasicBlock(cb->currentFunction, "merge");
+    LLVMBasicBlockRef elseBB = threeBlock || multiBlock ? LLVMAppendBasicBlock(cb->currentFunction, "else") : NULL;
+    if(!mergeBB)
+        mergeBB = LLVMAppendBasicBlock(cb->currentFunction, "merge");
 
-
-    LLVMBuildCondBr(cb->builder, cmp, ifBB, mergeBB);
+    // WARNING: Broken code.
+    // TODO: This needs to be replaced with a formal nested if statement
+    LLVMBuildCondBr(cb->builder, cmp, ifBB, elseBB ? elseBB : mergeBB);
     LLVMPositionBuilderAtEnd(cb->builder, ifBB);
 
+    int out = 0;
     vs_push(cb->varScope);
     if(!ac_compile_block(a->block, ifBB, cb))
+    {
         LLVMBuildBr(cb->builder, mergeBB);
+        out = 1;
+    }
     vs_pop(cb->varScope);
 
+    if(threeBlock)
+    {
+        ASTIfBlock *el = (ASTIfBlock *)a->ifNext;
+        LLVMPositionBuilderAtEnd(cb->builder, elseBB);
+
+        vs_push(cb->varScope);
+        if(!ac_compile_block(el->block, elseBB, cb))
+            LLVMBuildBr(cb->builder, mergeBB);
+        vs_pop(cb->varScope);
+    }
+    else if(multiBlock)
+    {
+        AST *el = a->ifNext;
+        LLVMPositionBuilderAtEnd(cb->builder, elseBB);
+        ac_compile_if(el, cb, mergeBB);
+
+        return;
+    }
+
+    LLVMBasicBlockRef last = LLVMGetLastBasicBlock(cb->currentFunction);
+    LLVMMoveBasicBlockAfter(mergeBB, last);
+
     LLVMPositionBuilderAtEnd(cb->builder, mergeBB);
+    return out;
 }
 
 int ac_compile_block(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)

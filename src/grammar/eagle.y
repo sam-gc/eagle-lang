@@ -17,14 +17,16 @@
 %token <string> TIDENTIFIER TINT TDOUBLE TTYPE
 %token <token> TPLUS TMINUS TEQUALS TMUL TDIV
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE
-%token <token> TFUNC TRETURN TPUTS TEXTERN TIF
+%token <token> TFUNC TRETURN TPUTS TEXTERN TIF TELSE TELIF
 %token <token> TCOLON TSEMI TNEWLINE TCOMMA
 %type <node> program declarations declaration statements statement block funcdecl expression ifstatement
 %type <node> variabledecl vardecllist funccall calllist funcident funcsident externdecl typelist type
+%type <node> elifstatement elifblock
 
 %right TEQUALS;
 %left TPLUS TMINUS;
 %left TMUL TDIV;
+%right "then" TIF TELSE TELIF
 %nonassoc TLPAREN;
 
 %start program
@@ -73,8 +75,19 @@ statement           : expression TSEMI { $$ = $1; }
                     | ifstatement { $$ = $1; }
                     | TNEWLINE { $$ = NULL; };
 
-ifstatement         : TIF expression TNEWLINE statement { $$ = ast_make_if($2, $4); }
-                    | TIF expression block { $$ = ast_make_if($2, $3); };
+elifstatement       : TELIF expression TNEWLINE statement { $$ = ast_make_if($2, $4); }
+                    | TELIF expression block { $$ = ast_make_if($2, $3); };
+
+elifblock           : elifstatement { $$ = $1; }
+                    | elifblock elifstatement { $$ = $1; ast_add_if($1, $2); };
+
+ifstatement         : TIF expression TNEWLINE statement %prec "then" { $$ = ast_make_if($2, $4); }
+                    | TIF expression block { $$ = ast_make_if($2, $3); }
+                    | TIF expression TNEWLINE statement TELSE TNEWLINE statement { $$ = ast_make_if($2, $4); ast_add_if($$, ast_make_if(NULL, $7)); }
+                    | TIF expression block TELSE block { $$ = ast_make_if($2, $3); ast_add_if($$, ast_make_if(NULL, $5)); }
+                    | TIF expression TNEWLINE statement elifblock { $$ = ast_make_if($2, $4); ast_add_if($$, $5); }
+                    | TIF expression block elifblock { $$ = ast_make_if($2, $3); ast_add_if($$, $4); }
+                    | TIF expression block TNEWLINE elifblock { $$ = ast_make_if($2, $3); ast_add_if($$, $5); };
 
 variabledecl        : type TIDENTIFIER { $$ = ast_make_var_decl($1, $2); };
 

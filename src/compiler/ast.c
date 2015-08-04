@@ -148,7 +148,15 @@ AST *ast_make_if(AST *test, AST *block)
 
     ast->test = test;
     ast->block = block;
+    ast->ifNext = NULL;
 
     return (AST *)ast;
+}
+
+void ast_add_if(AST *ast, AST *next)
+{
+    ASTIfBlock *i = (ASTIfBlock *)ast;
+    for(; i->ifNext; i = (ASTIfBlock *)i->ifNext);
+    i->ifNext = next;
 }
 

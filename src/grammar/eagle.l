@@ -54,6 +54,8 @@ semi (";"|";"{whitechar}*"\n")
 "puts"      return SET(TPUTS);
 "extern"    return SET(TEXTERN);
 "if"        return SET(TIF);
+"elif"      return SET(TELIF);
+"else"      return SET(TELSE);
 "int"       { SAVE_TOKEN; return TTYPE; }
 "long"      { SAVE_TOKEN; return TTYPE; }
 "double"    { SAVE_TOKEN; return TTYPE; }

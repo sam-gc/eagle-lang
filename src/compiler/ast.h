@@ -1,6 +1,5 @@
 //
-//  ast.h
-//  Eagle
+//  ast.h //  Eagle
 //
 //  Created by Sam Olsen on 7/22/15.
 //  Copyright (c) 2015 Sam Olsen. All rights reserved.
@@ -109,6 +108,7 @@ typedef struct {
 
     struct AST *test;
     struct AST *block;
+    struct AST *ifNext;
 } ASTIfBlock;
 
 AST *ast_make();
@@ -123,5 +123,6 @@ AST *ast_make_func_call(AST *callee, AST *params);
 AST *ast_make_var_decl(AST *type, char *ident);
 AST *ast_make_type(char *type);
 AST *ast_make_if(AST *test, AST *block);
+void ast_add_if(AST *ast, AST *next);
 
 #endif /* defined(__Eagle__ast__) */
