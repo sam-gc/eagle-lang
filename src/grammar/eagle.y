@@ -23,7 +23,7 @@
 %token <token> TCOLON TSEMI TNEWLINE TCOMMA
 %type <node> program declarations declaration statements statement block funcdecl expression ifstatement
 %type <node> variabledecl vardecllist funccall calllist funcident funcsident externdecl typelist type
-%type <node> elifstatement elifblock
+%type <node> elifstatement elifblock elsestatement singif
 
 %right TEQUALS;
 %left TPLUS TMINUS;
@@ -73,18 +73,22 @@ statement           : expression TSEMI { $$ = $1; }
                     | TSEMI { $$ = NULL; }
                     | ifstatement { $$ = $1; };
 
+singif              : TIF expression TSEMI statement { $$ = ast_make_if($2, $4); }
+                    | TIF expression block { $$ = ast_make_if($2, $3); };
+
+elsestatement       : TELSE statement { $$ = ast_make_if(NULL, $2); }
+                    | TELSE block { $$ = ast_make_if(NULL, $2); };
+
 elifstatement       : TELIF expression TSEMI statement { $$ = ast_make_if($2, $4); }
                     | TELIF expression block { $$ = ast_make_if($2, $3); };
 
 elifblock           : elifstatement { $$ = $1; }
                     | elifblock elifstatement { $$ = $1; ast_add_if($1, $2); };
 
-ifstatement         : TIF expression TSEMI statement %prec "then" { $$ = ast_make_if($2, $4); }
-                    | TIF expression TSEMI statement TELSE statement { $$ = ast_make_if($2, $4); ast_add_if($$, ast_make_if(NULL, $6));}
-                    | TIF expression block { $$ = ast_make_if($2, $3); }
-                    | TIF expression block TELSE block { $$ = ast_make_if($2, $3); ast_add_if($$, ast_make_if(NULL, $5)); }
-                    | TIF expression TSEMI statement elifblock { $$ = ast_make_if($2, $4); ast_add_if($$, $5); }
-                    | TIF expression block elifblock { $$ = ast_make_if($2, $3); ast_add_if($$, $4); };
+ifstatement         : singif { $$ = $1; }
+                    | singif elsestatement { $$ = $1; ast_add_if($$, $2); }
+                    | singif elifblock { $$ = $1; ast_add_if($1, $2); }
+                    | singif elifblock elsestatement { $$ = $1; ast_add_if($$, $2); ast_add_if($$, $3); };
 
 variabledecl        : type TIDENTIFIER { $$ = ast_make_var_decl($1, $2); };
 
