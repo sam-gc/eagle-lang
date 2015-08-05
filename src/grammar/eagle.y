@@ -8,6 +8,8 @@
     AST *ast_root = NULL;
 %}
 
+%error-verbose
+
 %union {
     int token;
     char *string;
@@ -38,9 +40,8 @@ program             : declarations { ast_root = $1; };
 declarations        : declaration { if($1) $$ = $1; else $$ = ast_make(); }
                     | declaration declarations { if($1) $1->next = $2; $$ = $1 ? $1 : $2; };
 
-declaration         : externdecl TNEWLINE { $$ = $1; }
-                    | funcdecl TNEWLINE { $$ = $1; }
-                    | TNEWLINE { $$ = NULL; };
+declaration         : externdecl TSEMI { $$ = $1; }
+                    | funcdecl { $$ = $1; };
 
 type                : TIDENTIFIER { $$ = ast_make_type($1); }
                     | TTYPE { $$ = ast_make_type($1); };
@@ -67,27 +68,23 @@ statements          : statement { if($1) $$ = $1; else $$ = ast_make(); }
                     | statement statements { if($1) $1->next = $2; $$ = $1 ? $1 : $2; };
 
 statement           : expression TSEMI { $$ = $1; }
-                    | expression TNEWLINE { $$ = $1; }
                     | TRETURN expression TSEMI { $$ = ast_make_unary($2, 'r'); }
-                    | TRETURN expression TNEWLINE { $$ = ast_make_unary($2, 'r'); }
                     | TPUTS expression TSEMI { $$ = ast_make_unary($2, 'p'); }
-                    | TPUTS expression TNEWLINE { $$ = ast_make_unary($2, 'p'); }
-                    | ifstatement { $$ = $1; }
-                    | TNEWLINE { $$ = NULL; };
+                    | TSEMI { $$ = NULL; }
+                    | ifstatement { $$ = $1; };
 
-elifstatement       : TELIF expression TNEWLINE statement { $$ = ast_make_if($2, $4); }
+elifstatement       : TELIF expression TSEMI statement { $$ = ast_make_if($2, $4); }
                     | TELIF expression block { $$ = ast_make_if($2, $3); };
 
 elifblock           : elifstatement { $$ = $1; }
                     | elifblock elifstatement { $$ = $1; ast_add_if($1, $2); };
 
-ifstatement         : TIF expression TNEWLINE statement %prec "then" { $$ = ast_make_if($2, $4); }
+ifstatement         : TIF expression TSEMI statement %prec "then" { $$ = ast_make_if($2, $4); }
+                    | TIF expression TSEMI statement TELSE statement { $$ = ast_make_if($2, $4); ast_add_if($$, ast_make_if(NULL, $6));}
                     | TIF expression block { $$ = ast_make_if($2, $3); }
-                    | TIF expression TNEWLINE statement TELSE TNEWLINE statement { $$ = ast_make_if($2, $4); ast_add_if($$, ast_make_if(NULL, $7)); }
                     | TIF expression block TELSE block { $$ = ast_make_if($2, $3); ast_add_if($$, ast_make_if(NULL, $5)); }
-                    | TIF expression TNEWLINE statement elifblock { $$ = ast_make_if($2, $4); ast_add_if($$, $5); }
-                    | TIF expression block elifblock { $$ = ast_make_if($2, $3); ast_add_if($$, $4); }
-                    | TIF expression block TNEWLINE elifblock { $$ = ast_make_if($2, $3); ast_add_if($$, $5); };
+                    | TIF expression TSEMI statement elifblock { $$ = ast_make_if($2, $4); ast_add_if($$, $5); }
+                    | TIF expression block elifblock { $$ = ast_make_if($2, $3); ast_add_if($$, $4); };
 
 variabledecl        : type TIDENTIFIER { $$ = ast_make_var_decl($1, $2); };
 

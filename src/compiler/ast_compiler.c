@@ -25,7 +25,7 @@ void ac_dispatch_declaration(AST *ast, CompilerBundle *cb);
 
 void ac_compile_function(AST *ast, CompilerBundle *cb);
 int ac_compile_block(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb);
-int ac_compile_if(AST *ast, CompilerBundle *cb, LLVMBasicBlockRef mergeBB);
+void ac_compile_if(AST *ast, CompilerBundle *cb, LLVMBasicBlockRef mergeBB);
 LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb);
 
 LLVMValueRef ac_compile_value(AST *ast, CompilerBundle *cb)
@@ -256,7 +256,7 @@ void ac_dispatch_declaration(AST *ast, CompilerBundle *cb)
     }
 }
 
-int ac_compile_if(AST *ast, CompilerBundle *cb, LLVMBasicBlockRef mergeBB)
+void ac_compile_if(AST *ast, CompilerBundle *cb, LLVMBasicBlockRef mergeBB)
 {
     int mergeBBIn = !!mergeBB;
     ASTIfBlock *a = (ASTIfBlock *)ast;
@@ -315,7 +315,6 @@ int ac_compile_if(AST *ast, CompilerBundle *cb, LLVMBasicBlockRef mergeBB)
     LLVMMoveBasicBlockAfter(mergeBB, last);
 
     LLVMPositionBuilderAtEnd(cb->builder, mergeBB);
-    return out;
 }
 
 int ac_compile_block(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)

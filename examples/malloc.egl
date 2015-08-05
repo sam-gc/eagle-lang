@@ -3,8 +3,11 @@ extern func free(long) : void
 
 func main() : int {
     long mem = malloc(100)
-
     puts mem
+
+
+;;;;
+
 
     free(mem)
     return 0

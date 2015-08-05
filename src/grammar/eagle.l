@@ -6,6 +6,11 @@
     
     #define SET(t) (yylval.token = t)
     #define SAVE_TOKEN (yylval.string = strdup(yytext))
+    #define DISCARD_NL (save_newline = 0)
+    #define SAVE_NL (save_newline = 1)
+
+int translate = 0;
+    int save_newline = 0;
 %}
 
 %option noyywrap
@@ -33,32 +38,32 @@ semi (";"|";"{whitechar}*"\n")
 
 {white}       ;
 
-"\n"         return SET(TNEWLINE);
+"\n"          { if(save_newline) {save_newline=0; return TSEMI;} /*else printf("IGNORING! %d\n", yylineno);*/ }
 
-{integer}     { SAVE_TOKEN; return TINT; }
-{real}      {SAVE_TOKEN; return TDOUBLE; }
-"+"         return SET(TPLUS);
-"-"         return SET(TMINUS);
-"*"         return SET(TMUL);
-"/"         return SET(TDIV);
-"="         return SET(TEQUALS);
-{func}      return SET(TFUNC);
-":"         return SET(TCOLON);
-","         return SET(TCOMMA);
-{semi}      return SET(TSEMI);
-"("         return SET(TLPAREN);
-")"         return SET(TRPAREN);
+{integer}     { SAVE_NL; SAVE_TOKEN; return TINT; }
+{real}      { SAVE_NL; SAVE_TOKEN; return TDOUBLE; }
+"+"         DISCARD_NL; return SET(TPLUS);
+"-"         DISCARD_NL; return SET(TMINUS);
+"*"         DISCARD_NL; return SET(TMUL);
+"/"         DISCARD_NL; return SET(TDIV);
+"="         DISCARD_NL; return SET(TEQUALS);
+"func"      DISCARD_NL; return SET(TFUNC);
+":"         DISCARD_NL; return SET(TCOLON);
+","         DISCARD_NL; return SET(TCOMMA);
+";"      DISCARD_NL; return SET(TSEMI);
+"("         DISCARD_NL; return SET(TLPAREN);
+")"         SAVE_NL; return SET(TRPAREN);
 {lbrace}    return SET(TLBRACE);
-"}"         return SET(TRBRACE);
-"return"    return SET(TRETURN);
-"puts"      return SET(TPUTS);
-"extern"    return SET(TEXTERN);
-"if"        return SET(TIF);
-"elif"      return SET(TELIF);
-"else"      return SET(TELSE);
-"int"       { SAVE_TOKEN; return TTYPE; }
-"long"      { SAVE_TOKEN; return TTYPE; }
-"double"    { SAVE_TOKEN; return TTYPE; }
-"void"      { SAVE_TOKEN; return TTYPE; }
-{alpha}       { SAVE_TOKEN; return TIDENTIFIER; }
+"}"         DISCARD_NL; return SET(TRBRACE);
+"return"    DISCARD_NL; return SET(TRETURN);
+"puts"      DISCARD_NL; return SET(TPUTS);
+"extern"    DISCARD_NL; return SET(TEXTERN);
+"if"        DISCARD_NL; return SET(TIF);
+"elif"      DISCARD_NL; return SET(TELIF);
+"else"      DISCARD_NL; return SET(TELSE);
+"int"       { SAVE_NL; SAVE_TOKEN; return TTYPE; }
+"long"      { SAVE_NL; SAVE_TOKEN; return TTYPE; }
+"double"    { SAVE_NL; SAVE_TOKEN; return TTYPE; }
+"void"      { SAVE_NL; SAVE_TOKEN; return TTYPE; }
+{alpha}       { SAVE_NL; SAVE_TOKEN; return TIDENTIFIER; }
 %%

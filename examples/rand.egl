@@ -1,0 +1,21 @@
+extern func rand() : int
+extern func srand(int) : void
+extern func time(long) : int
+
+func main() : int
+{
+    srand(time(0))
+    puts rand()
+    puts rand()
+
+    if rand() * 0
+    {
+        puts rand()
+        puts 111
+        return 1
+    } else {
+        puts 11
+    }
+
+    return 0
+}
