@@ -1,0 +1,11 @@
+func main(int argc) : int
+{
+    puts argc == 1
+    puts argc < 1
+    puts argc > 1
+    puts argc != 1
+    puts argc >= 1
+    puts argc <= 1
+    return 0
+}
+

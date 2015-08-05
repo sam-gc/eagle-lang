@@ -9,6 +9,7 @@
 %}
 
 %error-verbose
+%expect 4
 
 %union {
     int token;
@@ -17,7 +18,7 @@
 }
 
 %token <string> TIDENTIFIER TINT TDOUBLE TTYPE
-%token <token> TPLUS TMINUS TEQUALS TMUL TDIV
+%token <token> TPLUS TMINUS TEQUALS TMUL TDIV TGT TLT TEQ TNE TGTE TLTE TNOT
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE
 %token <token> TFUNC TRETURN TPUTS TEXTERN TIF TELSE TELIF
 %token <token> TCOLON TSEMI TNEWLINE TCOMMA
@@ -26,10 +27,11 @@
 %type <node> elifstatement elifblock elsestatement singif
 
 %right TEQUALS;
+%left TNOT;
+%left TEQ TNE TLT TGT TLTE TGTE
 %left TPLUS TMINUS;
 %left TMUL TDIV;
-%right "then" TIF TELSE TELIF
-%nonassoc TLPAREN;
+%right "then" TIF TELSE TELIF %nonassoc TLPAREN;
 
 %start program
 
@@ -105,6 +107,13 @@ expression          : TINT { $$ = ast_make_int32($1); }
                     | expression TMINUS expression { $$ = ast_make_binary($1, $3, '-'); }
                     | expression TMUL expression { $$ = ast_make_binary($1, $3, '*'); }
                     | expression TDIV expression { $$ = ast_make_binary($1, $3, '/'); }
+                    | expression TEQ expression { $$ = ast_make_binary($1, $3, 'e'); }
+                    | expression TGT expression { $$ = ast_make_binary($1, $3, 'g'); }
+                    | expression TGTE expression { $$ = ast_make_binary($1, $3, 'G'); }
+                    | expression TLT expression { $$ = ast_make_binary($1, $3, 'l'); }
+                    | expression TLTE expression { $$ = ast_make_binary($1, $3, 'L'); }
+                    | expression TNE expression { $$ = ast_make_binary($1, $3, 'n'); }
+                    | TNOT expression { $$ = ast_make_unary($2, '!'); }
                     | variabledecl { $$ = $1; }
                     | variabledecl TEQUALS expression { $$ = ast_make_binary($1, $3, '='); }
                     | TIDENTIFIER TEQUALS expression { $$ = ast_make_binary(ast_make_identifier($1), $3, '='); }

@@ -18,6 +18,7 @@ static inline LLVMValueRef ac_make_add(LLVMValueRef left, LLVMValueRef right, LL
 static inline LLVMValueRef ac_make_sub(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type);
 static inline LLVMValueRef ac_make_mul(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type);
 static inline LLVMValueRef ac_make_div(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type);
+static inline LLVMValueRef ac_make_comp(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type, char comp);
 
 LLVMValueRef ac_dispatch_expression(AST *ast, CompilerBundle *cb);
 void ac_dispatch_statement(AST *ast, CompilerBundle *cb);
@@ -153,6 +154,13 @@ LLVMValueRef ac_compile_binary(AST *ast, CompilerBundle *cb)
             return ac_make_mul(l, r, cb->builder, promo);
         case '/':
             return ac_make_div(l, r, cb->builder, promo);
+        case 'e':
+        case 'n':
+        case 'g':
+        case 'l':
+        case 'G':
+        case 'L':
+            return ac_make_comp(l, r, cb->builder, promo, a->op);
         default:
             return NULL;
     }
@@ -188,6 +196,9 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
                 LLVMBuildCall(cb->builder, func, args, 2, "putsout");
                 return NULL;
             }
+        case '!':
+            // TODO: Broken
+            return LLVMBuildNot(cb->builder, v, "nottmp");
         default:
             break;
     }
@@ -203,6 +214,8 @@ LLVMValueRef ac_dispatch_expression(AST *ast, CompilerBundle *cb)
             return ac_compile_value(ast, cb);
         case ABINARY:
             return ac_compile_binary(ast, cb);
+        case AUNARY:
+            return ac_compile_unary(ast, cb);
         case AVARDECL:
             return ac_compile_var_decl(ast, cb);
         case AIDENT:
@@ -258,7 +271,6 @@ void ac_dispatch_declaration(AST *ast, CompilerBundle *cb)
 
 void ac_compile_if(AST *ast, CompilerBundle *cb, LLVMBasicBlockRef mergeBB)
 {
-    int mergeBBIn = !!mergeBB;
     ASTIfBlock *a = (ASTIfBlock *)ast;
     LLVMValueRef val = ac_dispatch_expression(a->test, cb);
 
@@ -283,12 +295,10 @@ void ac_compile_if(AST *ast, CompilerBundle *cb, LLVMBasicBlockRef mergeBB)
     LLVMBuildCondBr(cb->builder, cmp, ifBB, elseBB ? elseBB : mergeBB);
     LLVMPositionBuilderAtEnd(cb->builder, ifBB);
 
-    int out = 0;
     vs_push(cb->varScope);
     if(!ac_compile_block(a->block, ifBB, cb))
     {
         LLVMBuildBr(cb->builder, mergeBB);
-        out = 1;
     }
     vs_pop(cb->varScope);
 
@@ -605,3 +615,53 @@ LLVMValueRef ac_make_div(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
             return NULL;
     }
 }
+
+LLVMValueRef ac_make_comp(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type, char comp)
+{
+    LLVMIntPredicate ip;
+    LLVMRealPredicate rp;
+
+    switch(comp)
+    {
+        case 'e':
+            ip = LLVMIntEQ;
+            rp = LLVMRealOEQ;
+            break;
+        case 'n':
+            ip = LLVMIntNE;
+            rp = LLVMRealONE;
+            break;
+        case 'g':
+            ip = LLVMIntSGT;
+            rp = LLVMRealOGT;
+            break;
+        case 'l':
+            ip = LLVMIntSLT;
+            rp = LLVMRealOLT;
+            break;
+        case 'G':
+            ip = LLVMIntSGE;
+            rp = LLVMRealOGE;
+            break;
+        case 'L':
+            ip = LLVMIntSLE;
+            rp = LLVMRealOLE;
+            break;
+        default:
+            ip = LLVMIntEQ;
+            rp = LLVMRealOEQ;
+            break;
+    }
+
+    switch(type)
+    {
+        case ETDouble:
+            return LLVMBuildFCmp(builder, rp, left, right, "eqtmp");
+        case ETInt32:
+        case ETInt64:
+            return LLVMBuildICmp(builder, ip, left, right, "eqtmp");
+        default:
+            return NULL;
+    }
+}
+

@@ -9,7 +9,6 @@
     #define DISCARD_NL (save_newline = 0)
     #define SAVE_NL (save_newline = 1)
 
-int translate = 0;
     int save_newline = 0;
 %}
 
@@ -46,6 +45,13 @@ semi (";"|";"{whitechar}*"\n")
 "-"         DISCARD_NL; return SET(TMINUS);
 "*"         DISCARD_NL; return SET(TMUL);
 "/"         DISCARD_NL; return SET(TDIV);
+">"         DISCARD_NL; return SET(TGT);
+">="        DISCARD_NL; return SET(TGTE);
+"=="        DISCARD_NL; return SET(TEQ);
+"<"         DISCARD_NL; return SET(TLT);
+"<="        DISCARD_NL; return SET(TLTE);
+"!="        DISCARD_NL; return SET(TNE);
+"!"         DISCARD_NL; return SET(TNOT);
 "="         DISCARD_NL; return SET(TEQUALS);
 "func"      DISCARD_NL; return SET(TFUNC);
 ":"         DISCARD_NL; return SET(TCOLON);
