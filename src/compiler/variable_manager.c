@@ -6,6 +6,8 @@ VarScopeStack vs_make()
     VarScopeStack vs;
     vs.pool = pool_create();
     vs.scope = NULL;
+    vs.globals = hst_create();
+    vs.globals.duplicate_keys = 1;
 
     return vs;
 }
@@ -50,7 +52,24 @@ VarBundle *vs_get(VarScopeStack *vs, char *ident)
     return NULL;
 }
 
-void vs_put(VarScopeStack *vs, char *ident, LLVMValueRef val, EagleType type)
+
+
+void vs_put_global(VarScopeStack *vs, char *ident, LLVMValueRef val, EagleTypeType *type)
+{
+    VarBundle *vb = malloc(sizeof(VarBundle));
+    vb->type = type;
+    vb->value = val;
+
+    hst_put(&vs->globals, ident, vb, NULL, NULL);
+    pool_add(&vs->pool, vb);
+}
+
+VarBundle *vs_get_global(VarScopeStack *vs, char *ident)
+{
+    return hst_get(&vs->globals, ident, NULL, NULL);
+}
+
+void vs_put(VarScopeStack *vs, char *ident, LLVMValueRef val, EagleTypeType *type)
 {
     VarBundle *vb = malloc(sizeof(VarBundle));
     vb->type = type;
@@ -61,3 +80,4 @@ void vs_put(VarScopeStack *vs, char *ident, LLVMValueRef val, EagleType type)
     hst_put(&s->table, ident, vb, NULL, NULL);
     pool_add(&vs->pool, vb);
 }
+

@@ -141,6 +141,14 @@ AST *ast_make_type(char *type)
     return (AST *)ast;
 }
 
+AST *ast_make_pointer(AST *ast)
+{
+    ASTTypeDecl *a = (ASTTypeDecl *)ast;
+    a->etype = ett_pointer_type(a->etype);
+
+    return ast;
+}
+
 AST *ast_make_if(AST *test, AST *block)
 {
     ASTIfBlock *ast = ast_malloc(sizeof(ASTIfBlock));

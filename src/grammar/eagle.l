@@ -57,6 +57,7 @@ semi (";"|";"{whitechar}*"\n")
 ":"         DISCARD_NL; return SET(TCOLON);
 ","         DISCARD_NL; return SET(TCOMMA);
 ";"      DISCARD_NL; return SET(TSEMI);
+"&"         DISCARD_NL; return SET(TAMP);
 "("         DISCARD_NL; return SET(TLPAREN);
 ")"         SAVE_NL; return SET(TRPAREN);
 {lbrace}    return SET(TLBRACE);

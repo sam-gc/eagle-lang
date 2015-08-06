@@ -17,13 +17,34 @@ typedef enum {
     ETInt32,
     ETInt64,
     ETDouble,
+    ETPointer,
     ETVoid,
     ETFunction
 } EagleType;
 
-EagleType et_parse_string(char *text);
+typedef struct {
+    EagleType type;
+} EagleTypeType;
+
+typedef struct {
+    EagleType type;
+    EagleTypeType *to;
+} EaglePointerType;
+
+typedef struct {
+    EagleType type;
+    EagleTypeType *retType;
+    EagleTypeType **params;
+    int pct;
+} EagleFunctionType;
+
+EagleTypeType *et_parse_string(char *text);
 EagleType et_promotion(EagleType left, EagleType right);
 EagleType et_eagle_type(LLVMTypeRef ty);
-LLVMTypeRef et_llvm_type(EagleType type);
+EagleTypeType *ett_base_type(EagleType type);
+EagleTypeType *ett_pointer_type(EagleTypeType *to);
+EagleTypeType *ett_function_type(EagleTypeType *retVal, EagleTypeType **params, int pct);
+EagleType ett_get_base_type(EagleTypeType *type);
+LLVMTypeRef ett_llvm_type(EagleTypeType *type);
 
 #endif /* defined(__Eagle__types__) */

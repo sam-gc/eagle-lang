@@ -1,0 +1,38 @@
+func test(int *i) : int *
+{
+    int *j
+    j = i
+    return j
+}
+
+func swap(int *x, int *y) : void
+{
+    int t = *x
+    *x = *y
+    *y = t
+}
+
+func main(int argc) : int
+{
+    int i = 5
+    int *j = &i
+    i = 6
+
+    puts j
+    puts *j
+
+    *j = 11
+    puts i
+
+    *test(j) = 32
+    puts *j
+
+    int a = 100
+    int b = 200
+
+    puts a - b
+    swap(&a, &b)
+    puts a - b
+    
+    return 0
+}

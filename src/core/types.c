@@ -10,17 +10,17 @@
 #include <string.h>
 #include "types.h"
 
-#define TTEST(t, targ, out) if(!strcmp(t, targ)) return out
+#define TTEST(t, targ, out) if(!strcmp(t, targ)) return ett_base_type(out)
 #define ETEST(t, a, b) if(a == b) return t
 
-EagleType et_parse_string(char *text)
+EagleTypeType *et_parse_string(char *text)
 {
     TTEST(text, "int", ETInt32);
     TTEST(text, "long", ETInt64);
     TTEST(text, "double", ETDouble);
     TTEST(text, "void", ETVoid);
     
-    return ETNone;
+    return NULL;
 }
 
 EagleType et_promotion(EagleType left, EagleType right)
@@ -31,6 +31,7 @@ EagleType et_promotion(EagleType left, EagleType right)
     return left > right ? left : right;
 }
 
+/*
 LLVMTypeRef et_llvm_type(EagleType type)
 {
     switch(type)
@@ -47,6 +48,26 @@ LLVMTypeRef et_llvm_type(EagleType type)
             return NULL;
     }
 }
+*/
+
+LLVMTypeRef ett_llvm_type(EagleTypeType *type)
+{
+    switch(type->type)
+    {
+        case ETVoid:
+            return LLVMVoidType();
+        case ETDouble:
+            return LLVMDoubleType();
+        case ETInt32:
+            return LLVMInt32Type();
+        case ETInt64:
+            return LLVMInt64Type();
+        case ETPointer:
+            return LLVMPointerType(ett_llvm_type(((EaglePointerType *)type)->to), 0);
+        default:
+            return NULL;
+    }
+}
 
 EagleType et_eagle_type(LLVMTypeRef ty)
 {
@@ -56,5 +77,39 @@ EagleType et_eagle_type(LLVMTypeRef ty)
     ETEST(ETVoid, ty, LLVMVoidType());
 
     return ETNone;
+}
+
+EagleTypeType *ett_base_type(EagleType type)
+{
+    EagleTypeType *ett = malloc(sizeof(EagleTypeType));
+    ett->type = type;
+
+    return ett;
+}
+
+EagleTypeType *ett_pointer_type(EagleTypeType *to)
+{
+    EaglePointerType *ett = malloc(sizeof(EaglePointerType));
+    ett->type = ETPointer;
+    ett->to = to;
+
+    return (EagleTypeType *)ett;
+}
+
+EagleTypeType *ett_function_type(EagleTypeType *retVal, EagleTypeType **params, int pct)
+{
+    EagleFunctionType *ett = malloc(sizeof(EagleFunctionType));
+    ett->type = ETFunction;
+    ett->retType = retVal;
+    ett->params = malloc(sizeof(EagleTypeType *) * pct);
+    memcpy(ett->params, params, sizeof(EagleTypeType *) * pct);
+    ett->pct = pct;
+
+    return (EagleTypeType *)ett;
+}
+
+EagleType ett_get_base_type(EagleTypeType *type)
+{
+    return type->type;
 }
 

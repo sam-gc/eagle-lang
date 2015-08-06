@@ -28,13 +28,13 @@ typedef enum {
 
 typedef struct AST {
     ASTType type;
-    EagleType resultantType;
+    EagleTypeType *resultantType;
     struct AST *next;
 } AST;
 
 typedef struct {
     ASTType type;
-    EagleType resultantType;
+    EagleTypeType *resultantType;
     struct AST *next;
     
     struct AST *left;
@@ -44,7 +44,7 @@ typedef struct {
 
 typedef struct {
     ASTType type;
-    EagleType resultantType;
+    EagleTypeType *resultantType;
     struct AST *next;
 
     struct AST *val;
@@ -53,7 +53,7 @@ typedef struct {
 
 typedef struct {
     ASTType type;
-    EagleType resultantType;
+    EagleTypeType *resultantType;
     struct AST *next;
     
     EagleType etype;
@@ -66,7 +66,7 @@ typedef struct {
 
 typedef struct {
     ASTType type;
-    EagleType resultantType;
+    EagleTypeType *resultantType;
     struct AST *next;
     
     struct AST *retType;
@@ -77,7 +77,7 @@ typedef struct {
 
 typedef struct {
     ASTType type;
-    EagleType resultantType;
+    EagleTypeType *resultantType;
     struct AST *next;
 
     struct AST *callee;
@@ -86,7 +86,7 @@ typedef struct {
 
 typedef struct {
     ASTType type;
-    EagleType resultantType;
+    EagleTypeType *resultantType;
     struct AST *next;
 
     struct AST *atype;
@@ -95,15 +95,15 @@ typedef struct {
 
 typedef struct {
     ASTType type;
-    EagleType resultantType;
+    EagleTypeType *resultantType;
     struct AST *next;
 
-    EagleType etype;
+    EagleTypeType *etype;
 } ASTTypeDecl;
 
 typedef struct {
     ASTType type;
-    EagleType resultantType;
+    EagleTypeType *resultantType;
     struct AST *next;
 
     struct AST *test;
@@ -122,6 +122,7 @@ AST *ast_make_func_decl(AST *type, char *ident, AST *body, AST *params);
 AST *ast_make_func_call(AST *callee, AST *params);
 AST *ast_make_var_decl(AST *type, char *ident);
 AST *ast_make_type(char *type);
+AST *ast_make_pointer(AST *ast);
 AST *ast_make_if(AST *test, AST *block);
 void ast_add_if(AST *ast, AST *next);
 

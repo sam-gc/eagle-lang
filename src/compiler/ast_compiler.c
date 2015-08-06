@@ -7,7 +7,7 @@ typedef struct {
     LLVMModuleRef module;
     LLVMBuilderRef builder;
 
-    EagleType currentFunctionReturnType;
+    EagleFunctionType *currentFunctionType;
     LLVMBasicBlockRef currentFunctionEntry;
     LLVMValueRef currentFunction;
     VarScopeStack *varScope;
@@ -35,10 +35,10 @@ LLVMValueRef ac_compile_value(AST *ast, CompilerBundle *cb)
     switch(a->etype)
     {
         case ETInt32:
-            a->resultantType = ETInt32;
+            a->resultantType = ett_base_type(ETInt32);
             return LLVMConstInt(LLVMInt32Type(), a->value.i, 1);
         case ETDouble:
-            a->resultantType = ETDouble;
+            a->resultantType = ett_base_type(ETDouble);
             return LLVMConstReal(LLVMDoubleType(), a->value.d);
         default:
             return NULL;
@@ -50,21 +50,20 @@ LLVMValueRef ac_compile_identifier(AST *ast, CompilerBundle *cb)
     ASTValue *a = (ASTValue *)ast;
     VarBundle *b = vs_get(cb->varScope, a->value.id);
 
-    if(b) // We are dealing with a local variable
+    if(!b) // We are dealing with a local variable
+    {
+        fprintf(stderr, "Error: Undeclared Identifier (%s)\n", a->value.id);
+        exit(0);
+    }
+
+    if(b->type->type == ETFunction)
     {
         a->resultantType = b->type;
-        return LLVMBuildLoad(cb->builder, b->value, "loadtmp");
+        return b->value;
     }
 
-    LLVMValueRef func = LLVMGetNamedFunction(cb->module, a->value.id);
-    if(func) // We are dealing with a function
-    {
-        a->resultantType = ETFunction;
-        return func;
-    }
-
-    fprintf(stderr, "Error: Undeclared Identifier (%s)\n", a->value.id);
-    exit(0);
+    a->resultantType = b->type;
+    return LLVMBuildLoad(cb->builder, b->value, "loadtmp");
     
     return NULL;
 }
@@ -80,8 +79,10 @@ LLVMValueRef ac_compile_var_decl(AST *ast, CompilerBundle *cb)
     LLVMValueRef begin = LLVMGetFirstInstruction(cb->currentFunctionEntry);
     if(begin)
         LLVMPositionBuilderBefore(cb->builder, begin);
-    LLVMValueRef pos = LLVMBuildAlloca(cb->builder, et_llvm_type(type->etype), a->ident);
+    LLVMValueRef pos = LLVMBuildAlloca(cb->builder, ett_llvm_type(type->etype), a->ident);
     vs_put(cb->varScope, a->ident, pos, type->etype);
+
+    ast->resultantType = type->etype;
 
     LLVMPositionBuilderAtEnd(cb->builder, curblock);
 
@@ -91,8 +92,8 @@ LLVMValueRef ac_compile_var_decl(AST *ast, CompilerBundle *cb)
 LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb)
 {
     ASTBinary *a = (ASTBinary *)ast;
+    EagleTypeType *totype;
     LLVMValueRef pos;
-    EagleType totype;
 
     if(a->left->type == AIDENT)
     {
@@ -102,6 +103,24 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb)
         totype = b->type;
         pos = b->value;
     }
+    else if(a->left->type == AUNARY && ((ASTUnary *)a->left)->op == '*')
+    {
+        ASTUnary *l = (ASTUnary *)a->left;
+        
+        pos = ac_dispatch_expression(l->val, cb);
+        if(l->val->resultantType->type != ETPointer)
+        {
+            fprintf(stderr, "Error: Only pointers may be dereferenced.\n");
+            exit(1);
+        }
+        totype = ((EaglePointerType *)l->val->resultantType)->to;
+    }
+    else
+    {
+        pos = ac_dispatch_expression(a->left, cb);
+        totype = a->left->resultantType;
+    }
+    /*
     else
     {
         ASTVarDecl *l = (ASTVarDecl *)a->left;
@@ -110,14 +129,15 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb)
         totype = type->etype;
         pos = ac_compile_var_decl(a->left, cb);
     }
+    */
 
     LLVMValueRef r = ac_dispatch_expression(a->right, cb);
-    EagleType fromtype = a->right->resultantType;
+    EagleTypeType *fromtype = a->right->resultantType;
 
     a->resultantType = totype;
 
-    if(fromtype != totype)
-        r = ac_build_conversion(cb->builder, r, fromtype, totype);
+    if(fromtype->type != totype->type)
+        r = ac_build_conversion(cb->builder, r, fromtype->type, totype->type);
 
     LLVMBuildStore(cb->builder, r, pos);
     return LLVMBuildLoad(cb->builder, pos, "loadtmp");
@@ -132,16 +152,16 @@ LLVMValueRef ac_compile_binary(AST *ast, CompilerBundle *cb)
     LLVMValueRef l = ac_dispatch_expression(a->left, cb);
     LLVMValueRef r = ac_dispatch_expression(a->right, cb);
 
-    EagleType promo = et_promotion(a->left->resultantType, a->right->resultantType);
-    a->resultantType = promo;
+    EagleType promo = et_promotion(a->left->resultantType->type, a->right->resultantType->type);
+    a->resultantType = ett_base_type(promo);
 
-    if(a->left->resultantType != promo)
+    if(a->left->resultantType->type != promo)
     {
-        l = ac_build_conversion(cb->builder, l, a->left->resultantType, promo);
+        l = ac_build_conversion(cb->builder, l, a->left->resultantType->type, promo);
     }
-    else if(a->right->resultantType != promo)
+    else if(a->right->resultantType->type != promo)
     {
-        r = ac_build_conversion(cb->builder, r, a->right->resultantType, promo);
+        r = ac_build_conversion(cb->builder, r, a->right->resultantType->type, promo);
     }
 
     switch(a->op)
@@ -166,9 +186,33 @@ LLVMValueRef ac_compile_binary(AST *ast, CompilerBundle *cb)
     }
 }
 
+LLVMValueRef ac_compile_get_address(AST *of, CompilerBundle *cb)
+{
+    ASTValue *o = (ASTValue *)of;
+    VarBundle *b = vs_get(cb->varScope, o->value.id);
+
+    if(!b)
+    {
+        fprintf(stderr, "Error: Undeclared identifier (%s)\n", o->value.id);
+        exit(0);
+    }
+    
+    of->resultantType = b->type;
+
+    return b->value;
+}
+
 LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
 {
     ASTUnary *a = (ASTUnary *)ast;
+
+    if(a->op == '&')
+    {
+        LLVMValueRef out = ac_compile_get_address(a->val, cb);
+        a->resultantType = ett_pointer_type(a->val->resultantType);
+        return out;
+    }
+
     LLVMValueRef v = ac_dispatch_expression(a->val, cb);
 
     switch(a->op)
@@ -176,7 +220,7 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
         case 'p':
             {
                 LLVMValueRef fmt = NULL;
-                switch(a->val->resultantType)
+                switch(a->val->resultantType->type)
                 {
                     case ETDouble:
                         fmt = LLVMBuildGlobalStringPtr(cb->builder, "%lf\n", "prfLF");
@@ -187,6 +231,9 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
                     case ETInt64:
                         fmt = LLVMBuildGlobalStringPtr(cb->builder, "%ld\n", "prfLI");
                         break;
+                    case ETPointer:
+                        fmt = LLVMBuildGlobalStringPtr(cb->builder, "%p\n", "prfPTR");
+                        break;
                     default:
                         break;
                 }
@@ -195,6 +242,19 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
                 LLVMValueRef args[] = {fmt, v};
                 LLVMBuildCall(cb->builder, func, args, 2, "putsout");
                 return NULL;
+            }
+        case '*':
+            {
+                if(a->val->resultantType->type != ETPointer)
+                {
+                    fprintf(stderr, "Error: Only pointers may be dereferenced.\n");
+                    exit(1);
+                }
+
+                LLVMValueRef r = LLVMBuildLoad(cb->builder, v, "dereftmp");
+                EaglePointerType *pt = (EaglePointerType *)a->val->resultantType;
+                a->resultantType = pt->to;
+                return r;
             }
         case '!':
             // TODO: Broken
@@ -275,9 +335,9 @@ void ac_compile_if(AST *ast, CompilerBundle *cb, LLVMBasicBlockRef mergeBB)
     LLVMValueRef val = ac_dispatch_expression(a->test, cb);
 
     LLVMValueRef cmp = NULL;
-    if(a->test->resultantType == ETInt32)
+    if(a->test->resultantType->type == ETInt32)
         cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstInt(LLVMInt32Type(), 0, 0), "cmp");
-    else if(a->test->resultantType == ETInt64)
+    else if(a->test->resultantType->type == ETInt64)
         cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstInt(LLVMInt64Type(), 0, 0), "cmp");
     else
         cmp = LLVMBuildFCmp(cb->builder, LLVMRealONE, val, LLVMConstReal(LLVMDoubleType(), 0.0), "cmp");
@@ -334,8 +394,8 @@ int ac_compile_block(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
         if(ast->type == AUNARY && ((ASTUnary *)ast)->op == 'r') // Handle the special return case
         {
             LLVMValueRef val = ac_dispatch_expression(((ASTUnary *)ast)->val, cb);
-            EagleType t = ((ASTUnary *)ast)->val->resultantType;
-            EagleType o = cb->currentFunctionReturnType;
+            EagleType t = ((ASTUnary *)ast)->val->resultantType->type;
+            EagleType o = cb->currentFunctionType->retType->type;
 
             if(t != o)
                 val = ac_build_conversion(cb->builder, val, t, o);
@@ -356,23 +416,13 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
     ASTFuncCall *a = (ASTFuncCall *)ast;
 
     LLVMValueRef func = ac_dispatch_expression(a->callee, cb);
-    LLVMTypeRef funcType = LLVMGetElementType(LLVMTypeOf(func));
-    LLVMTypeRef retType = LLVMGetReturnType(funcType);
-    int paramCount = LLVMCountParamTypes(funcType);
-    LLVMTypeRef types[paramCount];
-    EagleType tys[paramCount];
+    
+    EagleFunctionType *ett = (EagleFunctionType *)a->callee->resultantType;
 
-    LLVMGetParamTypes(funcType, types);
-
-    int i;
-    for(i = 0; i < paramCount; i++)
-        tys[i] = et_eagle_type(types[i]);
-
-    EagleType retEtype = et_eagle_type(retType);
-
-    a->resultantType = retEtype;
+    a->resultantType = ett->retType;
 
     AST *p;
+    int i;
     for(p = a->params, i = 0; p; p = p->next, i++);
     int ct = i;
 
@@ -380,13 +430,13 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
     for(p = a->params, i = 0; p; p = p->next, i++)
     {
         LLVMValueRef val = ac_dispatch_expression(p, cb);
-        EagleType rt = p->resultantType;
-        if(rt != tys[i])
-            val = ac_build_conversion(cb->builder, val, rt, tys[i]);
+        EagleType rt = p->resultantType->type;
+        if(rt != ett->params[i]->type)
+            val = ac_build_conversion(cb->builder, val, rt, ett->params[i]->type);
         args[i] = val;
     }
 
-    return LLVMBuildCall(cb->builder, func, args, ct, retEtype == ETVoid ? "" : "callout");
+    return LLVMBuildCall(cb->builder, func, args, ct, ett->retType->type == ETVoid ? "" : "callout");
 }
 
 void ac_compile_function(AST *ast, CompilerBundle *cb)
@@ -402,34 +452,27 @@ void ac_compile_function(AST *ast, CompilerBundle *cb)
 
     int ct = i;
 
-    LLVMTypeRef param_types[ct];
+    EagleTypeType *eparam_types[ct];
     for(i = 0, p = a->params; i < ct; p = p->next, i++)
     {
         ASTTypeDecl *type = (ASTTypeDecl *)((ASTVarDecl *)p)->atype;
-        param_types[i] = et_llvm_type(type->etype);
+        eparam_types[i] = type->etype;
     }
 
     ASTTypeDecl *retType = (ASTTypeDecl *)a->retType;
-    LLVMTypeRef func_type = LLVMFunctionType(et_llvm_type(retType->etype), param_types, ct, 0);
 
     LLVMValueRef func = NULL;
 
-    func = LLVMGetNamedFunction(cb->module, a->ident);
-    if(!func) // This really shouldn't happen
-    {
-        func = LLVMAddFunction(cb->module, a->ident, func_type);
-    }
-
-    cb->currentFunctionReturnType = retType->etype;
+    VarBundle *vb = vs_get(cb->varScope, a->ident);
+    func = vb->value;
+    cb->currentFunctionType = (EagleFunctionType *)vb->type;
 
     LLVMBasicBlockRef entry = LLVMAppendBasicBlock(func, "entry");
     LLVMPositionBuilderAtEnd(cb->builder, entry);
-
-    VarScopeStack scope = vs_make();
-    vs_push(&scope);
+    
+    vs_push(cb->varScope);
 
     cb->currentFunctionEntry = entry;
-    cb->varScope = &scope;
 
     cb->currentFunction = func;
 
@@ -446,14 +489,12 @@ void ac_compile_function(AST *ast, CompilerBundle *cb)
 
     ac_compile_block(a->body, entry, cb);
 
-    if(retType->etype == ETVoid)
+    if(retType->etype->type == ETVoid)
         LLVMBuildRetVoid(cb->builder);
 
     cb->currentFunctionEntry = NULL;
-    cb->varScope = NULL;
 
-    vs_pop(&scope);
-    vs_free(&scope);
+    vs_pop(cb->varScope);
 }
 
 void ac_prepare_module(LLVMModuleRef module)
@@ -475,16 +516,20 @@ void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
     ct = i;
 
     LLVMTypeRef param_types[ct];
+    EagleTypeType *eparam_types[ct];
     for(i = 0, p = a->params; p; p = p->next, i++)
     {
         ASTTypeDecl *type = (ASTTypeDecl *)((ASTVarDecl *)p)->atype;
 
-        param_types[i] = et_llvm_type(type->etype);
+        param_types[i] = ett_llvm_type(type->etype);
+        eparam_types[i] = type->etype;
     }
 
     ASTTypeDecl *retType = (ASTTypeDecl *)a->retType;
-    LLVMTypeRef func_type = LLVMFunctionType(et_llvm_type(retType->etype), param_types, ct, 0);
-    LLVMAddFunction(cb->module, a->ident, func_type);
+    LLVMTypeRef func_type = LLVMFunctionType(ett_llvm_type(retType->etype), param_types, ct, 0);
+    LLVMValueRef func = LLVMAddFunction(cb->module, a->ident, func_type);
+
+    vs_put(cb->varScope, a->ident, func, ett_function_type(retType->etype, eparam_types, ct));
 }
 
 LLVMModuleRef ac_compile(AST *ast)
@@ -492,6 +537,11 @@ LLVMModuleRef ac_compile(AST *ast)
     CompilerBundle cb;
     cb.module = LLVMModuleCreateWithName("main-module");
     cb.builder = LLVMCreateBuilder();
+    
+    VarScopeStack vs = vs_make();
+    cb.varScope = &vs;
+
+    vs_push(cb.varScope);
 
     ac_prepare_module(cb.module);
 
@@ -506,7 +556,10 @@ LLVMModuleRef ac_compile(AST *ast)
         ac_dispatch_declaration(ast, &cb);
     }
 
+    vs_pop(cb.varScope);
+
     LLVMDisposeBuilder(cb.builder);
+    vs_free(cb.varScope);
     return cb.module;
 }
 
