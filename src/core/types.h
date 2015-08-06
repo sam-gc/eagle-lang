@@ -12,6 +12,8 @@
 #include <stdio.h>
 #include "llvm_headers.h"
 
+#define ET_IS_INT(e) ((e) == ETInt8 || (e) == ETInt32 || (e) == ETInt64)
+
 typedef enum {
     ETNone,
     ETAny,
