@@ -30,12 +30,14 @@ typedef struct AST {
     ASTType type;
     EagleTypeType *resultantType;
     struct AST *next;
+    long lineno;
 } AST;
 
 typedef struct {
     ASTType type;
     EagleTypeType *resultantType;
     struct AST *next;
+    long lineno;
     
     struct AST *left;
     struct AST *right;
@@ -46,6 +48,7 @@ typedef struct {
     ASTType type;
     EagleTypeType *resultantType;
     struct AST *next;
+    long lineno;
 
     struct AST *val;
     char op;
@@ -55,6 +58,7 @@ typedef struct {
     ASTType type;
     EagleTypeType *resultantType;
     struct AST *next;
+    long lineno;
     
     EagleType etype;
     union {
@@ -68,6 +72,7 @@ typedef struct {
     ASTType type;
     EagleTypeType *resultantType;
     struct AST *next;
+    long lineno;
     
     struct AST *retType;
     struct AST *body;
@@ -79,6 +84,7 @@ typedef struct {
     ASTType type;
     EagleTypeType *resultantType;
     struct AST *next;
+    long lineno;
 
     struct AST *callee;
     struct AST *params;
@@ -88,6 +94,7 @@ typedef struct {
     ASTType type;
     EagleTypeType *resultantType;
     struct AST *next;
+    long lineno;
 
     struct AST *atype;
     char *ident;
@@ -97,6 +104,7 @@ typedef struct {
     ASTType type;
     EagleTypeType *resultantType;
     struct AST *next;
+    long lineno;
 
     EagleTypeType *etype;
 } ASTTypeDecl;
@@ -105,6 +113,7 @@ typedef struct {
     ASTType type;
     EagleTypeType *resultantType;
     struct AST *next;
+    long lineno;
 
     struct AST *test;
     struct AST *block;

@@ -8,8 +8,10 @@
     #define SAVE_TOKEN (yylval.string = strdup(yytext))
     #define DISCARD_NL (save_newline = 0)
     #define SAVE_NL (save_newline = 1)
+    #define OVERRIDE (override = 1)
 
     int save_newline = 0;
+    int override = 0;
 %}
 
 %option noyywrap
@@ -37,7 +39,7 @@ semi (";"|";"{whitechar}*"\n")
 
 {white}       ;
 
-"\n"          { if(save_newline) {save_newline=0; return TSEMI;} /*else printf("IGNORING! %d\n", yylineno);*/ }
+"\n"          { if(save_newline || override) {save_newline = override = 0; return TSEMI;} override = 0; /*else printf("IGNORING! %d\n", yylineno);*/ }
 
 {integer}     { SAVE_NL; SAVE_TOKEN; return TINT; }
 {real}      { SAVE_NL; SAVE_TOKEN; return TDOUBLE; }
@@ -64,7 +66,7 @@ semi (";"|";"{whitechar}*"\n")
 "}"         DISCARD_NL; return SET(TRBRACE);
 "return"    DISCARD_NL; return SET(TRETURN);
 "puts"      DISCARD_NL; return SET(TPUTS);
-"extern"    DISCARD_NL; return SET(TEXTERN);
+"extern"    DISCARD_NL; OVERRIDE; return SET(TEXTERN);
 "if"        DISCARD_NL; return SET(TIF);
 "elif"      DISCARD_NL; return SET(TELIF);
 "else"      DISCARD_NL; return SET(TELSE);
@@ -72,5 +74,6 @@ semi (";"|";"{whitechar}*"\n")
 "long"      { SAVE_NL; SAVE_TOKEN; return TTYPE; }
 "double"    { SAVE_NL; SAVE_TOKEN; return TTYPE; }
 "void"      { SAVE_NL; SAVE_TOKEN; return TTYPE; }
+"any"       { SAVE_NL; SAVE_TOKEN; return TTYPE; }
 {alpha}       { SAVE_NL; SAVE_TOKEN; return TIDENTIFIER; }
 %%

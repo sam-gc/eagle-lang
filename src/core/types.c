@@ -15,6 +15,8 @@
 
 EagleTypeType *et_parse_string(char *text)
 {
+    TTEST(text, "any", ETAny);
+    TTEST(text, "byte", ETInt8);
     TTEST(text, "int", ETInt32);
     TTEST(text, "long", ETInt64);
     TTEST(text, "double", ETDouble);
@@ -58,6 +60,9 @@ LLVMTypeRef ett_llvm_type(EagleTypeType *type)
             return LLVMVoidType();
         case ETDouble:
             return LLVMDoubleType();
+        case ETAny:
+        case ETInt8:
+            return LLVMInt8Type();
         case ETInt32:
             return LLVMInt32Type();
         case ETInt64:
@@ -110,6 +115,34 @@ EagleTypeType *ett_function_type(EagleTypeType *retVal, EagleTypeType **params, 
 
 EagleType ett_get_base_type(EagleTypeType *type)
 {
+    if(type->type == ETPointer)
+        return ett_get_base_type(((EaglePointerType *)type)->to);
+
     return type->type;
+}
+
+int ett_are_same(EagleTypeType *left, EagleTypeType *right)
+{
+    if(left->type != right->type)
+        return 0;
+
+    EagleType theType = left->type;
+    if(theType == ETPointer)
+    {
+        EaglePointerType *pl = (EaglePointerType *)left;
+        EaglePointerType *pr = (EaglePointerType *)right;
+
+        return ett_are_same(pl->to, pr->to);
+    }
+
+    return 1;
+}
+
+int ett_pointer_depth(EagleTypeType *t)
+{
+    EaglePointerType *pt = (EaglePointerType *)t;
+    int i;
+    for(i = 0; pt->type == ETPointer; pt = (EaglePointerType *)pt->to);
+    return i;
 }
 

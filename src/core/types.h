@@ -14,6 +14,8 @@
 
 typedef enum {
     ETNone,
+    ETAny,
+    ETInt8,
     ETInt32,
     ETInt64,
     ETDouble,
@@ -46,5 +48,7 @@ EagleTypeType *ett_pointer_type(EagleTypeType *to);
 EagleTypeType *ett_function_type(EagleTypeType *retVal, EagleTypeType **params, int pct);
 EagleType ett_get_base_type(EagleTypeType *type);
 LLVMTypeRef ett_llvm_type(EagleTypeType *type);
+int ett_are_same(EagleTypeType *left, EagleTypeType *right);
+int ett_pointer_depth(EagleTypeType *t);
 
 #endif /* defined(__Eagle__types__) */

@@ -21,6 +21,7 @@ void *ast_malloc(size_t size)
 {
     AST *ast = malloc(size);
     ast->next = NULL;
+    ast->lineno = yylineno;
     
     return ast;
 }

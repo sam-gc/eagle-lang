@@ -3,6 +3,8 @@
 #include "variable_manager.h"
 #include "core/llvm_headers.h"
 
+#define IS_ANY_PTR(t) (t->type == ETPointer && ((EaglePointerType *)t)->to->type == ETAny)
+
 typedef struct {
     LLVMModuleRef module;
     LLVMBuilderRef builder;
@@ -13,7 +15,7 @@ typedef struct {
     VarScopeStack *varScope;
 } CompilerBundle;
 
-static inline LLVMValueRef ac_build_conversion(LLVMBuilderRef builder, LLVMValueRef val, EagleType from, EagleType to);
+static inline LLVMValueRef ac_build_conversion(LLVMBuilderRef builder, LLVMValueRef val, EagleTypeType *from, EagleTypeType *to);
 static inline LLVMValueRef ac_make_add(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type);
 static inline LLVMValueRef ac_make_sub(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type);
 static inline LLVMValueRef ac_make_mul(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type);
@@ -113,6 +115,11 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb)
             fprintf(stderr, "Error: Only pointers may be dereferenced.\n");
             exit(1);
         }
+        if(IS_ANY_PTR(l->val->resultantType))
+        {
+            fprintf(stderr, "Error: Any pointers may not be dereferenced without cast.\n");
+            exit(1);
+        }
         totype = ((EaglePointerType *)l->val->resultantType)->to;
     }
     else
@@ -136,8 +143,8 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb)
 
     a->resultantType = totype;
 
-    if(fromtype->type != totype->type)
-        r = ac_build_conversion(cb->builder, r, fromtype->type, totype->type);
+    if(!ett_are_same(fromtype, totype))
+        r = ac_build_conversion(cb->builder, r, fromtype, totype);
 
     LLVMBuildStore(cb->builder, r, pos);
     return LLVMBuildLoad(cb->builder, pos, "loadtmp");
@@ -157,11 +164,11 @@ LLVMValueRef ac_compile_binary(AST *ast, CompilerBundle *cb)
 
     if(a->left->resultantType->type != promo)
     {
-        l = ac_build_conversion(cb->builder, l, a->left->resultantType->type, promo);
+        l = ac_build_conversion(cb->builder, l, a->left->resultantType, ett_base_type(promo));
     }
     else if(a->right->resultantType->type != promo)
     {
-        r = ac_build_conversion(cb->builder, r, a->right->resultantType->type, promo);
+        r = ac_build_conversion(cb->builder, r, a->right->resultantType, ett_base_type(promo));
     }
 
     switch(a->op)
@@ -248,6 +255,11 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
                 if(a->val->resultantType->type != ETPointer)
                 {
                     fprintf(stderr, "Error: Only pointers may be dereferenced.\n");
+                    exit(1);
+                }
+                if(IS_ANY_PTR(a->val->resultantType))
+                {
+                    fprintf(stderr, "Error: Any pointers may not be dereferenced without cast.\n");
                     exit(1);
                 }
 
@@ -394,10 +406,10 @@ int ac_compile_block(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
         if(ast->type == AUNARY && ((ASTUnary *)ast)->op == 'r') // Handle the special return case
         {
             LLVMValueRef val = ac_dispatch_expression(((ASTUnary *)ast)->val, cb);
-            EagleType t = ((ASTUnary *)ast)->val->resultantType->type;
-            EagleType o = cb->currentFunctionType->retType->type;
+            EagleTypeType *t = ((ASTUnary *)ast)->val->resultantType;
+            EagleTypeType *o = cb->currentFunctionType->retType;
 
-            if(t != o)
+            if(!ett_are_same(t, o))
                 val = ac_build_conversion(cb->builder, val, t, o);
 
             LLVMBuildRet(cb->builder, val);
@@ -430,9 +442,9 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
     for(p = a->params, i = 0; p; p = p->next, i++)
     {
         LLVMValueRef val = ac_dispatch_expression(p, cb);
-        EagleType rt = p->resultantType->type;
-        if(rt != ett->params[i]->type)
-            val = ac_build_conversion(cb->builder, val, rt, ett->params[i]->type);
+        EagleTypeType *rt = p->resultantType;
+        if(!ett_are_same(rt, ett->params[i]))
+            val = ac_build_conversion(cb->builder, val, rt, ett->params[i]);
         args[i] = val;
     }
 
@@ -563,12 +575,28 @@ LLVMModuleRef ac_compile(AST *ast)
     return cb.module;
 }
 
-LLVMValueRef ac_build_conversion(LLVMBuilderRef builder, LLVMValueRef val, EagleType from, EagleType to)
+LLVMValueRef ac_build_conversion(LLVMBuilderRef builder, LLVMValueRef val, EagleTypeType *from, EagleTypeType *to)
 {
-    switch(from)
+    switch(from->type)
     {
+        case ETPointer:
+        {
+            if(to->type != ETPointer)
+            {
+                fprintf(stderr, "Error: Non-pointer type may not be converted to pointer type.\n");
+                exit(1);
+            }
+
+            if(ett_pointer_depth(to) != ett_pointer_depth(from))
+            {
+                fprintf(stderr, "Error: Pointer conversion invalid.\n");
+                exit(1);
+            }
+
+            return LLVMBuildBitCast(builder, val, ett_llvm_type(to), "ptrtmp");
+        }
         case ETInt32:
-            switch(to)
+            switch(to->type)
             {
                 case ETInt32:
                     return val;
@@ -581,7 +609,7 @@ LLVMValueRef ac_build_conversion(LLVMBuilderRef builder, LLVMValueRef val, Eagle
             }
             break;
         case ETInt64:
-            switch(to)
+            switch(to->type)
             {
                 case ETInt64:
                     return val;
@@ -594,7 +622,7 @@ LLVMValueRef ac_build_conversion(LLVMBuilderRef builder, LLVMValueRef val, Eagle
             }
             break;
         case ETDouble:
-            switch(to)
+            switch(to->type)
             {
                 case ETDouble:
                     return val;
