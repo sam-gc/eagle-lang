@@ -1,10 +1,10 @@
 extern func rand() : int
 extern func srand(int) : void
-extern func time(long) : int
+extern func time(any *) : int
 
 func main() : int
 {
-    srand(time(0))
+    srand(time(nil))
     puts rand()
     puts rand()
 
@@ -17,5 +17,22 @@ func main() : int
         puts 11
     }
 
+    test()
+
     return 0
 }
+
+func test() : void
+{
+    int i = 5
+    int *k
+    int num = rand()
+    if num / 2 == num / 2.0
+        k = &i
+    else
+        k = nil
+
+    if k
+        puts *k
+}
+

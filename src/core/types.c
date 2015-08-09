@@ -13,9 +13,12 @@
 #define TTEST(t, targ, out) if(!strcmp(t, targ)) return ett_base_type(out)
 #define ETEST(t, a, b) if(a == b) return t
 
+LLVMTargetDataRef etTargetData = NULL;
+
 EagleTypeType *et_parse_string(char *text)
 {
     TTEST(text, "any", ETAny);
+    TTEST(text, "bool", ETInt1);
     TTEST(text, "byte", ETInt8);
     TTEST(text, "int", ETInt32);
     TTEST(text, "long", ETInt64);
@@ -153,6 +156,7 @@ int ett_is_numeric(EagleTypeType *t)
     EagleType type = t->type;
     switch(type)
     {
+        case ETInt1:
         case ETInt8:
         case ETInt32:
         case ETInt64:
@@ -161,6 +165,11 @@ int ett_is_numeric(EagleTypeType *t)
         default:
             return 0;
     }
+}
+
+int ett_size_of_type(EagleTypeType *t)
+{
+    return LLVMStoreSizeOfType(etTargetData, ett_llvm_type(t));
 }
 
 void ett_debug_print(EagleTypeType *t)

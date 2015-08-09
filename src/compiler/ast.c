@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "ast.h"
+#include "ast_compiler.h"
 
 extern int yylineno;
 int yyerror(char *text)
@@ -66,6 +67,25 @@ AST *ast_make_unary(AST *val, char op)
 
     ast->op = op;
     ast->val = val;
+
+    return (AST *)ast;
+}
+
+AST *ast_make_bool(int i)
+{
+    ASTValue *ast = ast_malloc(sizeof(ASTValue));
+    ast->type = AVALUE;
+    ast->etype = ETInt1;
+    ast->value.i = i;
+
+    return (AST *)ast;
+}
+
+AST *ast_make_nil()
+{
+    ASTValue *ast = ast_malloc(sizeof(ASTValue));
+    ast->type = AVALUE;
+    ast->etype = ETNil;
 
     return (AST *)ast;
 }
@@ -145,6 +165,9 @@ AST *ast_make_type(char *type)
 AST *ast_make_pointer(AST *ast)
 {
     ASTTypeDecl *a = (ASTTypeDecl *)ast;
+
+    if(a->etype->type == ETVoid)
+        die(a->lineno, "Cannot declare void pointer type. Use an any-pointer instead (any *).");
     a->etype = ett_pointer_type(a->etype);
 
     return ast;

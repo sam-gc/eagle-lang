@@ -15,9 +15,12 @@
 #define ET_IS_INT(e) ((e) == ETInt8 || (e) == ETInt32 || (e) == ETInt64)
 #define ET_IS_REAL(e) ((e) == ETDouble)
 
+extern LLVMTargetDataRef etTargetData;
+
 typedef enum {
     ETNone,
     ETAny,
+    ETNil,
     ETInt1,
     ETInt8,
     ETInt32,
@@ -55,7 +58,7 @@ LLVMTypeRef ett_llvm_type(EagleTypeType *type);
 int ett_are_same(EagleTypeType *left, EagleTypeType *right);
 int ett_pointer_depth(EagleTypeType *t);
 int ett_is_numeric(EagleTypeType *t);
-int ett_byte_size(EagleTypeType *t);
+int ett_size_of_type(EagleTypeType *t);
 
 void ett_debug_print(EagleTypeType *t);
 

@@ -4,6 +4,7 @@
 #include "core/llvm_headers.h"
 #include "ast.h"
 
+void die(int lineno, const char *fmt, ...);
 LLVMModuleRef ac_compile(AST *ast);
 
 #endif

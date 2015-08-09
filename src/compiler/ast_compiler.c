@@ -55,12 +55,18 @@ LLVMValueRef ac_compile_value(AST *ast, CompilerBundle *cb)
     ASTValue *a = (ASTValue *)ast;
     switch(a->etype)
     {
+        case ETInt1:
+            a->resultantType = ett_base_type(ETInt1);
+            return LLVMConstInt(LLVMInt1Type(), a->value.i, 1);
         case ETInt32:
             a->resultantType = ett_base_type(ETInt32);
             return LLVMConstInt(LLVMInt32Type(), a->value.i, 1);
         case ETDouble:
             a->resultantType = ett_base_type(ETDouble);
             return LLVMConstReal(LLVMDoubleType(), a->value.d);
+        case ETNil:
+            a->resultantType = ett_pointer_type(ett_base_type(ETAny));
+            return LLVMConstPointerNull(ett_llvm_type(a->resultantType));
         default:
             die(ALN, "Unknown value type.");
             return NULL;
@@ -378,6 +384,8 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
                         fmt = LLVMBuildGlobalStringPtr(cb->builder, "%lf\n", "prfLF");
                         break;
                     case ETInt1:
+                        fmt = LLVMBuildGlobalStringPtr(cb->builder, "(Bool) %d\n", "prfB");
+                        break;
                     case ETInt8:
                     case ETInt32:
                         fmt = LLVMBuildGlobalStringPtr(cb->builder, "%d\n", "prfI");
@@ -520,6 +528,8 @@ void ac_compile_if(AST *ast, CompilerBundle *cb, LLVMBasicBlockRef mergeBB)
         cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstInt(LLVMInt64Type(), 0, 0), "cmp");
     else if(a->test->resultantType->type == ETDouble)
         cmp = LLVMBuildFCmp(cb->builder, LLVMRealONE, val, LLVMConstReal(LLVMDoubleType(), 0.0), "cmp");
+    else if(a->test->resultantType->type == ETPointer)
+        cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstPointerNull(ett_llvm_type(a->test->resultantType)), "cmp");
     else
         die(ALN, "Cannot test against given type.");
 
@@ -764,11 +774,14 @@ LLVMValueRef ac_build_conversion(LLVMBuilderRef builder, LLVMValueRef val, Eagle
 
             return LLVMBuildBitCast(builder, val, ett_llvm_type(to), "ptrtmp");
         }
+        case ETInt1:
         case ETInt8:
         case ETInt32:
         case ETInt64:
             switch(to->type)
             {
+                case ETInt1:
+                    return LLVMBuildICmp(builder, LLVMIntNE, val, LLVMConstInt(ett_llvm_type(from), 0, 0), "cmp");
                 case ETInt8:
                 case ETInt32:
                 case ETInt64:
@@ -784,6 +797,8 @@ LLVMValueRef ac_build_conversion(LLVMBuilderRef builder, LLVMValueRef val, Eagle
             {
                 case ETDouble:
                     return val;
+                case ETInt1:
+                    return LLVMBuildFCmp(builder, LLVMRealONE, val, LLVMConstReal(0, 0), "cmp");
                 case ETInt8:
                 case ETInt32:
                 case ETInt64:
@@ -906,6 +921,7 @@ LLVMValueRef ac_make_comp(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef 
     {
         case ETDouble:
             return LLVMBuildFCmp(builder, rp, left, right, "eqtmp");
+        case ETInt1:
         case ETInt8:
         case ETInt32:
         case ETInt64:

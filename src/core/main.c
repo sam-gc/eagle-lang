@@ -11,10 +11,8 @@ extern AST *ast_root;
 int main(int argc, const char * argv[])
 {
     /*
-    LLVMTargetDataRef tdr = LLVMCreateTargetData("");
-    printf("%llu\n", LLVMStoreSizeOfType(tdr, ett_llvm_type(ett_base_type(ETInt1))));
-    LLVMDisposeTargetData(tdr);
     */
+    etTargetData = LLVMCreateTargetData("");
 
     yyparse();
 
@@ -25,6 +23,8 @@ int main(int argc, const char * argv[])
     LLVMInitializeNativeAsmPrinter();
 
     LLVMDisposeModule(module);
+
+    LLVMDisposeTargetData(etTargetData);
     
 //    int token;
 //    while ((token = yylex()) != 0)

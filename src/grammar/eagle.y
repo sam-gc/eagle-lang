@@ -22,6 +22,7 @@
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TLBRACKET TRBRACKET
 %token <token> TFUNC TRETURN TPUTS TEXTERN TIF TELSE TELIF
 %token <token> TCOLON TSEMI TNEWLINE TCOMMA TAMP TAT
+%token <token> TYES TNO TNIL
 %type <node> program declarations declaration statements statement block funcdecl ifstatement
 %type <node> variabledecl vardecllist funccall calllist funcident funcsident externdecl typelist type
 %type <node> elifstatement elifblock elsestatement singif 
@@ -135,6 +136,9 @@ ounexpr             : singexpr { $$ = $1; }
 
 singexpr            : TINT { $$ = ast_make_int32($1); }
                     | TDOUBLE { $$ = ast_make_double($1); }
+                    | TYES { $$ = ast_make_bool(1); }
+                    | TNO { $$ = ast_make_bool(0); }
+                    | TNIL { $$ = ast_make_nil(); }
                     | TIDENTIFIER { $$ = ast_make_identifier($1); }
                     | TLPAREN expr TRPAREN { $$ = $2; }
                     | funccall { $$ = $1; }

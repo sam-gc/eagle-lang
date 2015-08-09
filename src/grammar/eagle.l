@@ -73,7 +73,11 @@ semi (";"|";"{whitechar}*"\n")
 "if"        DISCARD_NL; return SET(TIF);
 "elif"      DISCARD_NL; return SET(TELIF);
 "else"      DISCARD_NL; return SET(TELSE);
-"byte"      DISCARD_NL; SAVE_TOKEN; return TTYPE; 
+"yes"       SAVE_NL; return SET(TYES);
+"no"        SAVE_NL; return SET(TNO);
+"nil"       SAVE_NL; return SET(TNIL);
+"bool"      SAVE_NL; SAVE_TOKEN; return TTYPE;
+"byte"      SAVE_NL; SAVE_TOKEN; return TTYPE; 
 "int"       { SAVE_NL; SAVE_TOKEN; return TTYPE; }
 "long"      { SAVE_NL; SAVE_TOKEN; return TTYPE; }
 "double"    { SAVE_NL; SAVE_TOKEN; return TTYPE; }
