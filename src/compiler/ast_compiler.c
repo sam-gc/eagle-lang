@@ -33,9 +33,10 @@ void ac_dispatch_declaration(AST *ast, CompilerBundle *cb);
 void ac_compile_function(AST *ast, CompilerBundle *cb);
 int ac_compile_block(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb);
 void ac_compile_if(AST *ast, CompilerBundle *cb, LLVMBasicBlockRef mergeBB);
+LLVMValueRef ac_compile_index(AST *ast, int keepPointer, CompilerBundle *cb);
 LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb);
 
-void die(int lineno, char *fmt, ...)
+void die(int lineno, const char *fmt, ...)
 {
     size_t len = strlen(fmt);
     char format[len + 9];
@@ -105,6 +106,47 @@ LLVMValueRef ac_compile_var_decl(AST *ast, CompilerBundle *cb)
     return pos;
 }
 
+LLVMValueRef ac_compile_cast(AST *ast, CompilerBundle *cb)
+{
+    ASTCast *a = (ASTCast *)ast;
+    ASTTypeDecl *ty = (ASTTypeDecl *)a->etype;
+
+    LLVMValueRef val = ac_dispatch_expression(a->val, cb);
+
+    EagleTypeType *to = ty->etype;
+    EagleTypeType *from = a->val->resultantType;
+
+    ast->resultantType = to;
+
+    if(ett_is_numeric(to) && ett_is_numeric(from))
+    {
+        return ac_build_conversion(cb->builder, val, from, to);
+    }
+
+    if(to->type == ETPointer && from->type == ETPointer)
+    {
+        return LLVMBuildBitCast(cb->builder, val, ett_llvm_type(to), "casttmp");
+    }
+
+    if(to->type == ETPointer)
+    {
+        if(!ET_IS_INT(from->type))
+            die(ALN, "Cannot cast non-integer type to pointer.");
+        return LLVMBuildIntToPtr(cb->builder, val, ett_llvm_type(to), "casttmp");
+    }
+
+    if(from->type == ETPointer)
+    {
+        if(!ET_IS_INT(to->type))
+            die(ALN, "Pointers may only be cast to other pointers or integers.");
+        return LLVMBuildPtrToInt(cb->builder, val, ett_llvm_type(to), "casttmp");
+    }
+
+    die(ALN, "Unknown type conversion requested.");
+
+    return NULL;
+}
+
 LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb)
 {
     ASTBinary *a = (ASTBinary *)ast;
@@ -141,6 +183,11 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb)
         pos = ac_dispatch_expression(a->left, cb);
         totype = a->left->resultantType;
     }
+    else if(a->left->type == ABINARY && ((ASTBinary *)a->left)->op == '[')
+    {
+        pos = ac_compile_index(a->left, 1, cb);
+        totype = a->left->resultantType;
+    }
     else
     {
         die(ALN, "Left hand side may not be assigned to.");
@@ -169,21 +216,74 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb)
     return LLVMBuildLoad(cb->builder, pos, "loadtmp");
 }
 
+LLVMValueRef ac_compile_index(AST *ast, int keepPointer, CompilerBundle *cb)
+{
+    ASTBinary *a = (ASTBinary *)ast;
+    AST *left = a->left;
+    AST *right = a->right;
+
+    LLVMValueRef l = ac_dispatch_expression(left, cb);
+    LLVMValueRef r = ac_dispatch_expression(right, cb);
+
+    EagleTypeType *lt = left->resultantType;
+    EagleTypeType *rt = right->resultantType;
+
+    if(lt->type != ETPointer)
+        die(LN(left), "Only pointer types may be indexed.");
+    if(ett_pointer_depth(lt) == 1 && ett_get_base_type(lt) == ETAny)
+        die(LN(left), "Trying to dereference any-pointer.");
+    if(!ett_is_numeric(rt))
+        die(LN(right), "Arrays can only be indexed by a number.");
+
+    if(ET_IS_REAL(rt->type))
+        r = ac_build_conversion(cb->builder, r, rt, ett_base_type(ETInt64));
+
+    ast->resultantType = ((EaglePointerType *)lt)->to;
+    LLVMValueRef gep = LLVMBuildInBoundsGEP(cb->builder, l, &r, 1, "idx");
+
+    if(keepPointer)
+        return gep;
+
+    return LLVMBuildLoad(cb->builder, gep, "dereftmp");
+}
+
 LLVMValueRef ac_compile_binary(AST *ast, CompilerBundle *cb)
 {
     ASTBinary *a = (ASTBinary *)ast;
     if(a->op == '=')
         return ac_build_store(ast, cb);
+    else if(a->op == '[')
+        return ac_compile_index(ast, 0, cb);
 
     LLVMValueRef l = ac_dispatch_expression(a->left, cb);
     LLVMValueRef r = ac_dispatch_expression(a->right, cb);
 
     if(a->left->resultantType->type == ETPointer || a->right->resultantType->type == ETPointer)
     {
+        EagleTypeType *lt = a->left->resultantType;
+        EagleTypeType *rt = a->right->resultantType;
         if(a->op != '+')
             die(ALN, "Operation '%c' not valid for pointer types.", a->op);
-        if(a->left->resultantType->type == ETPointer && ET_IS_INT(a->right->resultantType->type))
-            die(ALN, "Pointer arithmetic is only valid with integer and non-any pointer types.", a->op);
+        if(lt->type == ETPointer && !ET_IS_INT(rt->type))
+            die(ALN, "Pointer arithmetic is only valid with integer and non-any pointer types.");
+        if(rt->type == ETPointer && !ET_IS_INT(lt->type))
+            die(ALN, "Pointer arithmetic is only valid with integer and non-any pointer types.");
+        
+        if(lt->type == ETPointer && ett_get_base_type(lt) == ETAny && ett_pointer_depth(lt) == 1)
+            die(ALN, "Pointer arithmetic results in dereferencing any pointer.");
+        if(rt->type == ETPointer && ett_get_base_type(rt) == ETAny && ett_pointer_depth(rt) == 1)
+            die(ALN, "Pointer arithmetic results in dereferencing any pointer.");
+
+        LLVMValueRef indexer = lt->type == ETPointer ? r : l;
+        LLVMValueRef ptr = lt->type == ETPointer ? l : r;
+
+        EaglePointerType *pt = lt->type == ETPointer ?
+            (EaglePointerType *)lt : (EaglePointerType *)rt;
+
+        ast->resultantType = (EagleTypeType *)pt;
+
+        LLVMValueRef gep = LLVMBuildInBoundsGEP(cb->builder, ptr, &indexer, 1, "arith");
+        return LLVMBuildBitCast(cb->builder, gep, ett_llvm_type((EagleTypeType *)pt), "cast");
     }
 
     EagleType promo = et_promotion(a->left->resultantType->type, a->right->resultantType->type);
@@ -214,6 +314,7 @@ LLVMValueRef ac_compile_binary(AST *ast, CompilerBundle *cb)
         case 'l':
         case 'G':
         case 'L':
+            ast->resultantType = ett_base_type(ETInt1);
             return ac_make_comp(l, r, cb->builder, promo, a->op);
         default:
             die(ALN, "Invalid binary operation (%c).", a->op);
@@ -223,15 +324,34 @@ LLVMValueRef ac_compile_binary(AST *ast, CompilerBundle *cb)
 
 LLVMValueRef ac_compile_get_address(AST *of, CompilerBundle *cb)
 {
-    ASTValue *o = (ASTValue *)of;
-    VarBundle *b = vs_get(cb->varScope, o->value.id);
+    switch(of->type)
+    {
+        case AIDENT:
+        {
+            ASTValue *o = (ASTValue *)of;
+            VarBundle *b = vs_get(cb->varScope, o->value.id);
 
-    if(!b)
-        die(LN(of), "Undeclared identifier (%s)", o->value.id);
-    
-    of->resultantType = b->type;
+            if(!b)
+                die(LN(of), "Undeclared identifier (%s)", o->value.id);
+            
+            of->resultantType = b->type;
 
-    return b->value;
+            return b->value;
+        }
+        case ABINARY:
+        {
+            ASTBinary *o = (ASTBinary *)of;
+            if(o->op != '[')
+                die(LN(of), "Address may not be taken of this operator.");
+
+            LLVMValueRef val = ac_compile_index(of, 1, cb);
+            return val;
+        }
+        default:
+            die(LN(of), "Address may not be taken of this expression.");
+    }
+
+    return NULL;
 }
 
 LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
@@ -257,6 +377,8 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
                     case ETDouble:
                         fmt = LLVMBuildGlobalStringPtr(cb->builder, "%lf\n", "prfLF");
                         break;
+                    case ETInt1:
+                    case ETInt8:
                     case ETInt32:
                         fmt = LLVMBuildGlobalStringPtr(cb->builder, "%d\n", "prfI");
                         break;
@@ -301,24 +423,39 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
 
 LLVMValueRef ac_dispatch_expression(AST *ast, CompilerBundle *cb)
 {
+    LLVMValueRef val = NULL;
     switch(ast->type)
     {
         case AVALUE:
-            return ac_compile_value(ast, cb);
+            val = ac_compile_value(ast, cb);
+            break;
         case ABINARY:
-            return ac_compile_binary(ast, cb);
+            val = ac_compile_binary(ast, cb);
+            break;
         case AUNARY:
-            return ac_compile_unary(ast, cb);
+            val = ac_compile_unary(ast, cb);
+            break;
         case AVARDECL:
-            return ac_compile_var_decl(ast, cb);
+            val = ac_compile_var_decl(ast, cb);
+            break;
         case AIDENT:
-            return ac_compile_identifier(ast, cb);
+            val = ac_compile_identifier(ast, cb);
+            break;
         case AFUNCCALL:
-            return ac_compile_function_call(ast, cb);
+            val = ac_compile_function_call(ast, cb);
+            break;
+        case ACAST:
+            val = ac_compile_cast(ast, cb);
+            break;
         default:
             die(ALN, "Invalid expression type.");
             return NULL;
     }
+
+    if(!ast->resultantType)
+        die(ALN, "Internal Error. AST Resultant Type for expression not set.");
+
+    return val;
 }
 
 void ac_dispatch_statement(AST *ast, CompilerBundle *cb)
@@ -346,6 +483,9 @@ void ac_dispatch_statement(AST *ast, CompilerBundle *cb)
         case AIF:
             ac_compile_if(ast, cb, NULL);
             break;
+        case ACAST:
+            ac_compile_cast(ast, cb);
+            break;
         default:
             die(ALN, "Invalid statement type.");
     }
@@ -370,7 +510,11 @@ void ac_compile_if(AST *ast, CompilerBundle *cb, LLVMBasicBlockRef mergeBB)
     LLVMValueRef val = ac_dispatch_expression(a->test, cb);
 
     LLVMValueRef cmp = NULL;
-    if(a->test->resultantType->type == ETInt32)
+    if(a->test->resultantType->type == ETInt1)
+        cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstInt(LLVMInt1Type(), 0, 0), "cmp");
+    else if(a->test->resultantType->type == ETInt8)
+        cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstInt(LLVMInt8Type(), 0, 0), "cmp");
+    else if(a->test->resultantType->type == ETInt32)
         cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstInt(LLVMInt32Type(), 0, 0), "cmp");
     else if(a->test->resultantType->type == ETInt64)
         cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstInt(LLVMInt64Type(), 0, 0), "cmp");
@@ -608,55 +752,49 @@ LLVMValueRef ac_build_conversion(LLVMBuilderRef builder, LLVMValueRef val, Eagle
             if(to->type != ETPointer)
                 die(-1, "Non-pointer type may not be converted to pointer type.");
 
+            if(ett_get_base_type(to) == ETAny && ett_pointer_depth(to) == 1)
+                return LLVMBuildBitCast(builder, val, ett_llvm_type(to), "ptrtmp");
+            if(ett_get_base_type(from) == ETAny && ett_pointer_depth(from) == 1)
+                return LLVMBuildBitCast(builder, val, ett_llvm_type(to), "ptrtmp");
+
             if(ett_pointer_depth(to) != ett_pointer_depth(from))
-                die(-1, "Pointer conversion invalid.");
+                die(-1, "Implicit pointer conversion invalid. Cannot conver pointer of depth %d to depth %d.", ett_pointer_depth(to), ett_pointer_depth(from));
+            if(ett_get_base_type(to) != ett_get_base_type(from))
+                die(-1, "Implicit pointer conversion invalid; pointer types are incompatible.");
 
             return LLVMBuildBitCast(builder, val, ett_llvm_type(to), "ptrtmp");
         }
+        case ETInt8:
         case ETInt32:
-            switch(to->type)
-            {
-                case ETInt32:
-                    return val;
-                case ETInt64:
-                    return LLVMBuildIntCast(builder, val, LLVMInt64Type(), "conv");
-                case ETDouble:
-                    return LLVMBuildSIToFP(builder, val, LLVMDoubleType(), "conv");
-                default:
-                    die(-1, "Invalid conversion from int.");
-                    break;
-            }
-            break;
         case ETInt64:
             switch(to->type)
             {
-                case ETInt64:
-                    return val;
+                case ETInt8:
                 case ETInt32:
-                    return LLVMBuildIntCast(builder, val, LLVMInt32Type(), "conv");
+                case ETInt64:
+                    return LLVMBuildIntCast(builder, val, ett_llvm_type(to), "conv");
                 case ETDouble:
                     return LLVMBuildSIToFP(builder, val, LLVMDoubleType(), "conv");
                 default:
-                    die(-1, "Invalid conversion from long.");
+                    die(-1, "Invalid implicit conversion.");
                     break;
             }
-            break;
         case ETDouble:
             switch(to->type)
             {
                 case ETDouble:
                     return val;
+                case ETInt8:
                 case ETInt32:
-                    return LLVMBuildFPToSI(builder, val, LLVMInt32Type(), "conv");
                 case ETInt64:
-                    return LLVMBuildFPToSI(builder, val, LLVMInt64Type(), "conv");
+                    return LLVMBuildFPToSI(builder, val, ett_llvm_type(to), "conv");
                 default:
-                    die(-1, "Invalid conversion from double.");
+                    die(-1, "Invalid implicit conversion from double.");
                     break;
             }
             break;
         default:
-            die(-1, "Invalid conversion.");
+            die(-1, "Invalid implicit conversion.");
             break;
     }
 
@@ -669,6 +807,7 @@ LLVMValueRef ac_make_add(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
     {
         case ETDouble:
             return LLVMBuildFAdd(builder, left, right, "addtmp");
+        case ETInt8:
         case ETInt32:
         case ETInt64:
             return LLVMBuildAdd(builder, left, right, "addtmp");
@@ -684,6 +823,7 @@ LLVMValueRef ac_make_sub(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
     {
         case ETDouble:
             return LLVMBuildFSub(builder, left, right, "subtmp");
+        case ETInt8:
         case ETInt32:
         case ETInt64:
             return LLVMBuildSub(builder, left, right, "subtmp");
@@ -699,6 +839,7 @@ LLVMValueRef ac_make_mul(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
     {
         case ETDouble:
             return LLVMBuildFMul(builder, left, right, "multmp");
+        case ETInt8:
         case ETInt32:
         case ETInt64:
             return LLVMBuildMul(builder, left, right, "multmp");
@@ -714,6 +855,7 @@ LLVMValueRef ac_make_div(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
     {
         case ETDouble:
             return LLVMBuildFDiv(builder, left, right, "divtmp");
+        case ETInt8:
         case ETInt32:
         case ETInt64:
             return LLVMBuildSDiv(builder, left, right, "divtmp");
@@ -764,6 +906,7 @@ LLVMValueRef ac_make_comp(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef 
     {
         case ETDouble:
             return LLVMBuildFCmp(builder, rp, left, right, "eqtmp");
+        case ETInt8:
         case ETInt32:
         case ETInt64:
             return LLVMBuildICmp(builder, ip, left, right, "eqtmp");

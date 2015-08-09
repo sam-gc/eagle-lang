@@ -60,6 +60,8 @@ LLVMTypeRef ett_llvm_type(EagleTypeType *type)
             return LLVMVoidType();
         case ETDouble:
             return LLVMDoubleType();
+        case ETInt1:
+            return LLVMInt1Type();
         case ETAny:
         case ETInt8:
             return LLVMInt8Type();
@@ -142,7 +144,58 @@ int ett_pointer_depth(EagleTypeType *t)
 {
     EaglePointerType *pt = (EaglePointerType *)t;
     int i;
-    for(i = 0; pt->type == ETPointer; pt = (EaglePointerType *)pt->to);
+    for(i = 0; pt->type == ETPointer; pt = (EaglePointerType *)pt->to, i++);
     return i;
+}
+
+int ett_is_numeric(EagleTypeType *t)
+{
+    EagleType type = t->type;
+    switch(type)
+    {
+        case ETInt8:
+        case ETInt32:
+        case ETInt64:
+        case ETDouble:
+            return 1;
+        default:
+            return 0;
+    }
+}
+
+void ett_debug_print(EagleTypeType *t)
+{
+    switch(t->type)
+    {
+        case ETInt1:
+            printf("Bool\n");
+            return;
+        case ETInt8:
+            printf("Byte\n");
+            return;
+        case ETInt32:
+            printf("Int\n");
+            return;
+        case ETInt64:
+            printf("Long\n");
+            return;
+        case ETDouble:
+            printf("Double\n");
+            return;
+        case ETVoid:
+            printf("Void\n");
+            return;
+        case ETAny:
+            printf("Any\n");
+            return;
+        case ETPointer:
+            printf("Pointer to ");
+            ett_debug_print(((EaglePointerType *)t)->to);
+            return;
+        default:
+            return;
+    }
+
+    return;
 }
 

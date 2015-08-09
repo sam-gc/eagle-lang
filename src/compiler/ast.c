@@ -162,6 +162,17 @@ AST *ast_make_if(AST *test, AST *block)
     return (AST *)ast;
 }
 
+AST *ast_make_cast(AST *type, AST *val)
+{
+    ASTCast *ast = ast_malloc(sizeof(ASTCast));
+    ast->type = ACAST;
+
+    ast->etype = type;
+    ast->val = val;
+
+    return (AST *)ast;
+}
+
 void ast_add_if(AST *ast, AST *next)
 {
     ASTIfBlock *i = (ASTIfBlock *)ast;

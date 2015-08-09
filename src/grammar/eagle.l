@@ -60,16 +60,20 @@ semi (";"|";"{whitechar}*"\n")
 ","         DISCARD_NL; return SET(TCOMMA);
 ";"      DISCARD_NL; return SET(TSEMI);
 "&"         DISCARD_NL; return SET(TAMP);
+"@"         DISCARD_NL; return SET(TAT);
 "("         DISCARD_NL; return SET(TLPAREN);
 ")"         SAVE_NL; return SET(TRPAREN);
 {lbrace}    return SET(TLBRACE);
 "}"         DISCARD_NL; return SET(TRBRACE);
+"["         DISCARD_NL; return SET(TLBRACKET);
+"]"         SAVE_NL; return SET(TRBRACKET);
 "return"    DISCARD_NL; return SET(TRETURN);
 "puts"      DISCARD_NL; return SET(TPUTS);
 "extern"    DISCARD_NL; OVERRIDE; return SET(TEXTERN);
 "if"        DISCARD_NL; return SET(TIF);
 "elif"      DISCARD_NL; return SET(TELIF);
 "else"      DISCARD_NL; return SET(TELSE);
+"byte"      DISCARD_NL; SAVE_TOKEN; return TTYPE; 
 "int"       { SAVE_NL; SAVE_TOKEN; return TTYPE; }
 "long"      { SAVE_NL; SAVE_TOKEN; return TTYPE; }
 "double"    { SAVE_NL; SAVE_TOKEN; return TTYPE; }

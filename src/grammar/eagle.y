@@ -19,18 +19,21 @@
 
 %token <string> TIDENTIFIER TINT TDOUBLE TTYPE
 %token <token> TPLUS TMINUS TEQUALS TMUL TDIV TGT TLT TEQ TNE TGTE TLTE TNOT
-%token <token> TLPAREN TRPAREN TLBRACE TRBRACE
+%token <token> TLPAREN TRPAREN TLBRACE TRBRACE TLBRACKET TRBRACKET
 %token <token> TFUNC TRETURN TPUTS TEXTERN TIF TELSE TELIF
-%token <token> TCOLON TSEMI TNEWLINE TCOMMA TAMP
-%type <node> program declarations declaration statements statement block funcdecl expression ifstatement
+%token <token> TCOLON TSEMI TNEWLINE TCOMMA TAMP TAT
+%type <node> program declarations declaration statements statement block funcdecl ifstatement
 %type <node> variabledecl vardecllist funccall calllist funcident funcsident externdecl typelist type
-%type <node> elifstatement elifblock elsestatement singif
+%type <node> elifstatement elifblock elsestatement singif 
+%type <node> expr singexpr binexpr unexpr ounexpr
 
 %right TEQUALS;
 %left TNOT;
 %left TEQ TNE TLT TGT TLTE TGTE
 %left TPLUS TMINUS;
 %left TMUL TDIV;
+%left TAT TAMP
+%right TLBRACKET TRBRACKET;
 %right "then" TIF TELSE TELIF %nonassoc TLPAREN;
 
 %start program
@@ -69,20 +72,20 @@ block               : TLBRACE statements TRBRACE { $$ = $2; };
 statements          : statement { if($1) $$ = $1; else $$ = ast_make(); }
                     | statement statements { if($1) $1->next = $2; $$ = $1 ? $1 : $2; };
 
-statement           : expression TSEMI { $$ = $1; }
-                    | TRETURN expression TSEMI { $$ = ast_make_unary($2, 'r'); }
-                    | TPUTS expression TSEMI { $$ = ast_make_unary($2, 'p'); }
+statement           : expr TSEMI { $$ = $1; }
+                    | TRETURN expr TSEMI { $$ = ast_make_unary($2, 'r'); }
+                    | TPUTS expr TSEMI { $$ = ast_make_unary($2, 'p'); }
                     | TSEMI { $$ = NULL; }
                     | ifstatement { $$ = $1; };
 
-singif              : TIF expression TSEMI statement { $$ = ast_make_if($2, $4); }
-                    | TIF expression block { $$ = ast_make_if($2, $3); };
+singif              : TIF expr TSEMI statement { $$ = ast_make_if($2, $4); }
+                    | TIF expr block { $$ = ast_make_if($2, $3); };
 
 elsestatement       : TELSE statement { $$ = ast_make_if(NULL, $2); }
                     | TELSE block { $$ = ast_make_if(NULL, $2); };
 
-elifstatement       : TELIF expression TSEMI statement { $$ = ast_make_if($2, $4); }
-                    | TELIF expression block { $$ = ast_make_if($2, $3); };
+elifstatement       : TELIF expr TSEMI statement { $$ = ast_make_if($2, $4); }
+                    | TELIF expr block { $$ = ast_make_if($2, $3); };
 
 elifblock           : elifstatement { $$ = $1; }
                     | elifblock elifstatement { $$ = $1; ast_add_if($1, $2); };
@@ -94,35 +97,47 @@ ifstatement         : singif { $$ = $1; }
 
 variabledecl        : type TIDENTIFIER { $$ = ast_make_var_decl($1, $2); };
 
-funccall            : expression TLPAREN TRPAREN { $$ = ast_make_func_call($1, NULL); }
-                    | expression TLPAREN calllist TRPAREN { $$ = ast_make_func_call($1, $3); };
+funccall            : ounexpr TLPAREN TRPAREN { $$ = ast_make_func_call($1, NULL); }
+                    | ounexpr TLPAREN calllist TRPAREN { $$ = ast_make_func_call($1, $3); };
 
-calllist            : expression { $$ = $1; }
-                    | expression TCOMMA calllist { $1->next = $3; $$ = $1; };
+calllist            : expr { $$ = $1; }
+                    | expr TCOMMA calllist { $1->next = $3; $$ = $1; };
 
-expression          : TINT { $$ = ast_make_int32($1); }
-                    | TDOUBLE { $$ = ast_make_double($1); }
-                    | TLPAREN expression TRPAREN { $$ = $2; }
-                    | expression TPLUS expression { $$ = ast_make_binary($1, $3, '+'); }
-                    | expression TMINUS expression { $$ = ast_make_binary($1, $3, '-'); }
-                    | expression TMUL expression { $$ = ast_make_binary($1, $3, '*'); }
-                    | expression TDIV expression { $$ = ast_make_binary($1, $3, '/'); }
-                    | expression TEQ expression { $$ = ast_make_binary($1, $3, 'e'); }
-                    | expression TGT expression { $$ = ast_make_binary($1, $3, 'g'); }
-                    | expression TGTE expression { $$ = ast_make_binary($1, $3, 'G'); }
-                    | expression TLT expression { $$ = ast_make_binary($1, $3, 'l'); }
-                    | expression TLTE expression { $$ = ast_make_binary($1, $3, 'L'); }
-                    | expression TNE expression { $$ = ast_make_binary($1, $3, 'n'); }
-                    | TNOT expression { $$ = ast_make_unary($2, '!'); }
+expr                : binexpr { $$ = $1; }
+                    | unexpr { $$ = $1; }
+                    | singexpr { $$ = $1; }
                     | variabledecl { $$ = $1; }
-/*
-                    | variabledecl TEQUALS expression { $$ = ast_make_binary($1, $3, '='); }
-                    | TIDENTIFIER TEQUALS expression { $$ = ast_make_binary(ast_make_identifier($1), $3, '='); }
-*/
-                    | expression TEQUALS expression { $$ = ast_make_binary($1, $3, '='); }
+                    | type TAT ounexpr { $$ = ast_make_cast($1, $3); }
+                    ;
+
+binexpr             : expr TPLUS expr { $$ = ast_make_binary($1, $3, '+'); }
+                    | expr TEQUALS expr { $$ = ast_make_binary($1, $3, '='); }
+                    | expr TMINUS expr { $$ = ast_make_binary($1, $3, '-'); }
+                    | expr TMUL expr { $$ = ast_make_binary($1, $3, '*'); }
+                    | expr TDIV expr { $$ = ast_make_binary($1, $3, '/'); }
+                    | expr TEQ expr { $$ = ast_make_binary($1, $3, 'e'); }
+                    | expr TGT expr { $$ = ast_make_binary($1, $3, 'g'); }
+                    | expr TGTE expr { $$ = ast_make_binary($1, $3, 'G'); }
+                    | expr TLT expr { $$ = ast_make_binary($1, $3, 'l'); }
+                    | expr TLTE expr { $$ = ast_make_binary($1, $3, 'L'); }
+                    | expr TNE expr { $$ = ast_make_binary($1, $3, 'n'); }
+                    ;
+
+unexpr              : TMUL ounexpr { $$ = ast_make_unary($2, '*'); }
+                    | TAMP ounexpr { $$ = ast_make_unary($2, '&'); }
+                    | TNOT ounexpr { $$ = ast_make_unary($2, '!'); }
+                    | ounexpr TLBRACKET expr TRBRACKET { $$ = ast_make_binary($1, $3, '['); }
+                    ; 
+
+ounexpr             : singexpr { $$ = $1; }
+                    | unexpr { $$ = $1; }
+                    ;
+
+singexpr            : TINT { $$ = ast_make_int32($1); }
+                    | TDOUBLE { $$ = ast_make_double($1); }
                     | TIDENTIFIER { $$ = ast_make_identifier($1); }
-                    | TAMP TIDENTIFIER { $$ = ast_make_unary(ast_make_identifier($2), '&'); }
-                    | TMUL expression { $$ = ast_make_unary($2, '*'); }
-                    | funccall { $$ = $1; };
+                    | TLPAREN expr TRPAREN { $$ = $2; }
+                    | funccall { $$ = $1; }
+                    ;
 
 %%

@@ -1,14 +1,19 @@
-extern func malloc(long) : long
-extern func free(long) : void
+extern func malloc(long) : any *
+extern func free(any *) : void
 
-func main() : int {
-    long mem = malloc(100)
-    puts mem
+func main() : int
+{
+    int i = 1
+    int j = 2
+    int **ptrs = malloc(16)
+    
+    ptrs[0] = &i
+    ptrs[1] = &j
 
+    puts *ptrs[0]
+    puts *ptrs[1]
 
-;;;;
+    free(ptrs)
 
-
-    free(mem)
     return 0
-} 
+}

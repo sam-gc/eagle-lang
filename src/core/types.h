@@ -13,10 +13,12 @@
 #include "llvm_headers.h"
 
 #define ET_IS_INT(e) ((e) == ETInt8 || (e) == ETInt32 || (e) == ETInt64)
+#define ET_IS_REAL(e) ((e) == ETDouble)
 
 typedef enum {
     ETNone,
     ETAny,
+    ETInt1,
     ETInt8,
     ETInt32,
     ETInt64,
@@ -52,5 +54,9 @@ EagleType ett_get_base_type(EagleTypeType *type);
 LLVMTypeRef ett_llvm_type(EagleTypeType *type);
 int ett_are_same(EagleTypeType *left, EagleTypeType *right);
 int ett_pointer_depth(EagleTypeType *t);
+int ett_is_numeric(EagleTypeType *t);
+int ett_byte_size(EagleTypeType *t);
+
+void ett_debug_print(EagleTypeType *t);
 
 #endif /* defined(__Eagle__types__) */

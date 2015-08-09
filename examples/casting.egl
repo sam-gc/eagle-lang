@@ -1,0 +1,13 @@
+func main() : int
+{
+    int i = 5
+    int *j = &i
+
+    long k = long @j
+    puts k
+
+    int *l = int *@k
+    puts *l
+
+    return 0
+}

@@ -23,6 +23,7 @@ typedef enum {
     AVARDECL,
     AIDENT,
     AIF,
+    ACAST,
     ATYPE
 } ASTType;
 
@@ -120,6 +121,16 @@ typedef struct {
     struct AST *ifNext;
 } ASTIfBlock;
 
+typedef struct {
+    ASTType type;
+    EagleTypeType *resultantType;
+    struct AST *next;
+    long lineno;
+
+    struct AST *etype;
+    struct AST *val;
+} ASTCast;
+
 AST *ast_make();
 void ast_append(AST *old, AST *n);
 AST *ast_make_binary(AST *left, AST *right, char op);
@@ -133,6 +144,7 @@ AST *ast_make_var_decl(AST *type, char *ident);
 AST *ast_make_type(char *type);
 AST *ast_make_pointer(AST *ast);
 AST *ast_make_if(AST *test, AST *block);
+AST *ast_make_cast(AST *type, AST *val);
 void ast_add_if(AST *ast, AST *next);
 
 #endif /* defined(__Eagle__ast__) */
