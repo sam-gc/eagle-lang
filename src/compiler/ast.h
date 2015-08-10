@@ -99,6 +99,7 @@ typedef struct {
 
     struct AST *atype;
     char *ident;
+    struct AST *arrct;
 } ASTVarDecl;
 
 typedef struct {
@@ -143,8 +144,10 @@ AST *ast_make_identifier(char *ident);
 AST *ast_make_func_decl(AST *type, char *ident, AST *body, AST *params);
 AST *ast_make_func_call(AST *callee, AST *params);
 AST *ast_make_var_decl(AST *type, char *ident);
+AST *ast_make_arr_decl(AST *type, char *ident, AST *expr);
 AST *ast_make_type(char *type);
 AST *ast_make_pointer(AST *ast);
+AST *ast_make_array(AST *ast, int ct);
 AST *ast_make_if(AST *test, AST *block);
 AST *ast_make_cast(AST *type, AST *val);
 void ast_add_if(AST *ast, AST *next);

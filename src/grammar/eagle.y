@@ -3,7 +3,7 @@
     #include "compiler/ast.h"
 
     extern int yylex();
-    extern int yyerror(char *);
+    extern int yyerror(const char *);
     
     AST *ast_root = NULL;
 %}
@@ -20,7 +20,7 @@
 %token <string> TIDENTIFIER TINT TDOUBLE TTYPE
 %token <token> TPLUS TMINUS TEQUALS TMUL TDIV TGT TLT TEQ TNE TGTE TLTE TNOT
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TLBRACKET TRBRACKET
-%token <token> TFUNC TRETURN TPUTS TEXTERN TIF TELSE TELIF
+%token <token> TFUNC TRETURN TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF
 %token <token> TCOLON TSEMI TNEWLINE TCOMMA TAMP TAT
 %token <token> TYES TNO TNIL
 %type <node> program declarations declaration statements statement block funcdecl ifstatement
@@ -33,7 +33,8 @@
 %left TEQ TNE TLT TGT TLTE TGTE
 %left TPLUS TMINUS;
 %left TMUL TDIV;
-%left TAT TAMP
+%left TAT TAMP;
+%nonassoc TSIZEOF TCOUNTOF;
 %right TLBRACKET TRBRACKET;
 %right "then" TIF TELSE TELIF %nonassoc TLPAREN;
 
@@ -50,7 +51,10 @@ declaration         : externdecl TSEMI { $$ = $1; }
                     | funcdecl { $$ = $1; };
 
 type                : TTYPE { $$ = ast_make_type($1); }
-                    | type TMUL { $$ = ast_make_pointer($1); };
+                    | type TMUL { $$ = ast_make_pointer($1); }
+                    | type TLBRACKET TRBRACKET { $$ = ast_make_array($1, -1); }
+                    | type TLBRACKET TINT TRBRACKET { $$ = ast_make_array($1, atoi($3)); }
+                    ;
 
 funcdecl            : funcident block { ((ASTFuncDecl *)$1)->body = $2; $$ = $1; };
 
@@ -127,6 +131,8 @@ binexpr             : expr TPLUS expr { $$ = ast_make_binary($1, $3, '+'); }
 unexpr              : TMUL ounexpr { $$ = ast_make_unary($2, '*'); }
                     | TAMP ounexpr { $$ = ast_make_unary($2, '&'); }
                     | TNOT ounexpr { $$ = ast_make_unary($2, '!'); }
+                    | TSIZEOF ounexpr { $$ = ast_make_unary($2, 's'); }
+                    | TCOUNTOF ounexpr { $$ = ast_make_unary($2, 'c'); }
                     | ounexpr TLBRACKET expr TRBRACKET { $$ = ast_make_binary($1, $3, '['); }
                     ; 
 

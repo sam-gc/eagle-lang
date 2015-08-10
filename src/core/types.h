@@ -14,6 +14,7 @@
 
 #define ET_IS_INT(e) ((e) == ETInt8 || (e) == ETInt32 || (e) == ETInt64)
 #define ET_IS_REAL(e) ((e) == ETDouble)
+#define ET_IS_GEN_ARR(e) (((EagleArrayType *)(e))->ct < 0)
 
 extern LLVMTargetDataRef etTargetData;
 
@@ -27,6 +28,7 @@ typedef enum {
     ETInt64,
     ETDouble,
     ETPointer,
+    ETArray,
     ETVoid,
     ETFunction
 } EagleType;
@@ -42,6 +44,12 @@ typedef struct {
 
 typedef struct {
     EagleType type;
+    EagleTypeType *of;
+    int ct;
+} EagleArrayType;
+
+typedef struct {
+    EagleType type;
     EagleTypeType *retType;
     EagleTypeType **params;
     int pct;
@@ -52,6 +60,7 @@ EagleType et_promotion(EagleType left, EagleType right);
 EagleType et_eagle_type(LLVMTypeRef ty);
 EagleTypeType *ett_base_type(EagleType type);
 EagleTypeType *ett_pointer_type(EagleTypeType *to);
+EagleTypeType *ett_array_type(EagleTypeType *of, int ct);
 EagleTypeType *ett_function_type(EagleTypeType *retVal, EagleTypeType **params, int pct);
 EagleType ett_get_base_type(EagleTypeType *type);
 LLVMTypeRef ett_llvm_type(EagleTypeType *type);

@@ -74,6 +74,17 @@ LLVMTypeRef ett_llvm_type(EagleTypeType *type)
             return LLVMInt64Type();
         case ETPointer:
             return LLVMPointerType(ett_llvm_type(((EaglePointerType *)type)->to), 0);
+        case ETArray:
+            {
+                EagleArrayType *at = (EagleArrayType *)type;
+                LLVMTypeRef tys[2];
+                tys[0] = LLVMInt64Type();
+                tys[1] = at->ct < 0 ? LLVMPointerType(ett_llvm_type(at->of), 0) : LLVMArrayType(ett_llvm_type(at->of), at->ct);
+
+                if(at->ct < 0)
+                    return LLVMPointerType(LLVMStructType(tys, 2, 0), 0);
+                return LLVMStructType(tys, 2, 0);
+            }
         default:
             return NULL;
     }
@@ -102,6 +113,16 @@ EagleTypeType *ett_pointer_type(EagleTypeType *to)
     EaglePointerType *ett = malloc(sizeof(EaglePointerType));
     ett->type = ETPointer;
     ett->to = to;
+
+    return (EagleTypeType *)ett;
+}
+
+EagleTypeType *ett_array_type(EagleTypeType *of, int ct)
+{
+    EagleArrayType *ett = malloc(sizeof(EagleArrayType));
+    ett->type = ETArray;
+    ett->of = of;
+    ett->ct = ct;
 
     return (EagleTypeType *)ett;
 }
@@ -138,6 +159,14 @@ int ett_are_same(EagleTypeType *left, EagleTypeType *right)
         EaglePointerType *pr = (EaglePointerType *)right;
 
         return ett_are_same(pl->to, pr->to);
+    }
+
+    if(theType == ETArray)
+    {
+        EagleArrayType *al = (EagleArrayType *)left;
+        EagleArrayType *ar = (EagleArrayType *)right;
+
+        return ett_are_same(al->of, ar->of) && al->ct == ar->ct;
     }
 
     return 1;

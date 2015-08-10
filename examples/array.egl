@@ -1,0 +1,24 @@
+func testct(int[] nums) : void
+{
+    if countof nums > 1
+        puts nums[0]
+}
+
+func main() : int
+{
+    int[5] test
+    
+    test[1] = 11
+
+    puts test[1]
+
+    int *loc = &test[1]
+    test[1] = 12
+
+    puts *loc
+
+    testct(test)
+
+    puts countof test
+    return 0
+}

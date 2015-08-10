@@ -70,6 +70,8 @@ semi (";"|";"{whitechar}*"\n")
 "return"    DISCARD_NL; return SET(TRETURN);
 "puts"      DISCARD_NL; return SET(TPUTS);
 "extern"    DISCARD_NL; OVERRIDE; return SET(TEXTERN);
+"sizeof"    DISCARD_NL; return SET(TSIZEOF);
+"countof"   DISCARD_NL; return SET(TCOUNTOF);
 "if"        DISCARD_NL; return SET(TIF);
 "elif"      DISCARD_NL; return SET(TELIF);
 "else"      DISCARD_NL; return SET(TELSE);

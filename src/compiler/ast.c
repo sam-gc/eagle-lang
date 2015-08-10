@@ -12,7 +12,7 @@
 #include "ast_compiler.h"
 
 extern int yylineno;
-int yyerror(char *text)
+int yyerror(const char *text)
 {
     fprintf(stderr, "%d: Error: %s\n", yylineno, text);
     return -1;
@@ -145,10 +145,16 @@ AST *ast_make_func_call(AST *callee, AST *params)
 
 AST *ast_make_var_decl(AST *atype, char *ident)
 {
+    return ast_make_arr_decl(atype, ident, NULL);
+}
+
+AST *ast_make_arr_decl(AST *atype, char *ident, AST *expr)
+{
     ASTVarDecl *ast = ast_malloc(sizeof(ASTVarDecl));
     ast->type = AVARDECL;
     ast->atype = atype;
     ast->ident = ident;
+    ast->arrct = expr;
 
     return (AST *)ast;
 }
@@ -169,6 +175,14 @@ AST *ast_make_pointer(AST *ast)
     if(a->etype->type == ETVoid)
         die(a->lineno, "Cannot declare void pointer type. Use an any-pointer instead (any *).");
     a->etype = ett_pointer_type(a->etype);
+
+    return ast;
+}
+
+AST *ast_make_array(AST *ast, int ct)
+{
+    ASTTypeDecl *a = (ASTTypeDecl *)ast;
+    a->etype = ett_array_type(a->etype, ct);
 
     return ast;
 }

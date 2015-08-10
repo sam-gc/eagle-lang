@@ -3,15 +3,14 @@
 
 extern char *yytext;
 
+extern FILE *yyin;
 extern int yyparse();
 extern int yylex();
 
 extern AST *ast_root;
 
-int main(int argc, const char * argv[])
+int main(int argc, const char *argv[])
 {
-    /*
-    */
     etTargetData = LLVMCreateTargetData("");
 
     yyparse();
