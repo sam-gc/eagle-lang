@@ -73,17 +73,24 @@ LLVMTypeRef ett_llvm_type(EagleTypeType *type)
         case ETInt64:
             return LLVMInt64Type();
         case ETPointer:
+        {
+            EaglePointerType *pt = (EaglePointerType *)type;
+            if(pt->counted)
+            {
+                LLVMTypeRef tys[2];
+                tys[0] = LLVMInt64Type();
+                tys[1] = LLVMPointerType(ett_llvm_type(pt->to), 0);
+                return LLVMStructType(tys, 2, 0);
+            }
             return LLVMPointerType(ett_llvm_type(((EaglePointerType *)type)->to), 0);
+        }
         case ETArray:
             {
                 EagleArrayType *at = (EagleArrayType *)type;
-                LLVMTypeRef tys[2];
-                tys[0] = LLVMInt64Type();
-                tys[1] = at->ct < 0 ? LLVMPointerType(ett_llvm_type(at->of), 0) : LLVMArrayType(ett_llvm_type(at->of), at->ct);
-
                 if(at->ct < 0)
-                    return LLVMPointerType(LLVMStructType(tys, 2, 0), 0);
-                return LLVMStructType(tys, 2, 0);
+                    return LLVMPointerType(ett_llvm_type(at->of), 0);
+                else
+                    return LLVMArrayType(ett_llvm_type(at->of), at->ct);
             }
         default:
             return NULL;
@@ -113,6 +120,7 @@ EagleTypeType *ett_pointer_type(EagleTypeType *to)
     EaglePointerType *ett = malloc(sizeof(EaglePointerType));
     ett->type = ETPointer;
     ett->to = to;
+    ett->counted = 0;
 
     return (EagleTypeType *)ett;
 }
@@ -229,6 +237,10 @@ void ett_debug_print(EagleTypeType *t)
         case ETPointer:
             printf("Pointer to ");
             ett_debug_print(((EaglePointerType *)t)->to);
+            return;
+        case ETArray:
+            printf("Array len(%d) of ", ((EagleArrayType *)t)->ct);
+            ett_debug_print(((EagleArrayType *)t)->of);
             return;
         default:
             return;

@@ -17,7 +17,7 @@
     AST *node;
 }
 
-%token <string> TIDENTIFIER TINT TDOUBLE TTYPE
+%token <string> TIDENTIFIER TINT TDOUBLE TTYPE TCOUNTED
 %token <token> TPLUS TMINUS TEQUALS TMUL TDIV TGT TLT TEQ TNE TGTE TLTE TNOT
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TLBRACKET TRBRACKET
 %token <token> TFUNC TRETURN TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF
@@ -100,7 +100,8 @@ ifstatement         : singif { $$ = $1; }
                     | singif elifblock { $$ = $1; ast_add_if($1, $2); }
                     | singif elifblock elsestatement { $$ = $1; ast_add_if($$, $2); ast_add_if($$, $3); };
 
-variabledecl        : type TIDENTIFIER { $$ = ast_make_var_decl($1, $2); };
+variabledecl        : type TIDENTIFIER { $$ = ast_make_var_decl($1, $2); }
+                    | TCOUNTED type TIDENTIFIER { $$ = ast_make_var_decl($2, $3); ast_set_counted($$); };
 
 funccall            : ounexpr TLPAREN TRPAREN { $$ = ast_make_func_call($1, NULL); }
                     | ounexpr TLPAREN calllist TRPAREN { $$ = ast_make_func_call($1, $3); };

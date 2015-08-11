@@ -148,6 +148,16 @@ AST *ast_make_var_decl(AST *atype, char *ident)
     return ast_make_arr_decl(atype, ident, NULL);
 }
 
+void ast_set_counted(AST *ast)
+{
+    ASTVarDecl *a = (ASTVarDecl *)ast;
+    ASTTypeDecl *td = (ASTTypeDecl *)a->atype;
+    if(td->etype->type != ETPointer)
+        die(yylineno, "Only pointer types can be counted.");
+    EaglePointerType *pt = (EaglePointerType *)td->etype;
+    pt->counted = 1;
+}
+
 AST *ast_make_arr_decl(AST *atype, char *ident, AST *expr)
 {
     ASTVarDecl *ast = ast_malloc(sizeof(ASTVarDecl));
@@ -182,6 +192,14 @@ AST *ast_make_pointer(AST *ast)
 AST *ast_make_array(AST *ast, int ct)
 {
     ASTTypeDecl *a = (ASTTypeDecl *)ast;
+
+    if(a->etype->type == ETArray)
+    {
+        EagleArrayType *et = (EagleArrayType *)a->etype;
+        for(; et->of->type == ETArray; et = (EagleArrayType *)et->of);
+        et->of = ett_array_type(et->of, ct);
+        return ast;
+    }
     a->etype = ett_array_type(a->etype, ct);
 
     return ast;

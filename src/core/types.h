@@ -15,6 +15,7 @@
 #define ET_IS_INT(e) ((e) == ETInt8 || (e) == ETInt32 || (e) == ETInt64)
 #define ET_IS_REAL(e) ((e) == ETDouble)
 #define ET_IS_GEN_ARR(e) (((EagleArrayType *)(e))->ct < 0)
+#define ET_IS_COUNTED(p) (((EaglePointerType *)(p))->counted)
 
 extern LLVMTargetDataRef etTargetData;
 
@@ -40,6 +41,7 @@ typedef struct {
 typedef struct {
     EagleType type;
     EagleTypeType *to;
+    int counted;
 } EaglePointerType;
 
 typedef struct {

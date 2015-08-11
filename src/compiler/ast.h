@@ -144,6 +144,7 @@ AST *ast_make_identifier(char *ident);
 AST *ast_make_func_decl(AST *type, char *ident, AST *body, AST *params);
 AST *ast_make_func_call(AST *callee, AST *params);
 AST *ast_make_var_decl(AST *type, char *ident);
+void ast_set_counted(AST *ast);
 AST *ast_make_arr_decl(AST *type, char *ident, AST *expr);
 AST *ast_make_type(char *type);
 AST *ast_make_pointer(AST *ast);

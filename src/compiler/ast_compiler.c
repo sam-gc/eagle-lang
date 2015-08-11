@@ -25,9 +25,11 @@ static inline LLVMValueRef ac_make_sub(LLVMValueRef left, LLVMValueRef right, LL
 static inline LLVMValueRef ac_make_mul(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type);
 static inline LLVMValueRef ac_make_div(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type);
 static inline LLVMValueRef ac_make_comp(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type, char comp);
+static inline void ac_unwrap_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty, int keepptr);
+static inline void ac_incr_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty);
+static inline void ac_decr_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty);
 
 LLVMValueRef ac_dispatch_expression(AST *ast, CompilerBundle *cb);
-LLVMValueRef ac_dispatch_expression_no_hide_impl(AST *ast, CompilerBundle *cb);
 void ac_dispatch_statement(AST *ast, CompilerBundle *cb);
 void ac_dispatch_declaration(AST *ast, CompilerBundle *cb);
 
@@ -132,6 +134,7 @@ LLVMValueRef ac_compile_var_decl(AST *ast, CompilerBundle *cb)
         LLVMPositionBuilderBefore(cb->builder, begin);
     LLVMValueRef pos = LLVMBuildAlloca(cb->builder, ett_llvm_type(type->etype), a->ident);
 
+    /*
     if(type->etype->type == ETArray)
     {
         EagleArrayType *at = (EagleArrayType *)type->etype;
@@ -141,6 +144,7 @@ LLVMValueRef ac_compile_var_decl(AST *ast, CompilerBundle *cb)
             LLVMBuildStore(cb->builder, LLVMConstInt(LLVMInt64Type(), at->ct, 1), ctp);
         }
     }
+    */
 
     vs_put(cb->varScope, a->ident, pos, type->etype);
 
@@ -257,7 +261,19 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb)
     if(!ett_are_same(fromtype, totype))
         r = ac_build_conversion(cb->builder, r, fromtype, totype);
 
+    LLVMValueRef ptrPos;
+    if(a->resultantType->type == ETPointer)
+    {
+        ptrPos = pos;
+        ac_decr_pointer(cb, &pos, totype);
+        ac_unwrap_pointer(cb, &pos, totype, 1);
+    }
+
     LLVMBuildStore(cb->builder, r, pos);
+    
+    if(a->resultantType->type == ETPointer)
+        ac_incr_pointer(cb, &ptrPos, totype);
+
     return LLVMBuildLoad(cb->builder, pos, "loadtmp");
 }
 
@@ -288,13 +304,19 @@ LLVMValueRef ac_compile_index(AST *ast, int keepPointer, CompilerBundle *cb)
     else
         ast->resultantType = ((EagleArrayType *)lt)->of;
 
-    LLVMValueRef gep = LLVMBuildInBoundsGEP(cb->builder, l, &r, 1, "idx");
-    if(lt->type == ETArray)
+    LLVMValueRef gep;
+    if(lt->type == ETArray && ((EagleArrayType *)lt)->ct >= 0)
     {
-        gep = LLVMBuildBitCast(cb->builder, gep, ett_llvm_type(ett_pointer_type(ast->resultantType)), "cast");
+        LLVMValueRef zero = LLVMConstInt(LLVMInt32Type(), 0, 0);
+        LLVMValueRef pts[] = {zero, r};
+        gep = LLVMBuildInBoundsGEP(cb->builder, l, pts, 2, "idx");
+    }
+    else
+    {
+        gep = LLVMBuildInBoundsGEP(cb->builder, l, &r, 1, "idx");
     }
 
-    if(keepPointer)
+    if(keepPointer || (lt->type == ETArray && ((EagleArrayType *)lt)->of->type == ETArray))
         return gep;
 
     return LLVMBuildLoad(cb->builder, gep, "dereftmp");
@@ -421,7 +443,7 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
         return out;
     }
 
-    LLVMValueRef v = a->op != 'c' ? ac_dispatch_expression(a->val, cb) : ac_dispatch_expression_no_hide_impl(a->val, cb);
+    LLVMValueRef v = ac_dispatch_expression(a->val, cb);
 
     switch(a->op)
     {
@@ -489,15 +511,6 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
 }
 
 LLVMValueRef ac_dispatch_expression(AST *ast, CompilerBundle *cb)
-{
-    LLVMValueRef val = ac_dispatch_expression_no_hide_impl(ast, cb);
-    if(ast->resultantType->type == ETArray)
-        val = LLVMBuildStructGEP(cb->builder, val, 1, "arrrrrr");
-
-    return val;
-}
-
-LLVMValueRef ac_dispatch_expression_no_hide_impl(AST *ast, CompilerBundle *cb)
 {
     LLVMValueRef val = NULL;
     switch(ast->type)
@@ -685,11 +698,7 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
     LLVMValueRef args[ct];
     for(p = a->params, i = 0; p; p = p->next, i++)
     {
-        LLVMValueRef val;
-        if(ett->params[i]->type == ETArray)
-            val = ac_dispatch_expression_no_hide_impl(p, cb);
-        else
-            val = ac_dispatch_expression(p, cb);
+        LLVMValueRef val = ac_dispatch_expression(p, cb);
         EagleTypeType *rt = p->resultantType;
         if(!ett_are_same(rt, ett->params[i]))
             val = ac_build_conversion(cb->builder, val, rt, ett->params[i]);
@@ -843,6 +852,15 @@ LLVMValueRef ac_build_conversion(LLVMBuilderRef builder, LLVMValueRef val, Eagle
             if(ett_get_base_type(to) != ett_get_base_type(from))
                 die(-1, "Implicit pointer conversion invalid; pointer types are incompatible.");
 
+            return LLVMBuildBitCast(builder, val, ett_llvm_type(to), "ptrtmp");
+        }
+        case ETArray:
+        {
+            ett_debug_print(to);
+            if(to->type != ETPointer && to->type != ETArray)
+                die(-1, "Arrays may only be converted to equivalent pointers.");
+
+            //LLVMValueRef zero = LLVMConstInt(LLVMInt32Type(), 0, 0);
             return LLVMBuildBitCast(builder, val, ett_llvm_type(to), "ptrtmp");
         }
         case ETInt1:
@@ -1001,5 +1019,62 @@ LLVMValueRef ac_make_comp(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef 
             die(-1, "The given types may not be compared.");
             return NULL;
     }
+}
+
+void ac_unwrap_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty, int keepptr)
+{
+    EaglePointerType *pt = (EaglePointerType *)ty;
+    if(!pt->counted)
+        return;
+
+    LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, *ptr, 1, "unwrap");
+
+    if(keepptr)
+        *ptr = pos;
+    else
+        *ptr = LLVMBuildLoad(cb->builder, pos, "ptr");
+}
+
+void ac_incr_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty)
+{
+    LLVMBuilderRef builder = cb->builder;
+    EaglePointerType *pt = (EaglePointerType *)ty;
+    if(!pt->counted)
+        return;
+
+    LLVMValueRef pos = LLVMBuildStructGEP(builder, *ptr, 0, "ct");
+    LLVMValueRef ct = LLVMBuildLoad(builder, pos, "tct");
+    LLVMValueRef incr = LLVMBuildAdd(builder, ct, LLVMConstInt(LLVMInt64Type(), 1, 0), "sum");
+    LLVMBuildStore(builder, incr, pos);
+}
+
+void ac_decr_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty)
+{
+    LLVMBuilderRef builder = cb->builder;
+    EaglePointerType *pt = (EaglePointerType *)ty;
+    if(!pt->counted)
+        return;
+
+    LLVMValueRef pos = LLVMBuildStructGEP(builder, *ptr, 0, "ct");
+    LLVMValueRef ct = LLVMBuildLoad(builder, pos, "tct");
+    LLVMValueRef decr = LLVMBuildSub(builder, ct, LLVMConstInt(LLVMInt64Type(), 1, 0), "sub");
+    LLVMBuildStore(builder, decr, pos);
+
+    LLVMBasicBlockRef ib = LLVMAppendBasicBlock(cb->currentFunction, "if");
+    LLVMBasicBlockRef mb = LLVMAppendBasicBlock(cb->currentFunction, "merge");
+
+    LLVMValueRef cmp = LLVMBuildICmp(builder, LLVMIntEQ, decr, LLVMConstInt(LLVMInt64Type(), 0, 0), "icmp");
+    LLVMBuildCondBr(builder, cmp, ib, mb);
+
+    LLVMPositionBuilderAtEnd(builder, ib);
+    LLVMValueRef ptrpos = LLVMBuildStructGEP(builder, *ptr, 1, "unwrap");
+    LLVMValueRef pp = LLVMBuildLoad(builder, ptrpos, "load");
+    LLVMBuildFree(builder, pp);
+    pt->counted = 0;
+    LLVMBuildStore(builder, LLVMConstPointerNull(ett_llvm_type(ty)), ptrpos);
+    pt->counted = 1;
+    LLVMBuildBr(builder, mb);
+
+    LLVMPositionBuilderAtEnd(builder, mb);
 }
 

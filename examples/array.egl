@@ -1,24 +1,27 @@
-func testct(int[] nums) : void
-{
-    if countof nums > 1
-        puts nums[0]
-}
-
 func main() : int
 {
-    int[5] test
-    
-    test[1] = 11
+    int[5][10][30] i
+    i[1][2][15] = 100
 
-    puts test[1]
+    test(i)
 
-    int *loc = &test[1]
-    test[1] = 12
+    int *[2][2] j
+    j[1][1] = &i[1][2][15]
 
-    puts *loc
+    testtwo(j)
 
-    testct(test)
+    puts *j[1][1]
 
-    puts countof test
     return 0
 }
+
+func test(int[][10][30] j) : void
+{
+    puts j[1][2][15]
+}
+
+func testtwo(int *[][2] t) : void
+{
+    *t[1][1] = 200
+}
+
