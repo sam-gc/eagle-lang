@@ -4,7 +4,6 @@
 #include "ast_compiler.h"
 #include "variable_manager.h"
 #include "core/llvm_headers.h"
-#include "core/arraylist.h"
 
 #define IS_ANY_PTR(t) (t->type == ETPointer && ((EaglePointerType *)t)->to->type == ETAny)
 #define ALN (ast->lineno)
@@ -21,6 +20,7 @@ typedef struct {
 
     VarScopeStack *varScope;
     hashtable transients;
+    hashtable loadedTransients;
 } CompilerBundle;
 
 static inline LLVMValueRef ac_build_conversion(LLVMBuilderRef builder, LLVMValueRef val, EagleTypeType *from, EagleTypeType *to);
@@ -31,8 +31,10 @@ static inline LLVMValueRef ac_make_div(LLVMValueRef left, LLVMValueRef right, LL
 static inline LLVMValueRef ac_make_comp(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type, char comp);
 static inline void ac_unwrap_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty, int keepptr);
 static inline void ac_incr_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty);
+static inline void ac_incr_val_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty);
 static inline void ac_check_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty);
 static inline void ac_decr_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty);
+static inline void ac_decr_val_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty);
 
 LLVMValueRef ac_dispatch_expression(AST *ast, CompilerBundle *cb);
 void ac_dispatch_statement(AST *ast, CompilerBundle *cb);
@@ -189,7 +191,7 @@ LLVMValueRef ac_compile_new_decl(AST *ast, CompilerBundle *cb)
     
     LLVMTypeRef tys[2];
     tys[0] = LLVMInt64Type();
-    tys[1] = ett_llvm_type(type->etype), 0;
+    tys[1] = ett_llvm_type(type->etype);
     LLVMTypeRef tt = LLVMStructType(tys, 2, 0);
 
     LLVMValueRef mal = LLVMBuildMalloc(cb->builder, tt, "new");
@@ -314,20 +316,23 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb)
         r = ac_build_conversion(cb->builder, r, fromtype, totype);
 
     int transient = 0;
-    LLVMValueRef ptrPos;
+    LLVMValueRef ptrPos = NULL;
     if(a->resultantType->type == ETPointer)
     {
         ptrPos = pos;
         ac_decr_pointer(cb, &pos, totype);
 
-        if(hst_remove_key(&cb->transients, a->right, ahhd, ahed))
+        /*if(hst_remove_key(&cb->transients, a->right, ahhd, ahed))
+            transient = 1;*/
+        hst_remove_key(&cb->transients, a->right, ahhd, ahed);
+        if(hst_remove_key(&cb->loadedTransients, a->right, ahhd, ahed))
             transient = 1;
         //ac_unwrap_pointer(cb, &pos, totype, 1);
     }
 
     LLVMBuildStore(cb->builder, r, pos);
     
-    if(a->resultantType->type == ETPointer)
+    if(a->resultantType->type == ETPointer && !transient)
         ac_incr_pointer(cb, &ptrPos, totype);
 
     return LLVMBuildLoad(cb->builder, pos, "loadtmp");
@@ -607,6 +612,15 @@ LLVMValueRef ac_dispatch_expression(AST *ast, CompilerBundle *cb)
     return val;
 }
 
+void ac_decr_loaded_transients(void *key, void *val, void *data)
+{
+    CompilerBundle *cb = data;
+    AST *ast = key;
+    LLVMValueRef pos = val;
+
+    ac_decr_val_pointer(cb, &pos, ast->resultantType);
+}
+
 void ac_decr_transients(void *key, void *val, void *data)
 {
     CompilerBundle *cb = data;
@@ -652,8 +666,13 @@ void ac_dispatch_statement(AST *ast, CompilerBundle *cb)
     }
 
     hst_for_each(&cb->transients, ac_decr_transients, cb);
+    hst_for_each(&cb->loadedTransients, ac_decr_loaded_transients, cb);
+    
     hst_free(&cb->transients);
+    hst_free(&cb->loadedTransients);
+
     cb->transients = hst_create();
+    cb->loadedTransients = hst_create();
 }
 
 void ac_dispatch_declaration(AST *ast, CompilerBundle *cb)
@@ -750,6 +769,9 @@ int ac_compile_block(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
             if(!ett_are_same(t, o))
                 val = ac_build_conversion(cb->builder, val, t, o);
 
+            if(ET_IS_COUNTED(o))
+                ac_incr_val_pointer(cb, &val, o);
+
             vs_run_callbacks_through(cb->varScope, cb->currentFunctionScope);
 
             LLVMBuildRet(cb->builder, val);
@@ -787,10 +809,17 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
             val = ac_build_conversion(cb->builder, val, rt, ett->params[i]);
 
         hst_remove_key(&cb->transients, p, ahhd, ahed);
+        // hst_remove_key(&cb->loadedTransients, p, ahhd, ahed);
         args[i] = val;
     }
 
-    return LLVMBuildCall(cb->builder, func, args, ct, ett->retType->type == ETVoid ? "" : "callout");
+    LLVMValueRef out = LLVMBuildCall(cb->builder, func, args, ct, ett->retType->type == ETVoid ? "" : "callout");
+    if(ET_IS_COUNTED(ett->retType))
+    {
+        hst_put(&cb->loadedTransients, ast, out, ahhd, ahed);
+    }
+
+    return out;
 }
 
 void ac_compile_function(AST *ast, CompilerBundle *cb)
@@ -903,6 +932,7 @@ LLVMModuleRef ac_compile(AST *ast)
     cb.module = LLVMModuleCreateWithName("main-module");
     cb.builder = LLVMCreateBuilder();
     cb.transients = hst_create();
+    cb.loadedTransients = hst_create();
     
     VarScopeStack vs = vs_make();
     cb.varScope = &vs;
@@ -1130,6 +1160,20 @@ void ac_unwrap_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty,
     *ptr = pos;
 }
 
+void ac_incr_val_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty)
+{
+    LLVMBuilderRef builder = cb->builder;
+    EaglePointerType *pt = (EaglePointerType *)ty;
+    if(!pt->counted)
+        return;
+
+    LLVMValueRef tptr = *ptr;
+    tptr = LLVMBuildBitCast(builder, tptr, LLVMPointerType(LLVMInt64Type(), 0), "cast");
+    
+    LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_incr_ptr");
+    LLVMBuildCall(builder, func, &tptr, 1, ""); 
+}
+
 void ac_incr_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty)
 {
     LLVMBuilderRef builder = cb->builder;
@@ -1170,6 +1214,20 @@ void ac_check_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty)
     LLVMValueRef tptr = LLVMBuildBitCast(cb->builder, *ptr, LLVMPointerType(LLVMInt64Type(), 0), "");
     LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_check_ptr");
     LLVMBuildCall(cb->builder, func, &tptr, 1, "");
+}
+
+void ac_decr_val_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty)
+{
+    LLVMBuilderRef builder = cb->builder;
+    EaglePointerType *pt = (EaglePointerType *)ty;
+    if(!pt->counted)
+        return;
+
+    LLVMValueRef tptr = *ptr;
+    tptr = LLVMBuildBitCast(builder, tptr, LLVMPointerType(LLVMInt64Type(), 0), "cast");
+    
+    LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_decr_ptr");
+    LLVMBuildCall(builder, func, &tptr, 1, ""); 
 }
 
 void ac_decr_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty)

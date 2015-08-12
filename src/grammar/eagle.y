@@ -29,6 +29,7 @@
 %type <node> expr singexpr binexpr unexpr ounexpr
 
 %nonassoc TNEW;
+%nonassoc TCOUNTED;
 %right TEQUALS;
 %left TNOT;
 %left TEQ TNE TLT TGT TLTE TGTE
@@ -55,6 +56,7 @@ type                : TTYPE { $$ = ast_make_type($1); }
                     | type TMUL { $$ = ast_make_pointer($1); }
                     | type TLBRACKET TRBRACKET { $$ = ast_make_array($1, -1); }
                     | type TLBRACKET TINT TRBRACKET { $$ = ast_make_array($1, atoi($3)); }
+                    | TCOUNTED type { $$ = ast_make_counted($2); }
                     ;
 
 funcdecl            : funcident block { ((ASTFuncDecl *)$1)->body = $2; $$ = $1; };
@@ -101,8 +103,8 @@ ifstatement         : singif { $$ = $1; }
                     | singif elifblock { $$ = $1; ast_add_if($1, $2); }
                     | singif elifblock elsestatement { $$ = $1; ast_add_if($$, $2); ast_add_if($$, $3); };
 
-variabledecl        : type TIDENTIFIER { $$ = ast_make_var_decl($1, $2); }
-                    | TCOUNTED type TIDENTIFIER { $$ = ast_make_var_decl($2, $3); ast_set_counted($$); };
+variabledecl        : type TIDENTIFIER { $$ = ast_make_var_decl($1, $2); };
+                    /*| TCOUNTED type TIDENTIFIER { $$ = ast_make_var_decl($2, $3); ast_set_counted($$); };*/
 
 funccall            : ounexpr TLPAREN TRPAREN { $$ = ast_make_func_call($1, NULL); }
                     | ounexpr TLPAREN calllist TRPAREN { $$ = ast_make_func_call($1, $3); };

@@ -4,12 +4,39 @@ func test(counted int *a) : void
     puts *a
 }
 
+func creation(int ct) : void
+{
+    if ct {
+        counted int *t = new int
+        *t = ct
+        puts *t
+        creation(*t - 1)
+    }
+}
+
 func rettest() : counted int *
 {
-    counted int *heyo = new int
-    *heyo = 101
+    counted int *a = new int
+    *a = 101
+    return a
+}
 
-    return heyo
+func otest(counted int *a) : counted int *
+{
+    *a = 11
+    return a
+}
+
+func ptest() : void
+{
+    counted int *a = new int
+    counted int *b = otest(a)
+    puts *b
+
+    b = otest(new int)
+    puts *b
+
+    otest(new int)
 }
 
 func main() : int
@@ -18,6 +45,13 @@ func main() : int
     test(t)
     test(new int)
 
-    rettest()
+    creation(1000)
+
+    puts *rettest()
+
+    counted int *o = rettest()
+
+    test(rettest())
+    ptest()
     return 0
 }
