@@ -73,6 +73,7 @@ semi (";"|";"{whitechar}*"\n")
 "sizeof"    DISCARD_NL; return SET(TSIZEOF);
 "countof"   DISCARD_NL; return SET(TCOUNTOF);
 "counted"   DISCARD_NL; return SET(TCOUNTED);
+"new"       DISCARD_NL; return SET(TNEW);
 "if"        DISCARD_NL; return SET(TIF);
 "elif"      DISCARD_NL; return SET(TELIF);
 "else"      DISCARD_NL; return SET(TELSE);

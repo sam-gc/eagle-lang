@@ -79,8 +79,8 @@ LLVMTypeRef ett_llvm_type(EagleTypeType *type)
             {
                 LLVMTypeRef tys[2];
                 tys[0] = LLVMInt64Type();
-                tys[1] = LLVMPointerType(ett_llvm_type(pt->to), 0);
-                return LLVMStructType(tys, 2, 0);
+                tys[1] = ett_llvm_type(pt->to);
+                return LLVMPointerType(LLVMStructType(tys, 2, 0), 0);
             }
             return LLVMPointerType(ett_llvm_type(((EaglePointerType *)type)->to), 0);
         }

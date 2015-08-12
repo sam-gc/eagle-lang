@@ -24,7 +24,8 @@ typedef enum {
     AIDENT,
     AIF,
     ACAST,
-    ATYPE
+    ATYPE,
+    AALLOC
 } ASTType;
 
 typedef struct AST {
@@ -136,6 +137,7 @@ AST *ast_make();
 void ast_append(AST *old, AST *n);
 AST *ast_make_binary(AST *left, AST *right, char op);
 AST *ast_make_unary(AST *val, char op);
+AST *ast_make_allocater(char op, AST *val);
 AST *ast_make_bool(int i);
 AST *ast_make_nil();
 AST *ast_make_int32(char *text);
@@ -148,6 +150,7 @@ void ast_set_counted(AST *ast);
 AST *ast_make_arr_decl(AST *type, char *ident, AST *expr);
 AST *ast_make_type(char *type);
 AST *ast_make_pointer(AST *ast);
+AST *ast_make_counted(AST *ast);
 AST *ast_make_array(AST *ast, int ct);
 AST *ast_make_if(AST *test, AST *block);
 AST *ast_make_cast(AST *type, AST *val);

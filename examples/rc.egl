@@ -1,0 +1,23 @@
+func test(counted int *a) : void
+{
+    *a = 32
+    puts *a
+}
+
+func rettest() : counted int *
+{
+    counted int *heyo = new int
+    *heyo = 101
+
+    return heyo
+}
+
+func main() : int
+{
+    counted int *t = new int
+    test(t)
+    test(new int)
+
+    rettest()
+    return 0
+}

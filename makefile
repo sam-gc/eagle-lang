@@ -45,3 +45,10 @@ obj/grammar/%.o: src/grammar/%.c
 	$(MKDIR) obj/grammar/
 	$(CC) $(CFLAGS) -c -o $@ $<
 
+rc.o: rc.c
+	$(CC) -c rc.c -o rc.o
+
+prog: out.ll rc.o
+	llc out.ll
+	$(CC) out.s rc.o -g
+

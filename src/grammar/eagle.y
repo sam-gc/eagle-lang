@@ -17,7 +17,7 @@
     AST *node;
 }
 
-%token <string> TIDENTIFIER TINT TDOUBLE TTYPE TCOUNTED
+%token <string> TIDENTIFIER TINT TDOUBLE TTYPE TCOUNTED TNEW
 %token <token> TPLUS TMINUS TEQUALS TMUL TDIV TGT TLT TEQ TNE TGTE TLTE TNOT
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TLBRACKET TRBRACKET
 %token <token> TFUNC TRETURN TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF
@@ -28,6 +28,7 @@
 %type <node> elifstatement elifblock elsestatement singif 
 %type <node> expr singexpr binexpr unexpr ounexpr
 
+%nonassoc TNEW;
 %right TEQUALS;
 %left TNOT;
 %left TEQ TNE TLT TGT TLTE TGTE
@@ -114,6 +115,7 @@ expr                : binexpr { $$ = $1; }
                     | singexpr { $$ = $1; }
                     | variabledecl { $$ = $1; }
                     | type TAT ounexpr { $$ = ast_make_cast($1, $3); }
+                    | TNEW type { $$ = ast_make_allocater('n', $2); }
                     ;
 
 binexpr             : expr TPLUS expr { $$ = ast_make_binary($1, $3, '+'); }

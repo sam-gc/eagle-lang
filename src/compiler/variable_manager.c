@@ -74,10 +74,61 @@ void vs_put(VarScopeStack *vs, char *ident, LLVMValueRef val, EagleTypeType *typ
     VarBundle *vb = malloc(sizeof(VarBundle));
     vb->type = type;
     vb->value = val;
+    vb->scopeCallback = NULL;
+    vb->scopeData = NULL;
 
     VarScope *s = vs->scope;
 
     hst_put(&s->table, ident, vb, NULL, NULL);
     pool_add(&vs->pool, vb);
+}
+
+void vs_add_callback(VarScopeStack *vs, char *ident, LostScopeCallback callback, void *data)
+{
+    VarScope *s = vs->scope;
+    VarBundle *vb = hst_get(&s->table, ident, NULL, NULL);
+    if(!vb)
+        return;
+    
+    vb->scopeCallback = callback;
+    vb->scopeData = data;
+}
+
+void vs_callback_callback(void *key, void *val, void *data)
+{
+    VarBundle *vb = val;
+    if(vb->scopeCallback)
+    {
+        vb->scopeCallback(vb->value, vb->type, vb->scopeData);
+    }
+}
+
+void vs_run_callbacks(VarScopeStack *vs, VarScope *targ, int through)
+{
+    VarScope *scope;
+    for(scope = vs->scope; scope && scope != targ; scope = scope->next)
+    {
+        hst_for_each(&scope->table, vs_callback_callback, NULL);
+    }
+
+    if(scope && through)
+    {
+        hst_for_each(&scope->table, vs_callback_callback, NULL);
+    }
+}
+
+void vs_run_callbacks_through(VarScopeStack *vs, VarScope *targ)
+{
+    vs_run_callbacks(vs, targ, 1);
+}
+
+void vs_run_callbacks_to(VarScopeStack *vs, VarScope *targ)
+{
+    vs_run_callbacks(vs, targ, 0);
+}
+
+VarScope *vs_current(VarScopeStack *vs)
+{
+    return vs->scope;
 }
 

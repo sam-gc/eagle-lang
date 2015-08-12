@@ -71,6 +71,13 @@ AST *ast_make_unary(AST *val, char op)
     return (AST *)ast;
 }
 
+AST *ast_make_allocater(char op, AST *val)
+{
+    AST *ast = ast_make_unary(val, op);
+    ast->type = AALLOC;
+    return ast;
+}
+
 AST *ast_make_bool(int i)
 {
     ASTValue *ast = ast_malloc(sizeof(ASTValue));
@@ -185,6 +192,18 @@ AST *ast_make_pointer(AST *ast)
     if(a->etype->type == ETVoid)
         die(a->lineno, "Cannot declare void pointer type. Use an any-pointer instead (any *).");
     a->etype = ett_pointer_type(a->etype);
+
+    return ast;
+}
+
+AST *ast_make_counted(AST *ast)
+{
+    ASTTypeDecl *a = (ASTTypeDecl *)ast;
+
+    if(a->etype->type != ETPointer)
+        die(a->lineno, "Only pointer types may be counted.");
+    EaglePointerType *ep = (EaglePointerType *)a->etype;
+    ep->counted = 1;
 
     return ast;
 }

@@ -6,9 +6,13 @@
 #include "core/llvm_headers.h"
 #include "core/types.h"
 
+typedef void(*LostScopeCallback)(LLVMValueRef, EagleTypeType *, void *);
+
 typedef struct {
     LLVMValueRef value;
     EagleTypeType *type;
+    LostScopeCallback scopeCallback;
+    void *scopeData;
 } VarBundle;
 
 typedef struct VarScope {
@@ -30,5 +34,10 @@ void vs_put_global(VarScopeStack *vs, char *ident, LLVMValueRef val, EagleTypeTy
 VarBundle *vs_get_global(VarScopeStack *vs, char *ident);
 void vs_push(VarScopeStack *vs);
 void vs_pop(VarScopeStack *vs);
+
+void vs_add_callback(VarScopeStack *vs, char *ident, LostScopeCallback callback, void *data);
+void vs_run_callbacks_through(VarScopeStack *vs, VarScope *scope);
+void vs_run_callbacks_to(VarScopeStack *vs, VarScope *targ);
+VarScope *vs_current(VarScopeStack *vs);
 
 #endif
