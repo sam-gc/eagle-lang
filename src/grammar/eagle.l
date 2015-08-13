@@ -76,6 +76,7 @@ semi (";"|";"{whitechar}*"\n")
 "counted"   DISCARD_NL; return SET(TCOUNTED);
 "new"       DISCARD_NL; return SET(TNEW);
 "if"        DISCARD_NL; return SET(TIF);
+"for"       DISCARD_NL; return SET(TFOR);
 "elif"      DISCARD_NL; return SET(TELIF);
 "else"      DISCARD_NL; return SET(TELSE);
 "yes"       SAVE_NL; return SET(TYES);

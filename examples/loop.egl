@@ -1,0 +1,14 @@
+func main() : int {
+    for int i = 0; i < 100; i = i + 1 {
+        puts i
+    }
+
+    for int ^i = new int; *i < 50; *i = *i + 1 {
+        int ^tmp = new int
+        *tmp = *i
+        i = tmp
+        puts *i
+    }
+
+    return 0
+}

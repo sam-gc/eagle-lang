@@ -191,6 +191,16 @@ AST *ast_make_pointer(AST *ast)
 
     if(a->etype->type == ETVoid)
         die(a->lineno, "Cannot declare void pointer type. Use an any-pointer instead (any *).");
+
+    /*
+    if(a->etype->type == ETPointer)
+    {
+        EaglePointerType *pt = (EaglePointerType *)a->etype;
+        for(; pt->to->type == ETPointer; pt = (EaglePointerType *)pt->to);
+        pt->to = ett_pointer_type(pt->to);
+        return ast;
+    }
+    */
     a->etype = ett_pointer_type(a->etype);
 
     return ast;
@@ -232,6 +242,19 @@ AST *ast_make_if(AST *test, AST *block)
     ast->test = test;
     ast->block = block;
     ast->ifNext = NULL;
+
+    return (AST *)ast;
+}
+
+AST *ast_make_loop(AST *setup, AST *test, AST *update, AST *block)
+{
+    ASTLoopBlock *ast = ast_malloc(sizeof(ASTLoopBlock));
+    ast->type = ALOOP;
+
+    ast->setup = setup;
+    ast->test = test;
+    ast->update = update;
+    ast->block = block;
 
     return (AST *)ast;
 }

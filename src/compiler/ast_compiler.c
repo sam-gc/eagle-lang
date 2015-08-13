@@ -45,6 +45,7 @@ void ac_dispatch_declaration(AST *ast, CompilerBundle *cb);
 void ac_compile_function(AST *ast, CompilerBundle *cb);
 int ac_compile_block(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb);
 void ac_compile_if(AST *ast, CompilerBundle *cb, LLVMBasicBlockRef mergeBB);
+void ac_compile_loop(AST *ast, CompilerBundle *cb);
 LLVMValueRef ac_compile_index(AST *ast, int keepPointer, CompilerBundle *cb);
 LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb);
 
@@ -669,6 +670,9 @@ void ac_dispatch_statement(AST *ast, CompilerBundle *cb)
         case AIF:
             ac_compile_if(ast, cb, NULL);
             break;
+        case ALOOP:
+            ac_compile_loop(ast, cb);
+            break;
         case ACAST:
             ac_compile_cast(ast, cb);
             break;
@@ -702,26 +706,68 @@ void ac_dispatch_declaration(AST *ast, CompilerBundle *cb)
     }
 }
 
+LLVMValueRef ac_compile_test(AST *res, LLVMValueRef val, CompilerBundle *cb)
+{
+    LLVMValueRef cmp = NULL;
+    if(res->resultantType->type == ETInt1)
+        cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstInt(LLVMInt1Type(), 0, 0), "cmp");
+    else if(res->resultantType->type == ETInt8)
+        cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstInt(LLVMInt8Type(), 0, 0), "cmp");
+    else if(res->resultantType->type == ETInt32)
+        cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstInt(LLVMInt32Type(), 0, 0), "cmp");
+    else if(res->resultantType->type == ETInt64)
+        cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstInt(LLVMInt64Type(), 0, 0), "cmp");
+    else if(res->resultantType->type == ETDouble)
+        cmp = LLVMBuildFCmp(cb->builder, LLVMRealONE, val, LLVMConstReal(LLVMDoubleType(), 0.0), "cmp");
+    else if(res->resultantType->type == ETPointer)
+        cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstPointerNull(ett_llvm_type(res->resultantType)), "cmp");
+    else
+        die(LN(res), "Cannot test against given type.");
+    return cmp;
+}
+
+void ac_compile_loop(AST *ast, CompilerBundle *cb)
+{
+    ASTLoopBlock *a = (ASTLoopBlock *)ast;
+    LLVMBasicBlockRef testBB = LLVMAppendBasicBlock(cb->currentFunction, "test");
+    LLVMBasicBlockRef loopBB = LLVMAppendBasicBlock(cb->currentFunction, "loop");
+    LLVMBasicBlockRef mergeBB = LLVMAppendBasicBlock(cb->currentFunction, "merge");
+
+    vs_push(cb->varScope);
+    if(a->setup)
+        ac_dispatch_expression(a->setup, cb);
+    vs_push(cb->varScope);
+    LLVMBuildBr(cb->builder, testBB);
+    LLVMPositionBuilderAtEnd(cb->builder, testBB);
+    LLVMValueRef val = ac_dispatch_expression(a->test, cb);
+    LLVMValueRef cmp = ac_compile_test(a->test, val, cb);
+
+    LLVMBuildCondBr(cb->builder, cmp, loopBB, mergeBB);
+    LLVMPositionBuilderAtEnd(cb->builder, loopBB);
+
+    if(!ac_compile_block(a->block, loopBB, cb))
+    {
+        if(a->update)
+            ac_dispatch_expression(a->update, cb);
+        vs_run_callbacks_through(cb->varScope, cb->varScope->scope);
+        vs_pop(cb->varScope);
+        LLVMBuildBr(cb->builder, testBB);
+    }
+
+    LLVMBasicBlockRef last = LLVMGetLastBasicBlock(cb->currentFunction);
+    LLVMMoveBasicBlockAfter(mergeBB, last);
+
+    LLVMPositionBuilderAtEnd(cb->builder, mergeBB);
+    vs_run_callbacks_through(cb->varScope, cb->varScope->scope);
+    vs_pop(cb->varScope);
+}
+
 void ac_compile_if(AST *ast, CompilerBundle *cb, LLVMBasicBlockRef mergeBB)
 {
     ASTIfBlock *a = (ASTIfBlock *)ast;
     LLVMValueRef val = ac_dispatch_expression(a->test, cb);
 
-    LLVMValueRef cmp = NULL;
-    if(a->test->resultantType->type == ETInt1)
-        cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstInt(LLVMInt1Type(), 0, 0), "cmp");
-    else if(a->test->resultantType->type == ETInt8)
-        cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstInt(LLVMInt8Type(), 0, 0), "cmp");
-    else if(a->test->resultantType->type == ETInt32)
-        cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstInt(LLVMInt32Type(), 0, 0), "cmp");
-    else if(a->test->resultantType->type == ETInt64)
-        cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstInt(LLVMInt64Type(), 0, 0), "cmp");
-    else if(a->test->resultantType->type == ETDouble)
-        cmp = LLVMBuildFCmp(cb->builder, LLVMRealONE, val, LLVMConstReal(LLVMDoubleType(), 0.0), "cmp");
-    else if(a->test->resultantType->type == ETPointer)
-        cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstPointerNull(ett_llvm_type(a->test->resultantType)), "cmp");
-    else
-        die(ALN, "Cannot test against given type.");
+    LLVMValueRef cmp = ac_compile_test(a->test, val, cb);
 
     int multiBlock = a->ifNext && ((ASTIfBlock *)a->ifNext)->test;
     int threeBlock = !!a->ifNext && !multiBlock;

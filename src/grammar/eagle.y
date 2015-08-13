@@ -20,13 +20,13 @@
 %token <string> TIDENTIFIER TINT TDOUBLE TTYPE TCOUNTED TNEW
 %token <token> TPLUS TMINUS TEQUALS TMUL TDIV TGT TLT TEQ TNE TGTE TLTE TNOT TPOW
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TLBRACKET TRBRACKET
-%token <token> TFUNC TRETURN TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF
+%token <token> TFUNC TRETURN TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF TFOR
 %token <token> TCOLON TSEMI TNEWLINE TCOMMA TAMP TAT
 %token <token> TYES TNO TNIL
 %type <node> program declarations declaration statements statement block funcdecl ifstatement
 %type <node> variabledecl vardecllist funccall calllist funcident funcsident externdecl typelist type
 %type <node> elifstatement elifblock elsestatement singif 
-%type <node> expr singexpr binexpr unexpr ounexpr
+%type <node> expr singexpr binexpr unexpr ounexpr forstatement
 
 %nonassoc TNEW;
 %nonassoc TCOUNTED;
@@ -85,7 +85,13 @@ statement           : expr TSEMI { $$ = $1; }
                     | TRETURN expr TSEMI { $$ = ast_make_unary($2, 'r'); }
                     | TPUTS expr TSEMI { $$ = ast_make_unary($2, 'p'); }
                     | TSEMI { $$ = NULL; }
-                    | ifstatement { $$ = $1; };
+                    | ifstatement { $$ = $1; }
+                    | forstatement { $$ = $1; }
+                    ;
+
+forstatement        : TFOR expr block { $$ = ast_make_loop(NULL, $2, NULL, $3); }
+                    | TFOR expr TSEMI expr TSEMI expr block { $$ = ast_make_loop($2, $4, $6, $7); }
+                    ;
 
 singif              : TIF expr TSEMI statement { $$ = ast_make_if($2, $4); }
                     | TIF expr block { $$ = ast_make_if($2, $3); };

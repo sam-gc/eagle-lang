@@ -23,6 +23,7 @@ typedef enum {
     AVARDECL,
     AIDENT,
     AIF,
+    ALOOP,
     ACAST,
     ATYPE,
     AALLOC
@@ -127,6 +128,17 @@ typedef struct {
     ASTType type;
     EagleTypeType *resultantType;
     struct AST *next;
+
+    struct AST *setup;
+    struct AST *test;
+    struct AST *update;
+    struct AST *block;
+} ASTLoopBlock;
+
+typedef struct {
+    ASTType type;
+    EagleTypeType *resultantType;
+    struct AST *next;
     long lineno;
 
     struct AST *etype;
@@ -153,6 +165,7 @@ AST *ast_make_pointer(AST *ast);
 AST *ast_make_counted(AST *ast);
 AST *ast_make_array(AST *ast, int ct);
 AST *ast_make_if(AST *test, AST *block);
+AST *ast_make_loop(AST *setup, AST *test, AST *update, AST *block);
 AST *ast_make_cast(AST *type, AST *val);
 void ast_add_if(AST *ast, AST *next);
 
