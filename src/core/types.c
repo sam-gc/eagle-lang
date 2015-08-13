@@ -249,3 +249,22 @@ void ett_debug_print(EagleTypeType *t)
     return;
 }
 
+int ett_array_has_counted(EagleTypeType *t)
+{
+    EagleArrayType *at = (EagleArrayType *)t;
+    if(at->type == ETArray && at->ct > 0)
+        return ett_array_has_counted(at->of);
+
+    EaglePointerType *pt = (EaglePointerType *)t;
+    return pt->type == ETPointer && pt->counted;
+}
+
+int ett_array_count(EagleTypeType *t)
+{
+    EagleArrayType *at = (EagleArrayType *)t;
+    if(at->type == ETArray && at->ct > 0)
+        return at->ct * ett_array_count(at->of);
+
+    return 1;
+}
+

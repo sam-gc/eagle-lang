@@ -35,6 +35,8 @@ static inline void ac_incr_val_pointer(CompilerBundle *cb, LLVMValueRef *ptr, Ea
 static inline void ac_check_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty);
 static inline void ac_decr_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty);
 static inline void ac_decr_val_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty);
+static inline void ac_decr_in_array(CompilerBundle *cb, LLVMValueRef arr, int ct);
+static inline void ac_nil_fill_array(CompilerBundle *cb, LLVMValueRef arr, int ct);
 
 LLVMValueRef ac_dispatch_expression(AST *ast, CompilerBundle *cb);
 void ac_dispatch_statement(AST *ast, CompilerBundle *cb);
@@ -138,6 +140,12 @@ void ac_scope_leave_callback(LLVMValueRef pos, EagleTypeType *ty, void *data)
     ac_decr_pointer(cb, &pos, ty);
 }
 
+void ac_scope_leave_array_callback(LLVMValueRef pos, EagleTypeType *ty, void *data)
+{
+    CompilerBundle *cb = data;
+    ac_decr_in_array(cb, pos, ett_array_count(ty));
+}
+
 LLVMValueRef ac_compile_var_decl(AST *ast, CompilerBundle *cb)
 {
     ASTVarDecl *a = (ASTVarDecl *)ast;
@@ -175,6 +183,12 @@ LLVMValueRef ac_compile_var_decl(AST *ast, CompilerBundle *cb)
     {
         LLVMBuildStore(cb->builder, LLVMConstPointerNull(ett_llvm_type(type->etype)), pos);
         vs_add_callback(cb->varScope, a->ident, ac_scope_leave_callback, cb);
+    }
+
+    if(type->etype->type == ETArray && ett_array_has_counted(type->etype))
+    {
+        ac_nil_fill_array(cb, pos, ett_array_count(type->etype));
+        vs_add_callback(cb->varScope, a->ident, ac_scope_leave_array_callback, cb);
     }
 
     ast->resultantType = type->etype;
@@ -867,7 +881,8 @@ void ac_compile_function(AST *ast, CompilerBundle *cb)
         {
             LLVMValueRef pos = ac_compile_var_decl(p, cb);
             LLVMBuildStore(cb->builder, LLVMGetParam(func, i), pos);
-            ac_incr_pointer(cb, &pos, eparam_types[i]);
+            if(ET_IS_COUNTED(eparam_types[i]))
+                ac_incr_pointer(cb, &pos, eparam_types[i]);
         }
     }
 
@@ -896,6 +911,13 @@ void ac_prepare_module(LLVMModuleRef module)
     LLVMAddFunction(module, "__egl_decr_ptr", func_type_rc);
     LLVMAddFunction(module, "__egl_check_ptr", func_type_rc);
 
+    LLVMTypeRef param_types_arr1[] = {LLVMPointerType(LLVMInt8Type(), 0), LLVMInt64Type()};
+    func_type_rc = LLVMFunctionType(LLVMVoidType(), param_types_arr1, 2, 0);
+    LLVMAddFunction(module, "__egl_array_fill_nil", func_type_rc);
+
+    param_types_arr1[0] = LLVMPointerType(LLVMPointerType(LLVMInt8Type(), 0), 0);
+    func_type_rc = LLVMFunctionType(LLVMVoidType(), param_types_arr1, 2, 0);
+    LLVMAddFunction(module, "__egl_array_decr_ptrs", func_type_rc);
 }
 
 void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
@@ -1228,6 +1250,26 @@ void ac_decr_val_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *t
     
     LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_decr_ptr");
     LLVMBuildCall(builder, func, &tptr, 1, ""); 
+}
+
+void ac_nil_fill_array(CompilerBundle *cb, LLVMValueRef arr, int ct)
+{
+    LLVMBuilderRef builder = cb->builder;
+    arr = LLVMBuildBitCast(builder, arr, LLVMPointerType(LLVMInt8Type(), 0), "");
+
+    LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_array_fill_nil");
+    LLVMValueRef vals[] = {arr, LLVMConstInt(LLVMInt64Type(), ct, 0)};
+    LLVMBuildCall(builder, func, vals, 2, "");
+}
+
+void ac_decr_in_array(CompilerBundle *cb, LLVMValueRef arr, int ct)
+{
+    LLVMBuilderRef builder = cb->builder;
+    arr = LLVMBuildBitCast(builder, arr, LLVMPointerType(LLVMPointerType(LLVMInt8Type(), 0), 0), "");
+
+    LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_array_decr_ptrs");
+    LLVMValueRef vals[] = {arr, LLVMConstInt(LLVMInt64Type(), ct, 0)};
+    LLVMBuildCall(builder, func, vals, 2, "");
 }
 
 void ac_decr_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty)

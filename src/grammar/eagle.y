@@ -18,7 +18,7 @@
 }
 
 %token <string> TIDENTIFIER TINT TDOUBLE TTYPE TCOUNTED TNEW
-%token <token> TPLUS TMINUS TEQUALS TMUL TDIV TGT TLT TEQ TNE TGTE TLTE TNOT
+%token <token> TPLUS TMINUS TEQUALS TMUL TDIV TGT TLT TEQ TNE TGTE TLTE TNOT TPOW
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TLBRACKET TRBRACKET
 %token <token> TFUNC TRETURN TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF
 %token <token> TCOLON TSEMI TNEWLINE TCOMMA TAMP TAT
@@ -34,7 +34,7 @@
 %left TNOT;
 %left TEQ TNE TLT TGT TLTE TGTE
 %left TPLUS TMINUS;
-%left TMUL TDIV;
+%left TMUL TDIV TPOW;
 %left TAT TAMP;
 %nonassoc TSIZEOF TCOUNTOF;
 %right TLBRACKET TRBRACKET;
@@ -57,6 +57,7 @@ type                : TTYPE { $$ = ast_make_type($1); }
                     | type TLBRACKET TRBRACKET { $$ = ast_make_array($1, -1); }
                     | type TLBRACKET TINT TRBRACKET { $$ = ast_make_array($1, atoi($3)); }
                     | TCOUNTED type { $$ = ast_make_counted($2); }
+                    | type TPOW { $$ = ast_make_counted(ast_make_pointer($1)); }
                     ;
 
 funcdecl            : funcident block { ((ASTFuncDecl *)$1)->body = $2; $$ = $1; };

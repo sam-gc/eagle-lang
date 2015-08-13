@@ -1,0 +1,53 @@
+func main() : int {
+    int ^[10] nums
+    nums[0] = new int
+    nums[2] = new int
+
+    *nums[0] = 5
+    *nums[2] = 11
+
+    puts *nums[0]
+    puts *nums[2]
+
+    arr_test(nums)
+
+    nums[0] = nil
+    nums[2] = new int
+
+    set_zeroes(nums, 10)
+
+    puts *nums[7]
+
+    ptr_test(&nums[7])
+    puts *nums[7]
+
+    return 0
+}
+
+func ptr_test(int ^*num) : void
+{
+    *num = new int
+    **num = 101
+}
+
+func set_zeroes(int ^*nums, int count) : void
+{
+    if count > 1 {
+        nums[0] = new int
+        *nums[0] = 35
+        set_zeroes(nums + 1, count - 1)
+    }
+}
+
+func arr_test(int ^[] nums) : void
+{
+    puts *nums[0]
+    nums[1] = new int
+    *nums[1] = 62
+    puts *nums[1]
+
+    int ^[2] arrrr
+    arrrr[0] = nums[0]
+    arrrr[1] = nums[1]
+}
+

@@ -47,6 +47,7 @@ semi (";"|";"{whitechar}*"\n")
 "-"         DISCARD_NL; return SET(TMINUS);
 "*"         DISCARD_NL; return SET(TMUL);
 "/"         DISCARD_NL; return SET(TDIV);
+"^"         DISCARD_NL; return SET(TPOW);
 ">"         DISCARD_NL; return SET(TGT);
 ">="        DISCARD_NL; return SET(TGTE);
 "=="        DISCARD_NL; return SET(TEQ);

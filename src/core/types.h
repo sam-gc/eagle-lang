@@ -70,6 +70,8 @@ int ett_are_same(EagleTypeType *left, EagleTypeType *right);
 int ett_pointer_depth(EagleTypeType *t);
 int ett_is_numeric(EagleTypeType *t);
 int ett_size_of_type(EagleTypeType *t);
+int ett_array_has_counted(EagleTypeType *t);
+int ett_array_count(EagleTypeType *t);
 
 void ett_debug_print(EagleTypeType *t);
 
