@@ -997,7 +997,7 @@ void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
 LLVMModuleRef ac_compile(AST *ast)
 {
     CompilerBundle cb;
-    cb.module = LLVMModuleCreateWithName("main-module");
+    cb.module = LLVMModuleCreateWithNameInContext("main-module", LLVMGetGlobalContext());
     cb.builder = LLVMCreateBuilder();
     cb.transients = hst_create();
     cb.loadedTransients = hst_create();
@@ -1008,6 +1008,15 @@ LLVMModuleRef ac_compile(AST *ast)
     vs_push(cb.varScope);
 
     ac_prepare_module(cb.module);
+    the_module = cb.module;
+    /*
+    LLVMTypeRef st = LLVMStructCreateNamed(LLVMGetGlobalContext(), "teststruct");
+    LLVMTypeRef ty = LLVMInt64Type();
+    LLVMStructSetBody(st, &ty, 1, 0);
+    */
+
+    LLVMTypeRef tt= LLVMGetTypeByName(cb.module, "teststruct");
+    printf("%p\n", tt);
 
     AST *old = ast;
     for(; ast; ast = ast->next)

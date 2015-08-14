@@ -69,6 +69,7 @@ semi (";"|";"{whitechar}*"\n")
 "["         DISCARD_NL; return SET(TLBRACKET);
 "]"         SAVE_NL; return SET(TRBRACKET);
 "return"    DISCARD_NL; return SET(TRETURN);
+"struct"    DISCARD_NL; return SET(TSTRUCT);
 "puts"      DISCARD_NL; return SET(TPUTS);
 "extern"    DISCARD_NL; OVERRIDE; return SET(TEXTERN);
 "sizeof"    DISCARD_NL; return SET(TSIZEOF);
@@ -89,5 +90,5 @@ semi (";"|";"{whitechar}*"\n")
 "double"    { SAVE_NL; SAVE_TOKEN; return TTYPE; }
 "void"      { SAVE_NL; SAVE_TOKEN; return TTYPE; }
 "any"       { SAVE_NL; SAVE_TOKEN; return TTYPE; }
-{alpha}       { SAVE_NL; SAVE_TOKEN; return TIDENTIFIER; }
+{alpha}       { SAVE_NL; SAVE_TOKEN; return ty_is_name(yytext) ? TTYPE : TIDENTIFIER; }
 %%

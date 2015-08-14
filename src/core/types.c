@@ -8,11 +8,14 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include "hashtable.h"
 #include "types.h"
 
 #define TTEST(t, targ, out) if(!strcmp(t, targ)) return ett_base_type(out)
 #define ETEST(t, a, b) if(a == b) return t
+#define PLACEHOLDER ((void *)1)
 
+LLVMModuleRef the_module = NULL;
 LLVMTargetDataRef etTargetData = NULL;
 
 EagleTypeType *et_parse_string(char *text)
@@ -72,6 +75,22 @@ LLVMTypeRef ett_llvm_type(EagleTypeType *type)
             return LLVMInt32Type();
         case ETInt64:
             return LLVMInt64Type();
+        case ETStruct:
+        {
+            EagleStructType *st = (EagleStructType *)type;
+            LLVMTypeRef loaded = LLVMGetTypeByName(the_module, st->name);
+            if(loaded)
+                return loaded;
+
+            loaded = LLVMStructCreateNamed(LLVMGetGlobalContext(), st->name);
+
+            LLVMTypeRef *tys = malloc(sizeof(LLVMTypeRef) * st->names.count);
+            int i;
+            for(i = 0; i < st->names.count; i++)
+                tys[i] = arr_get(&st->names, i);
+            LLVMStructSetBody(loaded, tys, st->names.count, 0);
+           // LLVMTypeRef ty = LLVMStructType(
+        }
         case ETPointer:
         {
             EaglePointerType *pt = (EaglePointerType *)type;
@@ -145,6 +164,24 @@ EagleTypeType *ett_function_type(EagleTypeType *retVal, EagleTypeType **params, 
     ett->pct = pct;
 
     return (EagleTypeType *)ett;
+}
+
+EagleTypeType *ett_struct_type(char *name)
+{
+    EagleStructType *ett = malloc(sizeof(EagleStructType));
+    ett->type = ETStruct;
+    ett->types = arr_create(10);
+    ett->names = arr_create(10);
+    ett->name = name;
+
+    return (EagleTypeType *)ett;
+}
+
+void ett_struct_add(EagleTypeType *ett, EagleTypeType *ty, char *name)
+{
+    EagleStructType *e = (EagleStructType *)ett;
+    arr_append(&e->types, ty);
+    arr_append(&e->names, name);
 }
 
 EagleType ett_get_base_type(EagleTypeType *type)
@@ -266,5 +303,27 @@ int ett_array_count(EagleTypeType *t)
         return at->ct * ett_array_count(at->of);
 
     return 1;
+}
+
+static hashtable name_table;
+void ty_prepare_name_lookup()
+{
+    name_table = hst_create();
+    name_table.duplicate_keys = 1;
+}
+
+void ty_add_name(char *name)
+{
+    hst_put(&name_table, name, PLACEHOLDER, NULL, NULL);
+}
+
+int ty_is_name(char *name)
+{
+    return (int)hst_get(&name_table, name, NULL, NULL);
+}
+
+void ty_teardown_name_lookup()
+{
+    hst_free(&name_table);
 }
 

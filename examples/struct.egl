@@ -1,0 +1,7 @@
+struct Test {
+    int x
+    int y
+    double *z
+    Test ^t; int[10] f
+}
+

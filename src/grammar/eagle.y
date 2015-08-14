@@ -17,7 +17,7 @@
     AST *node;
 }
 
-%token <string> TIDENTIFIER TINT TDOUBLE TTYPE TCOUNTED TNEW
+%token <string> TIDENTIFIER TINT TDOUBLE TTYPE TCOUNTED TNEW TSTRUCT
 %token <token> TPLUS TMINUS TEQUALS TMUL TDIV TGT TLT TEQ TNE TGTE TLTE TNOT TPOW
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TLBRACKET TRBRACKET
 %token <token> TFUNC TRETURN TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF TFOR
@@ -25,7 +25,7 @@
 %token <token> TYES TNO TNIL
 %type <node> program declarations declaration statements statement block funcdecl ifstatement
 %type <node> variabledecl vardecllist funccall calllist funcident funcsident externdecl typelist type
-%type <node> elifstatement elifblock elsestatement singif 
+%type <node> elifstatement elifblock elsestatement singif structdecl structlist
 %type <node> expr singexpr binexpr unexpr ounexpr forstatement
 
 %nonassoc TNEW;
@@ -50,7 +50,8 @@ declarations        : declaration { if($1) $$ = $1; else $$ = ast_make(); }
                     | declaration declarations { if($1) $1->next = $2; $$ = $1 ? $1 : $2; };
 
 declaration         : externdecl TSEMI { $$ = $1; }
-                    | funcdecl { $$ = $1; };
+                    | funcdecl { $$ = $1; }
+                    | structdecl { $$ = $1; };
 
 type                : TTYPE { $$ = ast_make_type($1); }
                     | type TMUL { $$ = ast_make_pointer($1); }
@@ -58,6 +59,12 @@ type                : TTYPE { $$ = ast_make_type($1); }
                     | type TLBRACKET TINT TRBRACKET { $$ = ast_make_array($1, atoi($3)); }
                     | TCOUNTED type { $$ = ast_make_counted($2); }
                     | type TPOW { $$ = ast_make_counted(ast_make_pointer($1)); }
+                    ;
+
+structdecl          : TSTRUCT TTYPE TLBRACE structlist TRBRACE { };
+
+structlist          : structlist TSEMI variabledecl { }
+                    | variabledecl { }
                     ;
 
 funcdecl            : funcident block { ((ASTFuncDecl *)$1)->body = $2; $$ = $1; };
