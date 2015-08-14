@@ -23,6 +23,7 @@ typedef enum {
     AFUNCCALL,
     AVARDECL,
     ASTRUCTDECL,
+    ASTRUCTMEMBER,
     AIDENT,
     AIF,
     ALOOP,
@@ -33,8 +34,7 @@ typedef enum {
 
 typedef struct AST {
     ASTType type;
-    EagleTypeType *resultantType;
-    struct AST *next;
+    EagleTypeType *resultantType; struct AST *next;
     long lineno;
 } AST;
 
@@ -158,6 +158,16 @@ typedef struct {
     arraylist names;
 } ASTStructDecl;
 
+typedef struct {
+    ASTType type;
+    EagleTypeType *resultantType;
+    struct AST *next;
+    long lineno;
+
+    AST *left;
+    char *ident;
+} ASTStructMemberGet;
+
 AST *ast_make();
 void ast_append(AST *old, AST *n);
 AST *ast_make_binary(AST *left, AST *right, char op);
@@ -174,6 +184,7 @@ AST *ast_make_var_decl(AST *type, char *ident);
 AST *ast_make_struct_decl();
 AST *ast_struct_add(AST *ast, AST *var);
 AST *ast_struct_name(AST *ast, char *name);
+AST *ast_make_struct_get(AST *left, char *ident);
 void ast_set_counted(AST *ast);
 AST *ast_make_arr_decl(AST *type, char *ident, AST *expr);
 AST *ast_make_type(char *type);

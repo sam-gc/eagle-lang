@@ -306,6 +306,7 @@ int ett_array_count(EagleTypeType *t)
 
 static hashtable name_table;
 static hashtable struct_table;
+static hashtable types_table;
 void ty_prepare()
 {
     name_table = hst_create();
@@ -313,6 +314,9 @@ void ty_prepare()
 
     struct_table = hst_create();
     struct_table.duplicate_keys = 1;
+
+    types_table = hst_create();
+    types_table.duplicate_keys = 1;
 }
 
 void ty_add_name(char *name)
@@ -329,31 +333,46 @@ void ty_teardown()
 {
     hst_free(&name_table);
     hst_free(&struct_table);
+    hst_free(&types_table);
 }
 
-void ty_add_struct_def(char *name, arraylist *names)
+void ty_add_struct_def(char *name, arraylist *names, arraylist *types)
 {
     arraylist *copy = malloc(sizeof(arraylist));
     memcpy(copy, names, sizeof(arraylist));
     hst_put(&struct_table, name, copy, NULL, NULL);
+
+    copy = malloc(sizeof(arraylist));
+    memcpy(copy, types, sizeof(arraylist));
+    hst_put(&types_table, name, copy, NULL, NULL);
 }
 
-int ty_struct_member_index(EagleTypeType *ett, char *member)
+void ty_struct_member_index(EagleTypeType *ett, char *member, int *index, EagleTypeType **type)
 {
     EagleStructType *st = (EagleStructType *)ett;
     arraylist *names = hst_get(&struct_table, st->name, NULL, NULL);
+    arraylist *types = hst_get(&types_table, st->name, NULL, NULL);
 
     if(!names)
-        return -2;
+    {
+        *type = NULL;
+        *index = -2;
+        return;
+    }
 
     int i;
     for(i = 0; i < names->count; i++)
     {
         char *tmp = names->items[i];
         if(!strcmp(tmp, member))
-            return i;
+        {
+            *index = i;
+            *type = types->items[i];
+            return;
+        }
     }
 
-    return -1;
+    *type = NULL;
+    *index = -1;
 }
 

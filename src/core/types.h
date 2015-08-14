@@ -93,7 +93,7 @@ void ty_add_name(char *name);
 int ty_is_name(char *name);
 void ty_teardown();
 
-void ty_add_struct_def(char *name, arraylist *names);
-int ty_struct_member_index(EagleTypeType *ett, char *member);
+void ty_add_struct_def(char *name, arraylist *names, arraylist *types);
+void ty_struct_member_index(EagleTypeType *ett, char *member, int *index, EagleTypeType **type);
 
 #endif /* defined(__Eagle__types__) */

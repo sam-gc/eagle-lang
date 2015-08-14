@@ -186,6 +186,17 @@ AST *ast_struct_name(AST *ast, char *name)
     return ast;
 }
 
+AST *ast_make_struct_get(AST *left, char *ident)
+{
+    ASTStructMemberGet *ast = ast_malloc(sizeof(ASTStructMemberGet));
+    ast->type = ASTRUCTMEMBER;
+
+    ast->left = left;
+    ast->ident = ident;
+
+    return (AST *)ast;
+}
+
 void ast_set_counted(AST *ast)
 {
     ASTVarDecl *a = (ASTVarDecl *)ast;

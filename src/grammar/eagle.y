@@ -21,7 +21,7 @@
 %token <token> TPLUS TMINUS TEQUALS TMUL TDIV TGT TLT TEQ TNE TGTE TLTE TNOT TPOW
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TLBRACKET TRBRACKET
 %token <token> TFUNC TRETURN TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF TFOR
-%token <token> TCOLON TSEMI TNEWLINE TCOMMA TAMP TAT
+%token <token> TCOLON TSEMI TNEWLINE TCOMMA TDOT TAMP TAT
 %token <token> TYES TNO TNIL
 %type <node> program declarations declaration statements statement block funcdecl ifstatement
 %type <node> variabledecl vardecllist funccall calllist funcident funcsident externdecl typelist type
@@ -36,6 +36,7 @@
 %left TPLUS TMINUS;
 %left TMUL TDIV TPOW;
 %left TAT TAMP;
+%left TDOT;
 %nonassoc TSIZEOF TCOUNTOF;
 %right TLBRACKET TRBRACKET;
 %right "then" TIF TELSE TELIF %nonassoc TLPAREN;
@@ -153,6 +154,7 @@ unexpr              : TMUL ounexpr { $$ = ast_make_unary($2, '*'); }
                     | TSIZEOF ounexpr { $$ = ast_make_unary($2, 's'); }
                     | TCOUNTOF ounexpr { $$ = ast_make_unary($2, 'c'); }
                     | ounexpr TLBRACKET expr TRBRACKET { $$ = ast_make_binary($1, $3, '['); }
+                    | ounexpr TDOT TIDENTIFIER { $$ = ast_make_struct_get($1, $3); }
                     ; 
 
 ounexpr             : singexpr { $$ = $1; }

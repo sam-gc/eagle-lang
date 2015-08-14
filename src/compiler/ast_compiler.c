@@ -114,6 +114,11 @@ LLVMValueRef ac_compile_identifier(AST *ast, CompilerBundle *cb)
 
     if(b->type->type == ETArray && !ET_IS_GEN_ARR(b->type))
         return b->value;
+
+    if(b->type->type == ETStruct)
+        return b->value;
+    //if(b->type->type == ETPointer && ((EaglePointerType *)b->type)->to->type == ETStruct)
+
     return LLVMBuildLoad(cb->builder, b->value, "loadtmp");
 }
 
@@ -197,6 +202,37 @@ LLVMValueRef ac_compile_var_decl(AST *ast, CompilerBundle *cb)
     LLVMPositionBuilderAtEnd(cb->builder, curblock);
 
     return pos;
+}
+
+LLVMValueRef ac_compile_struct_member(AST *ast, CompilerBundle *cb, int keepPointer)
+{
+    ASTStructMemberGet *a = (ASTStructMemberGet *)ast;
+    LLVMValueRef left = ac_dispatch_expression(a->left, cb);
+
+    EagleTypeType *ty = a->left->resultantType;
+
+    if(ty->type != ETStruct && ty->type != ETPointer)
+        die(ALN, "Attempting to access member of non-struct type (%s).", a->ident);
+    if(ty->type == ETPointer && ((EaglePointerType *)ty)->to->type != ETStruct)
+        die(ALN, "Attempting to access member of non-struct pointer type (%s).", a->ident);
+
+    if(ty->type == ETPointer)
+        ty = ((EaglePointerType *)ty)->to;
+
+    int index;
+    EagleTypeType *type;
+    ty_struct_member_index(ty, a->ident, &index, &type);
+
+    if(index < -1)
+        die(ALN, "Internal compiler error. Struct not loaded but found.");
+    if(index < 0)
+        die(ALN, "Struct \"%s\" has no member \"%s\".", ((EagleStructType *)ty)->name, a->ident);
+
+    ast->resultantType = type;
+    LLVMValueRef gep = LLVMBuildStructGEP(cb->builder, left, index, a->ident);
+    if(keepPointer)
+        return gep;
+    return LLVMBuildLoad(cb->builder, gep, "");
 }
 
 LLVMValueRef ac_compile_new_decl(AST *ast, CompilerBundle *cb)
@@ -304,6 +340,11 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb)
     else if(a->left->type == ABINARY && ((ASTBinary *)a->left)->op == '[')
     {
         pos = ac_compile_index(a->left, 1, cb);
+        totype = a->left->resultantType;
+    }
+    else if(a->left->type == ASTRUCTMEMBER)
+    {
+        pos = ac_compile_struct_member(a->left, cb, 1);
         totype = a->left->resultantType;
     }
     else
@@ -501,6 +542,10 @@ LLVMValueRef ac_compile_get_address(AST *of, CompilerBundle *cb)
             LLVMValueRef val = ac_compile_index(of, 1, cb);
             return val;
         }
+        case ASTRUCTMEMBER:
+        {
+            return ac_compile_struct_member(of, cb, 1);
+        }
         default:
             die(LN(of), "Address may not be taken of this expression.");
     }
@@ -616,6 +661,9 @@ LLVMValueRef ac_dispatch_expression(AST *ast, CompilerBundle *cb)
             break;
         case AALLOC:
             val = ac_compile_new_decl(ast, cb);
+            break;
+        case ASTRUCTMEMBER:
+            val = ac_compile_struct_member(ast, cb, 0);
             break;
         default:
             die(ALN, "Invalid expression type.");
@@ -979,6 +1027,8 @@ void ac_add_struct_declaration(AST *ast, CompilerBundle *cb)
     for(i = 0; i < a->types.count; i++)
         tys[i] = ett_llvm_type(arr_get(&a->types, i));
     LLVMStructSetBody(loaded, tys, a->types.count, 0);
+
+    ty_add_struct_def(a->name, &a->names, &a->types);
 }
 
 void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
@@ -1077,7 +1127,6 @@ LLVMValueRef ac_build_conversion(LLVMBuilderRef builder, LLVMValueRef val, Eagle
         }
         case ETArray:
         {
-            ett_debug_print(to);
             if(to->type != ETPointer && to->type != ETArray)
                 die(-1, "Arrays may only be converted to equivalent pointers.");
 

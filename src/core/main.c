@@ -52,10 +52,9 @@ int main(int argc, const char *argv[])
 
     yyparse();
 
-    ty_teardown();
-
     LLVMModuleRef module = ac_compile(ast_root);
 
+    ty_teardown();
 
     LLVMDumpModule(module);
 

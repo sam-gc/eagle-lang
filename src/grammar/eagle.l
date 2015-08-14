@@ -59,6 +59,7 @@ semi (";"|";"{whitechar}*"\n")
 "func"      DISCARD_NL; return SET(TFUNC);
 ":"         DISCARD_NL; return SET(TCOLON);
 ","         DISCARD_NL; return SET(TCOMMA);
+"."         DISCARD_NL; return SET(TDOT);
 ";"      DISCARD_NL; return SET(TSEMI);
 "&"         DISCARD_NL; return SET(TAMP);
 "@"         DISCARD_NL; return SET(TAT);

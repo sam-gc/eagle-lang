@@ -1,10 +1,35 @@
 struct Test {
     int x
-    int y
+    int *y
+}
+
+func ptr() : void {
+    Test t
+    t.y = &t.x
+    t.x = 93
+
+    puts *t.y
+}
+
+func init(Test *t) : void {
+    t.x = 44
+    t.y = &t.x
 }
 
 func main() : int {
     Test t
+    int i = 42
+    t.x = 11
+    t.y = &i
+    puts t.x
+    puts *t.y
+
+    ptr()
+
+    init(&t);
+    puts t.x
+    puts *t.y
+
     return 0
 }
 
