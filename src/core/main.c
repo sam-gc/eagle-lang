@@ -46,13 +46,13 @@ int main(int argc, const char *argv[])
         return 0;
     }
 
-    ty_prepare_name_lookup();
+    ty_prepare();
 
     first_pass();
 
     yyparse();
 
-    ty_teardown_name_lookup();
+    ty_teardown();
 
     LLVMModuleRef module = ac_compile(ast_root);
 

@@ -700,6 +700,8 @@ void ac_dispatch_declaration(AST *ast, CompilerBundle *cb)
         case AFUNCDECL:
             ac_compile_function(ast, cb);
             break;
+        case ASTRUCTDECL:
+            break;
         default:
             die(ALN, "Invalid declaration type.");
             return;
@@ -966,8 +968,27 @@ void ac_prepare_module(LLVMModuleRef module)
     LLVMAddFunction(module, "__egl_array_decr_ptrs", func_type_rc);
 }
 
+void ac_add_struct_declaration(AST *ast, CompilerBundle *cb)
+{
+    ASTStructDecl *a = (ASTStructDecl *)ast;
+
+    LLVMTypeRef loaded = LLVMStructCreateNamed(LLVMGetGlobalContext(), a->name);
+
+    LLVMTypeRef *tys = malloc(sizeof(LLVMTypeRef) * a->types.count);
+    int i;
+    for(i = 0; i < a->types.count; i++)
+        tys[i] = ett_llvm_type(arr_get(&a->types, i));
+    LLVMStructSetBody(loaded, tys, a->types.count, 0);
+}
+
 void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
 {
+    if(ast->type == ASTRUCTDECL)
+    {
+        ac_add_struct_declaration(ast, cb);
+        return;
+    }
+
     if(ast->type != AFUNCDECL)
         return;
 
@@ -1014,9 +1035,6 @@ LLVMModuleRef ac_compile(AST *ast)
     LLVMTypeRef ty = LLVMInt64Type();
     LLVMStructSetBody(st, &ty, 1, 0);
     */
-
-    LLVMTypeRef tt= LLVMGetTypeByName(cb.module, "teststruct");
-    printf("%p\n", tt);
 
     AST *old = ast;
     for(; ast; ast = ast->next)

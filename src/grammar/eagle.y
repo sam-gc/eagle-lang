@@ -61,10 +61,10 @@ type                : TTYPE { $$ = ast_make_type($1); }
                     | type TPOW { $$ = ast_make_counted(ast_make_pointer($1)); }
                     ;
 
-structdecl          : TSTRUCT TTYPE TLBRACE structlist TRBRACE { };
+structdecl          : TSTRUCT TTYPE TLBRACE structlist TRBRACE { $$ = $4; ast_struct_name($$, $2); };
 
-structlist          : structlist TSEMI variabledecl { }
-                    | variabledecl { }
+structlist          : structlist variabledecl TSEMI { $$ = $1; ast_struct_add($$, $2); }
+                    | variabledecl TSEMI { $$ = ast_make_struct_decl(); ast_struct_add($$, $1); }
                     ;
 
 funcdecl            : funcident block { ((ASTFuncDecl *)$1)->body = $2; $$ = $1; };

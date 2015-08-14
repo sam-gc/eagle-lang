@@ -27,6 +27,11 @@ EagleTypeType *et_parse_string(char *text)
     TTEST(text, "long", ETInt64);
     TTEST(text, "double", ETDouble);
     TTEST(text, "void", ETVoid);
+
+    if(ty_is_name(text))
+    {
+        return ett_struct_type(text);
+    }
     
     return NULL;
 }
@@ -82,13 +87,7 @@ LLVMTypeRef ett_llvm_type(EagleTypeType *type)
             if(loaded)
                 return loaded;
 
-            loaded = LLVMStructCreateNamed(LLVMGetGlobalContext(), st->name);
-
-            LLVMTypeRef *tys = malloc(sizeof(LLVMTypeRef) * st->names.count);
-            int i;
-            for(i = 0; i < st->names.count; i++)
-                tys[i] = arr_get(&st->names, i);
-            LLVMStructSetBody(loaded, tys, st->names.count, 0);
+            return NULL;
            // LLVMTypeRef ty = LLVMStructType(
         }
         case ETPointer:
@@ -306,10 +305,14 @@ int ett_array_count(EagleTypeType *t)
 }
 
 static hashtable name_table;
-void ty_prepare_name_lookup()
+static hashtable struct_table;
+void ty_prepare()
 {
     name_table = hst_create();
     name_table.duplicate_keys = 1;
+
+    struct_table = hst_create();
+    struct_table.duplicate_keys = 1;
 }
 
 void ty_add_name(char *name)
@@ -322,8 +325,35 @@ int ty_is_name(char *name)
     return (int)hst_get(&name_table, name, NULL, NULL);
 }
 
-void ty_teardown_name_lookup()
+void ty_teardown()
 {
     hst_free(&name_table);
+    hst_free(&struct_table);
+}
+
+void ty_add_struct_def(char *name, arraylist *names)
+{
+    arraylist *copy = malloc(sizeof(arraylist));
+    memcpy(copy, names, sizeof(arraylist));
+    hst_put(&struct_table, name, copy, NULL, NULL);
+}
+
+int ty_struct_member_index(EagleTypeType *ett, char *member)
+{
+    EagleStructType *st = (EagleStructType *)ett;
+    arraylist *names = hst_get(&struct_table, st->name, NULL, NULL);
+
+    if(!names)
+        return -2;
+
+    int i;
+    for(i = 0; i < names->count; i++)
+    {
+        char *tmp = names->items[i];
+        if(!strcmp(tmp, member))
+            return i;
+    }
+
+    return -1;
 }
 

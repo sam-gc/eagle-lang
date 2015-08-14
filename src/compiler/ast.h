@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include "core/types.h"
+#include "core/arraylist.h"
 
 typedef enum {
     ASKIP,
@@ -21,6 +22,7 @@ typedef enum {
     AFUNCDECL,
     AFUNCCALL,
     AVARDECL,
+    ASTRUCTDECL,
     AIDENT,
     AIF,
     ALOOP,
@@ -145,6 +147,17 @@ typedef struct {
     struct AST *val;
 } ASTCast;
 
+typedef struct {
+    ASTType type;
+    EagleTypeType *resultantType;
+    struct AST *next;
+    long lineno;
+
+    char *name;
+    arraylist types;
+    arraylist names;
+} ASTStructDecl;
+
 AST *ast_make();
 void ast_append(AST *old, AST *n);
 AST *ast_make_binary(AST *left, AST *right, char op);
@@ -158,6 +171,9 @@ AST *ast_make_identifier(char *ident);
 AST *ast_make_func_decl(AST *type, char *ident, AST *body, AST *params);
 AST *ast_make_func_call(AST *callee, AST *params);
 AST *ast_make_var_decl(AST *type, char *ident);
+AST *ast_make_struct_decl();
+AST *ast_struct_add(AST *ast, AST *var);
+AST *ast_struct_name(AST *ast, char *name);
 void ast_set_counted(AST *ast);
 AST *ast_make_arr_decl(AST *type, char *ident, AST *expr);
 AST *ast_make_type(char *type);

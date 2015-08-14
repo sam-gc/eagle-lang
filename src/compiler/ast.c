@@ -155,6 +155,37 @@ AST *ast_make_var_decl(AST *atype, char *ident)
     return ast_make_arr_decl(atype, ident, NULL);
 }
 
+AST *ast_make_struct_decl()
+{
+    ASTStructDecl *ast = ast_malloc(sizeof(ASTStructDecl));
+    ast->type = ASTRUCTDECL;
+
+    ast->name = NULL;
+    ast->names = arr_create(10);
+    ast->types = arr_create(10);
+
+    return (AST *)ast;
+}
+
+AST *ast_struct_add(AST *ast, AST *var)
+{
+    ASTStructDecl *a = (ASTStructDecl *)ast;
+    ASTVarDecl *v = (ASTVarDecl *)var;
+    ASTTypeDecl *ty = (ASTTypeDecl *)v->atype;
+
+    arr_append(&a->types, ty->etype);
+    arr_append(&a->names, v->ident);
+
+    return ast;
+}
+
+AST *ast_struct_name(AST *ast, char *name)
+{
+    ASTStructDecl *a = (ASTStructDecl *)ast;
+    a->name = name;
+    return ast;
+}
+
 void ast_set_counted(AST *ast)
 {
     ASTVarDecl *a = (ASTVarDecl *)ast;

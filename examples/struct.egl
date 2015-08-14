@@ -1,7 +1,10 @@
 struct Test {
     int x
     int y
-    double *z
-    Test ^t; int[10] f
+}
+
+func main() : int {
+    Test t
+    return 0
 }
 

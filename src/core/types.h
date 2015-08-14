@@ -76,7 +76,6 @@ EagleTypeType *ett_pointer_type(EagleTypeType *to);
 EagleTypeType *ett_array_type(EagleTypeType *of, int ct);
 EagleTypeType *ett_function_type(EagleTypeType *retVal, EagleTypeType **params, int pct);
 EagleTypeType *ett_struct_type(char *name);
-void ett_struct_add(EagleTypeType *ett, EagleTypeType *ty, char *name);
 
 EagleType ett_get_base_type(EagleTypeType *type);
 LLVMTypeRef ett_llvm_type(EagleTypeType *type);
@@ -89,9 +88,12 @@ int ett_array_count(EagleTypeType *t);
 
 void ett_debug_print(EagleTypeType *t);
 
-void ty_prepare_name_lookup();
+void ty_prepare();
 void ty_add_name(char *name);
 int ty_is_name(char *name);
-void ty_teardown_name_lookup();
+void ty_teardown();
+
+void ty_add_struct_def(char *name, arraylist *names);
+int ty_struct_member_index(EagleTypeType *ett, char *member);
 
 #endif /* defined(__Eagle__types__) */
