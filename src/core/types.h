@@ -17,6 +17,7 @@
 #define ET_IS_REAL(e) ((e) == ETDouble)
 #define ET_IS_GEN_ARR(e) (((EagleArrayType *)(e))->ct < 0)
 #define ET_IS_COUNTED(p) ((p)->type == ETPointer && ((EaglePointerType *)(p))->counted)
+#define ET_IS_WEAK(p) ((p)->type == ETPointer && ((EaglePointerType *)(p))->weak)
 
 extern LLVMTargetDataRef etTargetData;
 extern LLVMModuleRef the_module;
@@ -45,6 +46,7 @@ typedef struct {
     EagleType type;
     EagleTypeType *to;
     int counted;
+    int weak;
 } EaglePointerType;
 
 typedef struct {
@@ -95,5 +97,6 @@ void ty_teardown();
 
 void ty_add_struct_def(char *name, arraylist *names, arraylist *types);
 void ty_struct_member_index(EagleTypeType *ett, char *member, int *index, EagleTypeType **type);
+int ty_needs_destructor(EagleTypeType *ett);
 
 #endif /* defined(__Eagle__types__) */

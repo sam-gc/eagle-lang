@@ -30,6 +30,7 @@ static inline LLVMValueRef ac_make_mul(LLVMValueRef left, LLVMValueRef right, LL
 static inline LLVMValueRef ac_make_div(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type);
 static inline LLVMValueRef ac_make_comp(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type, char comp);
 static inline void ac_unwrap_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty, int keepptr);
+static inline void ac_prepare_pointer(CompilerBundle *cb, LLVMValueRef ptr, EagleTypeType *ty);
 static inline void ac_incr_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty);
 static inline void ac_incr_val_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty);
 static inline void ac_check_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty);
@@ -37,6 +38,8 @@ static inline void ac_decr_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleT
 static inline void ac_decr_val_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty);
 static inline void ac_decr_in_array(CompilerBundle *cb, LLVMValueRef arr, int ct);
 static inline void ac_nil_fill_array(CompilerBundle *cb, LLVMValueRef arr, int ct);
+static inline void ac_add_weak_pointer(CompilerBundle *cb, LLVMValueRef ptr, LLVMValueRef weak, EagleTypeType *ty);
+static inline void ac_remove_weak_pointer(CompilerBundle *cb, LLVMValueRef weak, EagleTypeType *ty);
 
 LLVMValueRef ac_dispatch_expression(AST *ast, CompilerBundle *cb);
 void ac_dispatch_statement(AST *ast, CompilerBundle *cb);
@@ -153,6 +156,12 @@ void ac_scope_leave_array_callback(LLVMValueRef pos, EagleTypeType *ty, void *da
     ac_decr_in_array(cb, pos, ett_array_count(ty));
 }
 
+void ac_scope_leave_weak_callback(LLVMValueRef pos, EagleTypeType *ty, void *data)
+{
+    CompilerBundle *cb = data;
+    ac_remove_weak_pointer(cb, pos, ty);
+}
+
 LLVMValueRef ac_compile_var_decl(AST *ast, CompilerBundle *cb)
 {
     ASTVarDecl *a = (ASTVarDecl *)ast;
@@ -190,6 +199,11 @@ LLVMValueRef ac_compile_var_decl(AST *ast, CompilerBundle *cb)
     {
         LLVMBuildStore(cb->builder, LLVMConstPointerNull(ett_llvm_type(type->etype)), pos);
         vs_add_callback(cb->varScope, a->ident, ac_scope_leave_callback, cb);
+    }
+    else if(ET_IS_WEAK(type->etype))
+    {
+        LLVMBuildStore(cb->builder, LLVMConstPointerNull(ett_llvm_type(type->etype)), pos);
+        vs_add_callback(cb->varScope, a->ident, ac_scope_leave_weak_callback, cb);
     }
 
     if(type->etype->type == ETArray && ett_array_has_counted(type->etype))
@@ -238,18 +252,24 @@ LLVMValueRef ac_compile_new_decl(AST *ast, CompilerBundle *cb)
     ASTUnary *a = (ASTUnary *)ast;
     ASTTypeDecl *type = (ASTTypeDecl *)a->val;
     
-    LLVMTypeRef tys[2];
+    LLVMTypeRef tys[5];
     tys[0] = LLVMInt64Type();
-    tys[1] = ett_llvm_type(type->etype);
-    LLVMTypeRef tt = LLVMStructType(tys, 2, 0);
+    tys[1] = LLVMInt16Type();
+    tys[2] = LLVMInt16Type();
+    tys[3] = LLVMPointerType(LLVMInt8Type(), 0);
+    tys[4] = ett_llvm_type(type->etype);
+    LLVMTypeRef tt = LLVMStructType(tys, 5, 0);
 
     LLVMValueRef mal = LLVMBuildMalloc(cb->builder, tt, "new");
     EaglePointerType *pt = (EaglePointerType *)ett_pointer_type(type->etype);
     pt->counted = 1;
     ast->resultantType = (EagleTypeType *)pt;
 
+    ac_prepare_pointer(cb, mal, ast->resultantType);
+    /*
     LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, mal, 0, "ctp");
     LLVMBuildStore(cb->builder, LLVMConstInt(LLVMInt64Type(), 0, 0), pos);
+    */
 
     hst_put(&cb->transients, ast, mal, ahhd, ahed);
 
@@ -371,7 +391,7 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb)
 
     int transient = 0;
     LLVMValueRef ptrPos = NULL;
-    if(a->resultantType->type == ETPointer)
+    if(ET_IS_COUNTED(a->resultantType))
     {
         ptrPos = pos;
         ac_decr_pointer(cb, &pos, totype);
@@ -383,10 +403,15 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb)
             transient = 1;
         //ac_unwrap_pointer(cb, &pos, totype, 1);
     }
+    else if(ET_IS_WEAK(a->resultantType))
+    {
+        ac_remove_weak_pointer(cb, pos, totype);
+        ac_add_weak_pointer(cb, r, pos, totype);
+    }
 
     LLVMBuildStore(cb->builder, r, pos);
     
-    if(a->resultantType->type == ETPointer && !transient)
+    if(ET_IS_COUNTED(a->resultantType) && !transient)
         ac_incr_pointer(cb, &ptrPos, totype);
 
     return LLVMBuildLoad(cb->builder, pos, "loadtmp");
@@ -1004,6 +1029,15 @@ void ac_prepare_module(LLVMModuleRef module)
     LLVMAddFunction(module, "__egl_incr_ptr", func_type_rc);
     LLVMAddFunction(module, "__egl_decr_ptr", func_type_rc);
     LLVMAddFunction(module, "__egl_check_ptr", func_type_rc);
+    LLVMAddFunction(module, "__egl_prepare", func_type_rc);
+
+    LLVMTypeRef param_types_we[] = { LLVMPointerType(LLVMInt64Type(), 0), LLVMPointerType(LLVMInt8Type(), 0)};
+    func_type_rc = LLVMFunctionType(LLVMVoidType(), param_types_we, 2, 0);
+    LLVMAddFunction(module, "__egl_add_weak", func_type_rc);
+
+    LLVMTypeRef ty = LLVMPointerType(LLVMInt8Type(), 0);
+    func_type_rc = LLVMFunctionType(LLVMVoidType(), &ty, 1, 0);
+    LLVMAddFunction(module, "__egl_remove_weak", func_type_rc);
 
     LLVMTypeRef param_types_arr1[] = {LLVMPointerType(LLVMInt8Type(), 0), LLVMInt64Type()};
     func_type_rc = LLVMFunctionType(LLVMVoidType(), param_types_arr1, 2, 0);
@@ -1297,7 +1331,7 @@ void ac_unwrap_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty,
 
     LLVMValueRef tptr = *ptr;//LLVMBuildLoad(cb->builder, *ptr, "tptr");
 
-    LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, tptr, 1, "unwrap");
+    LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, tptr, 4, "unwrap");
 
     *ptr = pos;
 }
@@ -1356,6 +1390,38 @@ void ac_check_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty)
     LLVMValueRef tptr = LLVMBuildBitCast(cb->builder, *ptr, LLVMPointerType(LLVMInt64Type(), 0), "");
     LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_check_ptr");
     LLVMBuildCall(cb->builder, func, &tptr, 1, "");
+}
+
+void ac_prepare_pointer(CompilerBundle *cb, LLVMValueRef ptr, EagleTypeType *ty)
+{
+    if(!ET_IS_COUNTED(ty))
+        return;
+
+    LLVMValueRef tptr = LLVMBuildBitCast(cb->builder, ptr, LLVMPointerType(LLVMInt64Type(), 0), "");
+    LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_prepare");
+    LLVMBuildCall(cb->builder, func, &tptr, 1, "");
+}
+
+void ac_add_weak_pointer(CompilerBundle *cb, LLVMValueRef ptr, LLVMValueRef weak, EagleTypeType *ty)
+{
+    if(!ET_IS_WEAK(ty))
+        return;
+
+    LLVMValueRef vals[2];
+    vals[0] = LLVMBuildBitCast(cb->builder, ptr, LLVMPointerType(LLVMInt64Type(), 0), "");
+    vals[1] = LLVMBuildBitCast(cb->builder, weak, LLVMPointerType(LLVMInt8Type(), 0), "");
+    LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_add_weak");
+    LLVMBuildCall(cb->builder, func, vals, 2, "");
+}
+
+void ac_remove_weak_pointer(CompilerBundle *cb, LLVMValueRef weak, EagleTypeType *ty)
+{
+    if(!ET_IS_WEAK(ty))
+        return;
+
+    LLVMValueRef val = LLVMBuildBitCast(cb->builder, weak, LLVMPointerType(LLVMInt8Type(), 0), "");
+    LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_remove_weak");
+    LLVMBuildCall(cb->builder, func, &val, 1, "");
 }
 
 void ac_decr_val_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty)

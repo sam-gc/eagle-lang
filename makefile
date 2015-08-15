@@ -46,7 +46,7 @@ obj/grammar/%.o: src/grammar/%.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 rc.o: rc.c
-	$(CC) -c rc.c -o rc.o
+	$(CC) -c -g rc.c -o rc.o
 
 prog: out.ll rc.o
 	llc out.ll

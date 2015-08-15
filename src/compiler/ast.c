@@ -260,6 +260,18 @@ AST *ast_make_counted(AST *ast)
     return ast;
 }
 
+AST *ast_make_weak(AST *ast)
+{
+    ASTTypeDecl *a = (ASTTypeDecl *)ast;
+
+    if(a->etype->type != ETPointer)
+        die(a->lineno, "Only pointer types may be declared weak.");
+    EaglePointerType *ep = (EaglePointerType *)a->etype;
+    ep->weak = 1;
+
+    return ast;
+}
+
 AST *ast_make_array(AST *ast, int ct)
 {
     ASTTypeDecl *a = (ASTTypeDecl *)ast;

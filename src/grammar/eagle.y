@@ -20,7 +20,7 @@
 %token <string> TIDENTIFIER TINT TDOUBLE TTYPE TCOUNTED TNEW TSTRUCT
 %token <token> TPLUS TMINUS TEQUALS TMUL TDIV TGT TLT TEQ TNE TGTE TLTE TNOT TPOW
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TLBRACKET TRBRACKET
-%token <token> TFUNC TRETURN TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF TFOR
+%token <token> TFUNC TRETURN TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF TFOR TWEAK
 %token <token> TCOLON TSEMI TNEWLINE TCOMMA TDOT TAMP TAT TARROW
 %token <token> TYES TNO TNIL
 %type <node> program declarations declaration statements statement block funcdecl ifstatement
@@ -29,7 +29,7 @@
 %type <node> expr singexpr binexpr unexpr ounexpr forstatement
 
 %nonassoc TNEW;
-%nonassoc TCOUNTED;
+%nonassoc TCOUNTED TWEAK;
 %right TEQUALS;
 %left TNOT;
 %left TEQ TNE TLT TGT TLTE TGTE
@@ -59,6 +59,7 @@ type                : TTYPE { $$ = ast_make_type($1); }
                     | type TLBRACKET TRBRACKET { $$ = ast_make_array($1, -1); }
                     | type TLBRACKET TINT TRBRACKET { $$ = ast_make_array($1, atoi($3)); }
                     | TCOUNTED type { $$ = ast_make_counted($2); }
+                    | TWEAK type { $$ = ast_make_weak($2); }
                     | type TPOW { $$ = ast_make_counted(ast_make_pointer($1)); }
                     ;
 

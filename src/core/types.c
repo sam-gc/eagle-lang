@@ -95,10 +95,13 @@ LLVMTypeRef ett_llvm_type(EagleTypeType *type)
             EaglePointerType *pt = (EaglePointerType *)type;
             if(pt->counted)
             {
-                LLVMTypeRef tys[2];
+                LLVMTypeRef tys[5];
                 tys[0] = LLVMInt64Type();
-                tys[1] = ett_llvm_type(pt->to);
-                return LLVMPointerType(LLVMStructType(tys, 2, 0), 0);
+                tys[1] = LLVMInt16Type();
+                tys[2] = LLVMInt16Type();
+                tys[3] = LLVMPointerType(LLVMInt8Type(), 0);
+                tys[4] = ett_llvm_type(pt->to);
+                return LLVMPointerType(LLVMStructType(tys, 5, 0), 0);
             }
             return LLVMPointerType(ett_llvm_type(((EaglePointerType *)type)->to), 0);
         }
@@ -139,6 +142,7 @@ EagleTypeType *ett_pointer_type(EagleTypeType *to)
     ett->type = ETPointer;
     ett->to = to;
     ett->counted = 0;
+    ett->weak = 0;
 
     return (EagleTypeType *)ett;
 }
@@ -374,5 +378,26 @@ void ty_struct_member_index(EagleTypeType *ett, char *member, int *index, EagleT
 
     *type = NULL;
     *index = -1;
+}
+
+int ty_needs_destructor(EagleTypeType *ett)
+{
+    /*
+    EagleStructType *st = (EagleStructType *)ett;
+    arraylist *types = hst_get(&types_table, st->name, NULL, NULL);
+
+    if(!types)
+        return -2;
+
+    int i;
+    for(i = 0; i < types->count; i++)
+    {
+        EagleTypeType *ty = types->items[i];
+        if(ET_IS_COUNTED)
+            1;
+    }
+
+    */
+    return 0;
 }
 

@@ -190,6 +190,7 @@ AST *ast_make_arr_decl(AST *type, char *ident, AST *expr);
 AST *ast_make_type(char *type);
 AST *ast_make_pointer(AST *ast);
 AST *ast_make_counted(AST *ast);
+AST *ast_make_weak(AST *ast);
 AST *ast_make_array(AST *ast, int ct);
 AST *ast_make_if(AST *test, AST *block);
 AST *ast_make_loop(AST *setup, AST *test, AST *update, AST *block);

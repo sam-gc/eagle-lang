@@ -1,0 +1,21 @@
+func test() : void {
+    int^ i = new int
+    weak int* j = i
+    weak int* k = i
+    j^ = 32
+    j = nil
+    puts k^
+}
+
+func main() : void {
+    int^ i = new int
+    weak int* j = i
+    puts i
+
+    i^ = 11
+    puts j^
+    i = nil
+    puts j
+
+    test()
+}
