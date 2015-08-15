@@ -21,7 +21,7 @@
 %token <token> TPLUS TMINUS TEQUALS TMUL TDIV TGT TLT TEQ TNE TGTE TLTE TNOT TPOW
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TLBRACKET TRBRACKET
 %token <token> TFUNC TRETURN TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF TFOR
-%token <token> TCOLON TSEMI TNEWLINE TCOMMA TDOT TAMP TAT
+%token <token> TCOLON TSEMI TNEWLINE TCOMMA TDOT TAMP TAT TARROW
 %token <token> TYES TNO TNIL
 %type <node> program declarations declaration statements statement block funcdecl ifstatement
 %type <node> variabledecl vardecllist funccall calllist funcident funcsident externdecl typelist type
@@ -34,9 +34,9 @@
 %left TNOT;
 %left TEQ TNE TLT TGT TLTE TGTE
 %left TPLUS TMINUS;
-%left TMUL TDIV TPOW;
+%left TMUL TDIV;
 %left TAT TAMP;
-%left TDOT;
+%left TDOT TPOW TARROW;
 %nonassoc TSIZEOF TCOUNTOF;
 %right TLBRACKET TRBRACKET;
 %right "then" TIF TELSE TELIF %nonassoc TLPAREN;
@@ -148,13 +148,14 @@ binexpr             : expr TPLUS expr { $$ = ast_make_binary($1, $3, '+'); }
                     | expr TNE expr { $$ = ast_make_binary($1, $3, 'n'); }
                     ;
 
-unexpr              : TMUL ounexpr { $$ = ast_make_unary($2, '*'); }
+unexpr              : ounexpr TPOW { $$ = ast_make_unary($1, '*'); }
                     | TAMP ounexpr { $$ = ast_make_unary($2, '&'); }
                     | TNOT ounexpr { $$ = ast_make_unary($2, '!'); }
                     | TSIZEOF ounexpr { $$ = ast_make_unary($2, 's'); }
                     | TCOUNTOF ounexpr { $$ = ast_make_unary($2, 'c'); }
                     | ounexpr TLBRACKET expr TRBRACKET { $$ = ast_make_binary($1, $3, '['); }
                     | ounexpr TDOT TIDENTIFIER { $$ = ast_make_struct_get($1, $3); }
+                    | ounexpr TARROW TIDENTIFIER { $$ = ast_make_struct_get(ast_make_unary($1, '*'), $3); }
                     ; 
 
 ounexpr             : singexpr { $$ = $1; }

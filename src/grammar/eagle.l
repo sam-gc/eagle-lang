@@ -47,7 +47,7 @@ semi (";"|";"{whitechar}*"\n")
 "-"         DISCARD_NL; return SET(TMINUS);
 "*"         DISCARD_NL; return SET(TMUL);
 "/"         DISCARD_NL; return SET(TDIV);
-"^"         DISCARD_NL; return SET(TPOW);
+"^"         SAVE_NL; return SET(TPOW);
 ">"         DISCARD_NL; return SET(TGT);
 ">="        DISCARD_NL; return SET(TGTE);
 "=="        DISCARD_NL; return SET(TEQ);
@@ -60,6 +60,7 @@ semi (";"|";"{whitechar}*"\n")
 ":"         DISCARD_NL; return SET(TCOLON);
 ","         DISCARD_NL; return SET(TCOMMA);
 "."         DISCARD_NL; return SET(TDOT);
+"->"        DISCARD_NL; return SET(TARROW);
 ";"      DISCARD_NL; return SET(TSEMI);
 "&"         DISCARD_NL; return SET(TAMP);
 "@"         DISCARD_NL; return SET(TAT);

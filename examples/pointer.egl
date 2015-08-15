@@ -7,9 +7,9 @@ func test(int *i) : int *
 
 func swap(int *x, int *y) : void
 {
-    int t = *x
-    *x = *y
-    *y = t
+    int t = x^
+    x^ = y^
+    y^ = t
 }
 
 func main(int argc) : int
@@ -19,13 +19,13 @@ func main(int argc) : int
     i = 6
 
     puts j
-    puts *j
+    puts j^
 
-    *j = 11
+    j^ = 11
     puts i
 
-    *test(j) = 32
-    puts *j
+    test(j)^ = 32
+    puts j^
 
     int a = 100
     int b = 200

@@ -117,7 +117,8 @@ LLVMValueRef ac_compile_identifier(AST *ast, CompilerBundle *cb)
 
     if(b->type->type == ETStruct)
         return b->value;
-    //if(b->type->type == ETPointer && ((EaglePointerType *)b->type)->to->type == ETStruct)
+    if(b->type->type == ETPointer && ((EaglePointerType *)b->type)->to->type == ETStruct)
+        return b->value;
 
     return LLVMBuildLoad(cb->builder, b->value, "loadtmp");
 }
@@ -211,13 +212,10 @@ LLVMValueRef ac_compile_struct_member(AST *ast, CompilerBundle *cb, int keepPoin
 
     EagleTypeType *ty = a->left->resultantType;
 
-    if(ty->type != ETStruct && ty->type != ETPointer)
+    if(ty->type != ETStruct)
         die(ALN, "Attempting to access member of non-struct type (%s).", a->ident);
     if(ty->type == ETPointer && ((EaglePointerType *)ty)->to->type != ETStruct)
         die(ALN, "Attempting to access member of non-struct pointer type (%s).", a->ident);
-
-    if(ty->type == ETPointer)
-        ty = ((EaglePointerType *)ty)->to;
 
     int index;
     EagleTypeType *type;

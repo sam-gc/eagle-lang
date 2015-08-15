@@ -1,6 +1,6 @@
 struct Test {
     int x
-    int *y
+    int* y
 }
 
 func ptr() : void {
@@ -8,12 +8,12 @@ func ptr() : void {
     t.y = &t.x
     t.x = 93
 
-    puts *t.y
+    puts t.y^
 }
 
 func init(Test *t) : void {
-    t.x = 44
-    t.y = &t.x
+    t->x = 44
+    t^.y = &t->x
 }
 
 func main() : int {
@@ -22,13 +22,13 @@ func main() : int {
     t.x = 11
     t.y = &i
     puts t.x
-    puts *t.y
+    puts t.y^
 
     ptr()
 
     init(&t);
     puts t.x
-    puts *t.y
+    puts t.y^
 
     return 0
 }

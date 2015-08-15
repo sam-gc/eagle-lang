@@ -1,55 +1,55 @@
-func test(counted int *a) : void
+func test(int^ a) : void
 {
-    *a = 32
-    puts *a
+    a^ = 32
+    puts a^
 }
 
 func creation(int ct) : void
 {
     if ct {
-        counted int *t = new int
-        *t = ct
-        puts *t
-        creation(*t - 1)
+        int^ t = new int
+        t^ = ct
+        puts t^
+        creation(t^ - 1)
     }
 }
 
-func rettest() : counted int *
+func rettest() : int^
 {
-    counted int *a = new int
-    *a = 101
+    int^ a = new int
+    a^ = 101
     return a
 }
 
-func otest(counted int *a) : counted int *
+func otest(int^ a) : int^
 {
-    *a = 11
+    a^ = 11
     return a
 }
 
 func ptest() : void
 {
-    counted int *a = new int
-    counted int *b = otest(a)
-    puts *b
+    int^ a = new int
+    int^ b = otest(a)
+    puts b^
 
     b = otest(new int)
-    puts *b
+    puts b^
 
     otest(new int)
 }
 
 func main() : int
 {
-    counted int *t = new int
+    int^ t = new int
     test(t)
     test(new int)
 
     creation(1000)
 
-    puts *rettest()
+    puts rettest()^
 
-    counted int *o = rettest()
+    int^ o = rettest()
 
     test(rettest())
     ptest()

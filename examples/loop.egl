@@ -3,11 +3,11 @@ func main() : int {
         puts i
     }
 
-    for int ^i = new int; *i < 50; *i = *i + 1 {
+    for int ^i = new int; i^ < 50; i^ = i^ + 1 {
         int ^tmp = new int
-        *tmp = *i
+        tmp^ = i^
         i = tmp
-        puts *i
+        puts i^
     }
 
     return 0

@@ -33,6 +33,6 @@ func test() : void
         k = nil
 
     if k
-        puts *k
+        puts k^
 }
 
