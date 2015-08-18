@@ -1,5 +1,6 @@
 func test(weak int* a, int^* b) : void
 {
+    puts a
     b^ = nil
     puts a
 }

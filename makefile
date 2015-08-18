@@ -1,10 +1,12 @@
 CORE_SOURCES=$(wildcard src/core/*.c)
 COMPILER_SOURCES=$(wildcard src/compiler/*.c)
 GRAMMAR_SOURCES=$(wildcard src/grammar/*.c)
+EXAMPLE_SOURCES=$(wildcard examples/*.egl)
 
 CORE_OBJ_FILES=$(addprefix obj/core/,$(notdir $(CORE_SOURCES:.c=.o)))
 COMPILER_OBJ_FILES=$(addprefix obj/compiler/,$(notdir $(COMPILER_SOURCES:.c=.o)))
 GRAMMAR_OBJ_FILES=$(addprefix obj/grammar/,$(notdir $(GRAMMAR_SOURCES:.c=.o)))
+EXAMPLE_EXECUTABLES=$(addprefix builtex/,$(notdir $(EXAMPLE_SOURCES:.egl=.e)))
 
 CFLAGS=-g -Isrc -std=c99 -O0 -Wall `llvm-config --cflags`
 LDFLAGS=`llvm-config --ldflags --system-libs --libs core support analysis native`
@@ -13,7 +15,7 @@ CC=gcc
 MKDIR=mkdir -p
 LD=g++
 
-all: glory
+all: glory 
 
 eagle: guts glory
 
@@ -32,6 +34,11 @@ clean:
 deep_clean: clean
 	rm -f *.s
 	rm -f *.ll
+	rm -rf builtex
+
+clean-examples:
+	rm -f *.e
+	rm -rf builtex
 
 obj/compiler/%.o: src/compiler/%.c
 	$(MKDIR) obj/compiler/
@@ -56,4 +63,13 @@ prog: out.ll rc.o
 	./eagle $< 2>out.ll
 	llc out.ll
 	$(CC) out.s rc.o -g -o $@.e
+
+builtex/%.e: examples/%.egl
+	$(MKDIR) builtex/
+	./eagle $< 2> out.ll
+	llc out.ll
+	$(CC) out.s rc.o -g -o $@ -lm
+
+all-examples: $(EXAMPLE_EXECUTABLES)
+
 

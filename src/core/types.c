@@ -95,13 +95,15 @@ LLVMTypeRef ett_llvm_type(EagleTypeType *type)
             EaglePointerType *pt = (EaglePointerType *)type;
             if(pt->counted || pt->weak)
             {
-                LLVMTypeRef tys[5];
+                LLVMTypeRef ptmp = LLVMPointerType(LLVMInt8Type(), 0);
+                LLVMTypeRef tys[6];
                 tys[0] = LLVMInt64Type();
                 tys[1] = LLVMInt16Type();
                 tys[2] = LLVMInt16Type();
                 tys[3] = LLVMPointerType(LLVMInt8Type(), 0);
-                tys[4] = ett_llvm_type(pt->to);
-                return LLVMPointerType(LLVMStructType(tys, 5, 0), 0);
+                tys[4] = LLVMPointerType(LLVMFunctionType(LLVMVoidType(), &ptmp, 1, 0), 0);
+                tys[5] = ett_llvm_type(pt->to);
+                return LLVMPointerType(LLVMStructType(tys, 6, 0), 0);
             }
             return LLVMPointerType(ett_llvm_type(((EaglePointerType *)type)->to), 0);
         }

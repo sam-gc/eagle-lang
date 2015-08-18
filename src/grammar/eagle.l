@@ -9,6 +9,7 @@
     #define DISCARD_NL (save_newline = 0)
     #define SAVE_NL (save_newline = 1)
     #define OVERRIDE (override = 1)
+    #define OVEROVERIDE (override = 0)
 
     int save_newline = 0;
     int override = 0;
@@ -66,7 +67,7 @@ semi (";"|";"{whitechar}*"\n")
 "@"         DISCARD_NL; return SET(TAT);
 "("         DISCARD_NL; return SET(TLPAREN);
 ")"         SAVE_NL; return SET(TRPAREN);
-{lbrace}    return SET(TLBRACE);
+{lbrace}    OVEROVERIDE; return SET(TLBRACE);
 "}"         DISCARD_NL; return SET(TRBRACE);
 "["         DISCARD_NL; return SET(TLBRACKET);
 "]"         SAVE_NL; return SET(TRBRACKET);

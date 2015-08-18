@@ -120,8 +120,10 @@ LLVMValueRef ac_compile_identifier(AST *ast, CompilerBundle *cb)
 
     if(b->type->type == ETStruct)
         return b->value;
-    if(b->type->type == ETPointer && ((EaglePointerType *)b->type)->to->type == ETStruct && !ET_IS_COUNTED(b->type) && !ET_IS_WEAK(b->type))
+    /*
+    if((b->type->type == ETPointer && ((EaglePointerType *)b->type)->to->type == ETStruct) && (!ET_IS_COUNTED(b->type) && !ET_IS_WEAK(b->type)))
         return b->value;
+        */
 
     return LLVMBuildLoad(cb->builder, b->value, "loadtmp");
 }
@@ -252,14 +254,17 @@ LLVMValueRef ac_compile_new_decl(AST *ast, CompilerBundle *cb)
 {
     ASTUnary *a = (ASTUnary *)ast;
     ASTTypeDecl *type = (ASTTypeDecl *)a->val;
+
+    LLVMTypeRef ptmp = LLVMPointerType(LLVMInt8Type(), 0);
     
-    LLVMTypeRef tys[5];
+    LLVMTypeRef tys[6];
     tys[0] = LLVMInt64Type();
     tys[1] = LLVMInt16Type();
     tys[2] = LLVMInt16Type();
     tys[3] = LLVMPointerType(LLVMInt8Type(), 0);
-    tys[4] = ett_llvm_type(type->etype);
-    LLVMTypeRef tt = LLVMStructType(tys, 5, 0);
+    tys[4] = LLVMPointerType(LLVMFunctionType(LLVMVoidType(), &ptmp, 1, 0), 0);
+    tys[5] = ett_llvm_type(type->etype);
+    LLVMTypeRef tt = LLVMStructType(tys, 6, 0);
 
     LLVMValueRef mal = LLVMBuildMalloc(cb->builder, tt, "new");
     EaglePointerType *pt = (EaglePointerType *)ett_pointer_type(type->etype);
@@ -1337,7 +1342,7 @@ void ac_unwrap_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty,
 
     LLVMValueRef tptr = *ptr;//LLVMBuildLoad(cb->builder, *ptr, "tptr");
 
-    LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, tptr, 4, "unwrap");
+    LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, tptr, 5, "unwrap");
 
     *ptr = pos;
 }

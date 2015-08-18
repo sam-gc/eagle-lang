@@ -8,15 +8,8 @@ typedef struct {
     int16_t wrefct;
     int16_t wrefal;
     void ***wrefs;
-} __egl_ptr;
-
-struct estruct {
-    int64_t memcount;
-    int16_t wrefct;
-    int16_t wrefal;
-    void ***wrefs;
     void (*teardown)(void *);
-};
+} __egl_ptr;
 
 void __egl_prepare(__egl_ptr *ptr)
 {
@@ -24,6 +17,7 @@ void __egl_prepare(__egl_ptr *ptr)
     ptr->wrefct = 0;
     ptr->wrefal = 0;
     ptr->wrefs = NULL;
+    ptr->teardown = NULL;
 }
 
 void __egl_incr_ptr(__egl_ptr *ptr)
@@ -49,6 +43,8 @@ void __egl_decr_ptr(__egl_ptr *ptr)
     {
         if(ptr->wrefs)
         {
+            if(ptr->teardown) ptr->teardown(ptr);
+
             __egl_set_nil(ptr->wrefs, ptr->wrefct);
             free(ptr->wrefs);
         }
@@ -65,6 +61,8 @@ void __egl_check_ptr(__egl_ptr *ptr)
     {
         if(ptr->wrefs)
         {
+            if(ptr->teardown) ptr->teardown(ptr);
+
             __egl_set_nil(ptr->wrefs, ptr->wrefct);
             free(ptr->wrefs);
         }
@@ -129,14 +127,5 @@ void __egl_array_decr_ptrs(void **arr, int64_t ct)
     int64_t i;
     for(i = 0; i < ct; i++)
         __egl_decr_ptr(arr[i]);
-}
-
-void __egl_struct_decr(struct estruct *ptr)
-{
-    if(!ptr)
-        return;
-
-    ptr->memcount = ptr->memcount - 1;
-    __egl_check_ptr((__egl_ptr *)ptr);
 }
 
