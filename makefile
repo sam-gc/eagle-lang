@@ -52,3 +52,8 @@ prog: out.ll rc.o
 	llc out.ll
 	$(CC) out.s rc.o -g
 
+%: examples/%.egl rc.o
+	./eagle $< 2>out.ll
+	llc out.ll
+	$(CC) out.s rc.o -g -o $@.e
+

@@ -3,11 +3,31 @@ func test() : void {
     weak int* j = i
     weak int* k = i
     j^ = 32
-    j = nil
-    puts k^
+    k = nil
+    puts j^
+}
+
+func testtwo() : void {
+    weak int *x
+    puts x
+    if yes {
+        x = new int
+        puts x
+        int^ y = new int
+        y^ = 101
+        x = y
+        puts x^
+    }
+    puts x
+}
+
+func testthree(int^* k) : void {
+    puts k^^
+    k^ = nil
 }
 
 func main() : void {
+    test()
     int^ i = new int
     weak int* j = i
     puts i
@@ -17,5 +37,13 @@ func main() : void {
     i = nil
     puts j
 
-    test()
+    testtwo()
+
+    int^ a = new int
+    a^ = 37
+    weak int *b = a
+    testthree(&a)
+    puts b
+
+
 }

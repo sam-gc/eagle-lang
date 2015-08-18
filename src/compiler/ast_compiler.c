@@ -120,7 +120,7 @@ LLVMValueRef ac_compile_identifier(AST *ast, CompilerBundle *cb)
 
     if(b->type->type == ETStruct)
         return b->value;
-    if(b->type->type == ETPointer && ((EaglePointerType *)b->type)->to->type == ETStruct)
+    if(b->type->type == ETPointer && ((EaglePointerType *)b->type)->to->type == ETStruct && !ET_IS_COUNTED(b->type) && !ET_IS_WEAK(b->type))
         return b->value;
 
     return LLVMBuildLoad(cb->builder, b->value, "loadtmp");
@@ -241,6 +241,7 @@ LLVMValueRef ac_compile_struct_member(AST *ast, CompilerBundle *cb, int keepPoin
         die(ALN, "Struct \"%s\" has no member \"%s\".", ((EagleStructType *)ty)->name, a->ident);
 
     ast->resultantType = type;
+
     LLVMValueRef gep = LLVMBuildStructGEP(cb->builder, left, index, a->ident);
     if(keepPointer)
         return gep;
@@ -631,9 +632,12 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
 
                 ac_unwrap_pointer(cb, &v, a->val->resultantType, 0);
 
-                LLVMValueRef r = LLVMBuildLoad(cb->builder, v, "dereftmp");
                 EaglePointerType *pt = (EaglePointerType *)a->val->resultantType;
                 a->resultantType = pt->to;
+
+                LLVMValueRef r = v;
+                if(a->resultantType->type != ETStruct)
+                    r = LLVMBuildLoad(cb->builder, v, "dereftmp");
                 return r;
             }
         case 'c':
@@ -1002,6 +1006,8 @@ void ac_compile_function(AST *ast, CompilerBundle *cb)
             LLVMBuildStore(cb->builder, LLVMGetParam(func, i), pos);
             if(ET_IS_COUNTED(eparam_types[i]))
                 ac_incr_pointer(cb, &pos, eparam_types[i]);
+            if(ET_IS_WEAK(eparam_types[i]))
+                ac_add_weak_pointer(cb, LLVMGetParam(func, i), pos, eparam_types[i]);
         }
     }
 
@@ -1326,7 +1332,7 @@ LLVMValueRef ac_make_comp(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef 
 void ac_unwrap_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty, int keepptr)
 {
     EaglePointerType *pt = (EaglePointerType *)ty;
-    if(!pt->counted)
+    if(!pt->counted && !pt->weak)
         return;
 
     LLVMValueRef tptr = *ptr;//LLVMBuildLoad(cb->builder, *ptr, "tptr");

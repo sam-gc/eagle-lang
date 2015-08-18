@@ -1,0 +1,16 @@
+func test(weak int* a, int^* b) : void
+{
+    b^ = nil
+    puts a
+}
+
+func main() : int
+{
+    int^ a = new int
+    weak int* b = a
+
+    test(b, &a)
+    puts b
+
+    return 0
+}

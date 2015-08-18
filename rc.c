@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdio.h>
 
 typedef struct {
     int64_t memcount;
@@ -11,6 +12,9 @@ typedef struct {
 
 struct estruct {
     int64_t memcount;
+    int16_t wrefct;
+    int16_t wrefal;
+    void ***wrefs;
     void (*teardown)(void *);
 };
 
@@ -106,11 +110,12 @@ void __egl_remove_weak(__egl_ptr **pos)
         return;
     if(idx == ptr->wrefct - 1)
     {
+        ptr->wrefct--;
         ptr->wrefs[idx] = NULL;
         return;
     }
 
-    memcpy(pos + idx, pos + idx + 1, (ptr->wrefct - idx) * sizeof(void *));
+    memmove(pos + idx, pos + idx + 1, (ptr->wrefct - idx - 1) * sizeof(void *));
     ptr->wrefs[--ptr->wrefct] = NULL;
 }
 
@@ -132,10 +137,6 @@ void __egl_struct_decr(struct estruct *ptr)
         return;
 
     ptr->memcount = ptr->memcount - 1;
-    if(!ptr->memcount)
-    {
-        ptr->teardown(ptr);
-        free(ptr);
-    }
+    __egl_check_ptr((__egl_ptr *)ptr);
 }
 

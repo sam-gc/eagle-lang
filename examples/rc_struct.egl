@@ -1,0 +1,37 @@
+struct Test {
+    int x
+    int y
+}
+
+func createTest(int x, int y) : Test^
+{
+    Test^ t = new Test
+    t->x = x
+    t->y = y
+
+    return t
+}
+
+func sumTest(Test^ t) : int
+{
+    int val = t->x + t->y
+    t->x = t->x - 1
+    t->y = t->y - 1
+
+    return val
+}
+
+func main() : int
+{
+    Test^ t = createTest(5, 10)
+    puts sumTest(t)
+    puts sumTest(t)
+
+    weak Test* u = t
+    if yes
+        t = nil
+
+    puts u
+    return 0
+}
+

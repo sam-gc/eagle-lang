@@ -93,7 +93,7 @@ LLVMTypeRef ett_llvm_type(EagleTypeType *type)
         case ETPointer:
         {
             EaglePointerType *pt = (EaglePointerType *)type;
-            if(pt->counted)
+            if(pt->counted || pt->weak)
             {
                 LLVMTypeRef tys[5];
                 tys[0] = LLVMInt64Type();
