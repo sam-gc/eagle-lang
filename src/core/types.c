@@ -384,7 +384,6 @@ void ty_struct_member_index(EagleTypeType *ett, char *member, int *index, EagleT
 
 int ty_needs_destructor(EagleTypeType *ett)
 {
-    /*
     EagleStructType *st = (EagleStructType *)ett;
     arraylist *types = hst_get(&types_table, st->name, NULL, NULL);
 
@@ -395,11 +394,12 @@ int ty_needs_destructor(EagleTypeType *ett)
     for(i = 0; i < types->count; i++)
     {
         EagleTypeType *ty = types->items[i];
-        if(ET_IS_COUNTED)
-            1;
+        if(ET_IS_COUNTED(ty) || ET_IS_WEAK(ty))
+            return 1;
+        if(ty->type == ETStruct)
+            return ty_needs_destructor(ty);
     }
 
-    */
     return 0;
 }
 

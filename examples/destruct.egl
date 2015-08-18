@@ -1,0 +1,16 @@
+struct Test {
+    int^ i
+    weak int *j
+    int l
+
+    Blah b
+}
+
+struct Blah {
+    int^ blob
+}
+
+func main() : void {
+    Test t
+}
+

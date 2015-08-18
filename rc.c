@@ -8,7 +8,7 @@ typedef struct {
     int16_t wrefct;
     int16_t wrefal;
     void ***wrefs;
-    void (*teardown)(void *);
+    void (*teardown)(void *, int);
 } __egl_ptr;
 
 void __egl_prepare(__egl_ptr *ptr)
@@ -43,7 +43,7 @@ void __egl_decr_ptr(__egl_ptr *ptr)
     {
         if(ptr->wrefs)
         {
-            if(ptr->teardown) ptr->teardown(ptr);
+            if(ptr->teardown) ptr->teardown(ptr, 1);
 
             __egl_set_nil(ptr->wrefs, ptr->wrefct);
             free(ptr->wrefs);
@@ -61,7 +61,7 @@ void __egl_check_ptr(__egl_ptr *ptr)
     {
         if(ptr->wrefs)
         {
-            if(ptr->teardown) ptr->teardown(ptr);
+            if(ptr->teardown) ptr->teardown(ptr, 1);
 
             __egl_set_nil(ptr->wrefs, ptr->wrefct);
             free(ptr->wrefs);
