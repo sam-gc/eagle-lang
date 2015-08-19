@@ -204,6 +204,7 @@ LLVMValueRef ac_compile_var_decl(AST *ast, CompilerBundle *cb)
         }
     }
     */
+    LLVMPositionBuilderAtEnd(cb->builder, curblock);
 
     vs_put(cb->varScope, a->ident, pos, type->etype);
 
@@ -231,8 +232,6 @@ LLVMValueRef ac_compile_var_decl(AST *ast, CompilerBundle *cb)
     }
 
     ast->resultantType = type->etype;
-
-    LLVMPositionBuilderAtEnd(cb->builder, curblock);
 
     return pos;
 }

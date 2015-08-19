@@ -1,0 +1,23 @@
+struct Test {
+    int^ x
+    Test^ next
+}
+
+func main() : void {
+    Test ^t = new Test
+    t->x = new int
+    t->x^ = 42
+
+    Test^ head = t
+
+    for int i = 0; i < 10; i = i + 1 {
+        Test^ temp = new Test
+        t->next = temp;
+        temp->x = new int
+        temp->x^ = i
+
+        t = temp
+    }
+
+    head = nil
+}

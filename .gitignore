@@ -2,8 +2,11 @@ src/grammar/*.c
 src/grammar/*.h
 src/grammar/eagle.output
 
+builtex/*
+
 *.ll
 *.s
+*.e
 
 obj/
 eagle
