@@ -79,6 +79,7 @@ semi (";"|";"{whitechar}*"\n")
 "countof"   DISCARD_NL; return SET(TCOUNTOF);
 "counted"   DISCARD_NL; return SET(TCOUNTED);
 "weak"      DISCARD_NL; return SET(TWEAK);
+"unwrap"    DISCARD_NL; return SET(TUNWRAP);
 "new"       DISCARD_NL; return SET(TNEW);
 "if"        DISCARD_NL; return SET(TIF);
 "for"       DISCARD_NL; return SET(TFOR);

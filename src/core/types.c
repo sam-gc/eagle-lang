@@ -211,6 +211,13 @@ int ett_are_same(EagleTypeType *left, EagleTypeType *right)
         EaglePointerType *pl = (EaglePointerType *)left;
         EaglePointerType *pr = (EaglePointerType *)right;
 
+        int cl = pl->counted + pl->weak;
+        int cr = pr->counted + pr->weak;
+        if(cl > 0 && !cr)
+            return 0;
+        if(cr > 0 && !cl)
+            return 0;
+
         return ett_are_same(pl->to, pr->to);
     }
 

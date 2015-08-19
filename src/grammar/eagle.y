@@ -20,7 +20,7 @@
 %token <string> TIDENTIFIER TINT TDOUBLE TTYPE TCOUNTED TNEW TSTRUCT
 %token <token> TPLUS TMINUS TEQUALS TMUL TDIV TGT TLT TEQ TNE TGTE TLTE TNOT TPOW
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TLBRACKET TRBRACKET
-%token <token> TFUNC TRETURN TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF TFOR TWEAK
+%token <token> TFUNC TRETURN TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF TFOR TWEAK TUNWRAP
 %token <token> TCOLON TSEMI TNEWLINE TCOMMA TDOT TAMP TAT TARROW
 %token <token> TYES TNO TNIL
 %type <node> program declarations declaration statements statement block funcdecl ifstatement
@@ -29,7 +29,7 @@
 %type <node> expr singexpr binexpr unexpr ounexpr forstatement
 
 %nonassoc TNEW;
-%nonassoc TCOUNTED TWEAK;
+%nonassoc TCOUNTED TWEAK TUNWRAP;
 %right TEQUALS;
 %left TNOT;
 %left TEQ TNE TLT TGT TLTE TGTE
@@ -154,6 +154,7 @@ unexpr              : ounexpr TPOW { $$ = ast_make_unary($1, '*'); }
                     | TNOT ounexpr { $$ = ast_make_unary($2, '!'); }
                     | TSIZEOF ounexpr { $$ = ast_make_unary($2, 's'); }
                     | TCOUNTOF ounexpr { $$ = ast_make_unary($2, 'c'); }
+                    | TUNWRAP ounexpr { $$ = ast_make_unary($2, 'u'); }
                     | ounexpr TLBRACKET expr TRBRACKET { $$ = ast_make_binary($1, $3, '['); }
                     | ounexpr TDOT TIDENTIFIER { $$ = ast_make_struct_get($1, $3); }
                     | ounexpr TARROW TIDENTIFIER { $$ = ast_make_struct_get(ast_make_unary($1, '*'), $3); }

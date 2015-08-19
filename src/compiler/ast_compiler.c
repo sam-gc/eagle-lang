@@ -687,6 +687,14 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
                 a->resultantType = ett_base_type(ETInt64);
                 return LLVMBuildLoad(cb->builder, r, "dereftmp");
             }
+        case 'u':
+            {
+                if(!ET_IS_COUNTED(a->val->resultantType) && !ET_IS_WEAK(a->val->resultantType))
+                    die(ALN, "Only pointers in the counted regime may be unwrapped.");
+
+                a->resultantType = ett_pointer_type(((EaglePointerType *)a->val->resultantType)->to);
+                return LLVMBuildStructGEP(cb->builder, v, 5, "unwrap");
+            }
         case '!':
             // TODO: Broken
             return LLVMBuildNot(cb->builder, v, "nottmp");
@@ -1407,6 +1415,8 @@ LLVMValueRef ac_build_conversion(LLVMBuilderRef builder, LLVMValueRef val, Eagle
                 return LLVMBuildBitCast(builder, val, ett_llvm_type(to), "ptrtmp");
             if(ett_get_base_type(from) == ETAny && ett_pointer_depth(from) == 1)
                 return LLVMBuildBitCast(builder, val, ett_llvm_type(to), "ptrtmp");
+            if(ET_IS_COUNTED(to) != ET_IS_COUNTED(from) || ET_IS_WEAK(to) != ET_IS_WEAK(from))
+                die(-1, "Counted pointer type may not be converted to counted pointer type. Use the \"unwrap\" keyword.");
 
             if(ett_pointer_depth(to) != ett_pointer_depth(from))
                 die(-1, "Implicit pointer conversion invalid. Cannot conver pointer of depth %d to depth %d.", ett_pointer_depth(to), ett_pointer_depth(from));
