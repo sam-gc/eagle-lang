@@ -1,6 +1,6 @@
 struct Test {
     int^ i
-    weak int *j
+    weak int^ j
     int l
 
     Blah b
@@ -10,7 +10,50 @@ struct Blah {
     int^ blob
 }
 
+func alskdfj(Test *t) : void {
+    t->i = new int
+    t->i^ = 42
+}
+
+func mallocPassTest(Test^ i) : void {
+    i->i = new int
+    i->i^ = 45
+}
+
+func mallocTest() : void {
+    Test^ t = new Test
+    t->i = new int
+    t->i^ = 66
+    mallocPassTest(t)
+    puts t->i^
+
+    t->b.blob = new int
+    t->j = t->b.blob
+
+    weak Test^ w = t
+    t = nil
+    puts w
+}
+
 func main() : void {
     Test t
+
+    t.i = new int
+    t.i^ = 11
+    t.j = t.i
+
+    puts t.b.blob
+
+    t.b.blob = new int
+   
+    puts t.j^
+    puts t.i
+    Test e
+    e = t
+
+    alskdfj(&e)
+    puts e.i^
+
+    mallocTest()
 }
 

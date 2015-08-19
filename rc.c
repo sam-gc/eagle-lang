@@ -43,11 +43,10 @@ void __egl_decr_ptr(__egl_ptr *ptr)
     {
         if(ptr->wrefs)
         {
-            if(ptr->teardown) ptr->teardown(ptr, 1);
-
             __egl_set_nil(ptr->wrefs, ptr->wrefct);
             free(ptr->wrefs);
         }
+        if(ptr->teardown) ptr->teardown(ptr, 1);
         free(ptr);
     }
 }
@@ -61,11 +60,10 @@ void __egl_check_ptr(__egl_ptr *ptr)
     {
         if(ptr->wrefs)
         {
-            if(ptr->teardown) ptr->teardown(ptr, 1);
-
             __egl_set_nil(ptr->wrefs, ptr->wrefct);
             free(ptr->wrefs);
         }
+        if(ptr->teardown) ptr->teardown(ptr, 1);
         free(ptr);
     }
 }

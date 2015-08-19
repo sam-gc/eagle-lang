@@ -1,0 +1,61 @@
+struct Node {
+    Node^ next
+    weak Node^ prev
+
+    int payload
+}
+
+func makeNode(int payload) : Node^
+{
+    Node^ n = new Node
+    n->payload = payload
+
+    return n
+}
+
+func appendNode(Node^ head, int value) : void
+{
+    for head; head->next; head = head->next
+    {
+        0
+    }
+
+    head->next = makeNode(value)
+    head->next->prev = head
+}
+
+func removeNode(Node^ head, int idx) : void
+{
+    for int i = 0; i < idx; i = i + 1 {
+        head = head->next
+    }
+
+    Node^ nx = head->next
+    Node^ prev = head->prev
+
+    prev->next = nx
+}
+
+func printList(Node^ head) : void
+{
+    for head; head; head = head->next
+    {
+        puts head->payload
+    }
+}
+
+func main() : int
+{
+    Node^ head = makeNode(11)
+    appendNode(head, 10)
+    appendNode(head, 9)
+    appendNode(head, 8)
+    appendNode(head, 7)
+
+    removeNode(head, 1)
+
+    printList(head)
+
+    return 0
+}
+

@@ -40,10 +40,12 @@ static inline void ac_decr_in_array(CompilerBundle *cb, LLVMValueRef arr, int ct
 static inline void ac_nil_fill_array(CompilerBundle *cb, LLVMValueRef arr, int ct);
 static inline void ac_add_weak_pointer(CompilerBundle *cb, LLVMValueRef ptr, LLVMValueRef weak, EagleTypeType *ty);
 static inline void ac_remove_weak_pointer(CompilerBundle *cb, LLVMValueRef weak, EagleTypeType *ty);
+static inline void ac_call_copy_constructor(CompilerBundle *cb, LLVMValueRef pos, EagleTypeType *ty);
 static inline void ac_call_constructor(CompilerBundle *cb, LLVMValueRef pos, EagleTypeType *ty);
 static inline void ac_call_destructor(CompilerBundle *cb, LLVMValueRef pos, EagleTypeType *ty);
 
 LLVMValueRef ac_dispatch_expression(AST *ast, CompilerBundle *cb);
+LLVMValueRef ac_gen_struct_destructor_func(char *name, CompilerBundle *cb);
 void ac_dispatch_statement(AST *ast, CompilerBundle *cb);
 void ac_dispatch_declaration(AST *ast, CompilerBundle *cb);
 
@@ -166,6 +168,12 @@ void ac_scope_leave_weak_callback(LLVMValueRef pos, EagleTypeType *ty, void *dat
     ac_remove_weak_pointer(cb, pos, ty);
 }
 
+void ac_scope_leave_struct_callback(LLVMValueRef pos, EagleTypeType *ty, void *data)
+{
+    CompilerBundle *cb = data;
+    ac_call_destructor(cb, pos, ty);
+}
+
 LLVMValueRef ac_compile_var_decl(AST *ast, CompilerBundle *cb)
 {
     ASTVarDecl *a = (ASTVarDecl *)ast;
@@ -203,13 +211,17 @@ LLVMValueRef ac_compile_var_decl(AST *ast, CompilerBundle *cb)
     {
         LLVMBuildStore(cb->builder, LLVMConstPointerNull(ett_llvm_type(type->etype)), pos);
 
-        EaglePointerType *pt = (EaglePointerType *)type->etype;
         vs_add_callback(cb->varScope, a->ident, ac_scope_leave_callback, cb);
     }
     else if(ET_IS_WEAK(type->etype))
     {
         LLVMBuildStore(cb->builder, LLVMConstPointerNull(ett_llvm_type(type->etype)), pos);
         vs_add_callback(cb->varScope, a->ident, ac_scope_leave_weak_callback, cb);
+    }
+    else if(type->etype->type == ETStruct && ty_needs_destructor(type->etype))
+    {
+        ac_call_constructor(cb, pos, type->etype);
+        vs_add_callback(cb->varScope, a->ident, ac_scope_leave_struct_callback, cb);
     }
 
     if(type->etype->type == ETArray && ett_array_has_counted(type->etype))
@@ -249,7 +261,7 @@ LLVMValueRef ac_compile_struct_member(AST *ast, CompilerBundle *cb, int keepPoin
     ast->resultantType = type;
 
     LLVMValueRef gep = LLVMBuildStructGEP(cb->builder, left, index, a->ident);
-    if(keepPointer)
+    if(keepPointer || type->type == ETStruct)
         return gep;
     return LLVMBuildLoad(cb->builder, gep, "");
 }
@@ -259,14 +271,16 @@ LLVMValueRef ac_compile_new_decl(AST *ast, CompilerBundle *cb)
     ASTUnary *a = (ASTUnary *)ast;
     ASTTypeDecl *type = (ASTTypeDecl *)a->val;
 
-    LLVMTypeRef ptmp = LLVMPointerType(LLVMInt8Type(), 0);
+    LLVMTypeRef ptmp[2];
+    ptmp[0] = LLVMPointerType(LLVMInt8Type(), 0);
+    ptmp[1] = LLVMInt1Type();
     
     LLVMTypeRef tys[6];
     tys[0] = LLVMInt64Type();
     tys[1] = LLVMInt16Type();
     tys[2] = LLVMInt16Type();
     tys[3] = LLVMPointerType(LLVMInt8Type(), 0);
-    tys[4] = LLVMPointerType(LLVMFunctionType(LLVMVoidType(), &ptmp, 1, 0), 0);
+    tys[4] = LLVMPointerType(LLVMFunctionType(LLVMVoidType(), ptmp, 2, 0), 0);
     tys[5] = ett_llvm_type(type->etype);
     LLVMTypeRef tt = LLVMStructType(tys, 6, 0);
 
@@ -276,6 +290,14 @@ LLVMValueRef ac_compile_new_decl(AST *ast, CompilerBundle *cb)
     ast->resultantType = (EagleTypeType *)pt;
 
     ac_prepare_pointer(cb, mal, ast->resultantType);
+    if(type->etype->type == ETStruct && ty_needs_destructor(type->etype))
+    {
+        LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, mal, 5, "");
+        ac_call_constructor(cb, pos, type->etype);
+        pos = LLVMBuildStructGEP(cb->builder, mal, 4, "");
+        EagleStructType *st = (EagleStructType *)type->etype;
+        LLVMBuildStore(cb->builder, ac_gen_struct_destructor_func(st->name, cb), pos);
+    }
     /*
     LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, mal, 0, "ctp");
     LLVMBuildStore(cb->builder, LLVMConstInt(LLVMInt64Type(), 0, 0), pos);
@@ -418,11 +440,19 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb)
         ac_remove_weak_pointer(cb, pos, totype);
         ac_add_weak_pointer(cb, r, pos, totype);
     }
+    else if(a->resultantType->type == ETStruct)
+    {
+        ac_call_destructor(cb, pos, a->resultantType);
+        r = LLVMBuildLoad(cb->builder, r, "");
+        //ac_call_constr(cb, r, a->resultantType);
+    }
 
     LLVMBuildStore(cb->builder, r, pos);
     
     if(ET_IS_COUNTED(a->resultantType) && !transient)
         ac_incr_pointer(cb, &ptrPos, totype);
+    else if(a->resultantType->type == ETStruct)
+        ac_call_copy_constructor(cb, pos, a->resultantType);
 
     return LLVMBuildLoad(cb->builder, pos, "loadtmp");
 }
@@ -1084,10 +1114,10 @@ LLVMValueRef ac_gen_struct_destructor_func(char *name, CompilerBundle *cb)
     return func;
 }
 
-LLVMValueRef ac_gen_struct_constructor_func(char *name, CompilerBundle *cb)
+LLVMValueRef ac_gen_struct_constructor_func(char *name, CompilerBundle *cb, int copy)
 {
     char *buf = malloc(strlen(name) + 9);
-    sprintf(buf, "__egl_i_%s", name);
+    copy ? sprintf(buf, "__egl_c_%s", name) : sprintf(buf, "__egl_i_%s", name);
 
     LLVMValueRef func = LLVMGetNamedFunction(cb->module, buf);
     if(func)
@@ -1103,10 +1133,50 @@ LLVMValueRef ac_gen_struct_constructor_func(char *name, CompilerBundle *cb)
     return func;
 }
 
+void ac_make_struct_copy_constructor(AST *ast, CompilerBundle *cb)
+{
+    ASTStructDecl *a = (ASTStructDecl *)ast;
+    LLVMValueRef func = ac_gen_struct_constructor_func(a->name, cb, 1);
+
+    EagleTypeType *ett = ett_pointer_type(ett_struct_type(a->name));
+
+    LLVMBasicBlockRef entry = LLVMAppendBasicBlock(func, "entry");
+    LLVMPositionBuilderAtEnd(cb->builder, entry);
+    LLVMValueRef in = LLVMGetParam(func, 0);
+    LLVMValueRef strct = LLVMBuildBitCast(cb->builder, in, ett_llvm_type(ett), "");
+
+
+    arraylist *types = &a->types;
+    int i;
+    for(i = 0; i < types->count; i++)
+    {
+        EagleTypeType *t = arr_get(types, i);
+        if(ET_IS_COUNTED(t))
+        {
+            LLVMValueRef gep = LLVMBuildStructGEP(cb->builder, strct, i, "");
+            ac_incr_pointer(cb, &gep, t);
+        }
+        else if(ET_IS_WEAK(t))
+        {
+            LLVMValueRef gep = LLVMBuildStructGEP(cb->builder, strct, i, "");
+            ac_add_weak_pointer(cb, LLVMBuildLoad(cb->builder, gep, ""), gep, t);
+        }
+        else if(t->type == ETStruct && ty_needs_destructor(t))
+        {
+            LLVMValueRef fc = ac_gen_struct_constructor_func(((EagleStructType *)t)->name, cb, 1);
+            LLVMValueRef param = LLVMBuildStructGEP(cb->builder, strct, i, "");
+            param = LLVMBuildBitCast(cb->builder, param, LLVMPointerType(LLVMInt8Type(), 0), "");
+            LLVMBuildCall(cb->builder, fc, &param, 1, "");
+        }
+    }
+
+    LLVMBuildRetVoid(cb->builder);
+}
+
 void ac_make_struct_constructor(AST *ast, CompilerBundle *cb)
 {
     ASTStructDecl *a = (ASTStructDecl *)ast;
-    LLVMValueRef func = ac_gen_struct_constructor_func(a->name, cb);
+    LLVMValueRef func = ac_gen_struct_constructor_func(a->name, cb, 0);
 
     EagleTypeType *ett = ett_pointer_type(ett_struct_type(a->name));
 
@@ -1128,7 +1198,7 @@ void ac_make_struct_constructor(AST *ast, CompilerBundle *cb)
         }
         else if(t->type == ETStruct && ty_needs_destructor(t))
         {
-            LLVMValueRef fc = ac_gen_struct_constructor_func(((EagleStructType *)t)->name, cb);
+            LLVMValueRef fc = ac_gen_struct_constructor_func(((EagleStructType *)t)->name, cb, 0);
             LLVMValueRef param = LLVMBuildStructGEP(cb->builder, strct, i, "");
             param = LLVMBuildBitCast(cb->builder, param, LLVMPointerType(LLVMInt8Type(), 0), "");
             LLVMBuildCall(cb->builder, fc, &param, 1, "");
@@ -1163,6 +1233,7 @@ void ac_make_struct_destructor(AST *ast, CompilerBundle *cb)
     ett->counted = 0;
     LLVMPositionBuilderAtEnd(cb->builder, elseBB);
     cast = LLVMBuildBitCast(cb->builder, LLVMGetParam(func, 0), ett_llvm_type((EagleTypeType *)ett), "");
+    LLVMBuildStore(cb->builder, cast, pos);
     LLVMBuildBr(cb->builder, mergeBB);
 
     LLVMPositionBuilderAtEnd(cb->builder, mergeBB);
@@ -1278,6 +1349,7 @@ void ac_make_struct_definitions(AST *ast, CompilerBundle *cb)
         {
             ac_make_struct_destructor(ast, cb);
             ac_make_struct_constructor(ast, cb);
+            ac_make_struct_copy_constructor(ast, cb);
         }
     }
 }
@@ -1611,16 +1683,31 @@ void ac_remove_weak_pointer(CompilerBundle *cb, LLVMValueRef weak, EagleTypeType
     LLVMBuildCall(cb->builder, func, &val, 1, "");
 }
 
+void ac_call_copy_constructor(CompilerBundle *cb, LLVMValueRef pos, EagleTypeType *ty)
+{
+    if(ET_IS_WEAK(ty) || ET_IS_COUNTED(ty))
+        pos = LLVMBuildStructGEP(cb->builder, pos, 5, "");
+
+    EagleStructType *st = ty->type == ETPointer ? (EagleStructType *)((EaglePointerType *)ty)->to
+                                                : (EagleStructType *)ty;
+
+    pos = LLVMBuildBitCast(cb->builder, pos, LLVMPointerType(LLVMInt8Type(), 0), "");
+
+    LLVMValueRef func = ac_gen_struct_constructor_func(st->name, cb, 1);
+    LLVMBuildCall(cb->builder, func, &pos, 1, "");
+}
+
 void ac_call_constructor(CompilerBundle *cb, LLVMValueRef pos, EagleTypeType *ty)
 {
     if(ET_IS_WEAK(ty) || ET_IS_COUNTED(ty))
         pos = LLVMBuildStructGEP(cb->builder, pos, 5, "");
 
-    EagleStructType *st = (EagleStructType *)((EaglePointerType *)ty)->to;
+    EagleStructType *st = ty->type == ETPointer ? (EagleStructType *)((EaglePointerType *)ty)->to
+                                                : (EagleStructType *)ty;
 
     pos = LLVMBuildBitCast(cb->builder, pos, LLVMPointerType(LLVMInt8Type(), 0), "");
 
-    LLVMValueRef func = ac_gen_struct_constructor_func(st->name, cb);
+    LLVMValueRef func = ac_gen_struct_constructor_func(st->name, cb, 0);
     LLVMBuildCall(cb->builder, func, &pos, 1, "");
 }
 
@@ -1629,7 +1716,8 @@ void ac_call_destructor(CompilerBundle *cb, LLVMValueRef pos, EagleTypeType *ty)
     if(ET_IS_WEAK(ty) || ET_IS_COUNTED(ty))
         die(-1, "WEIRD ERROR");
 
-    EagleStructType *st = (EagleStructType *)((EaglePointerType *)ty)->to;
+    EagleStructType *st = ty->type == ETPointer ? (EagleStructType *)((EaglePointerType *)ty)->to
+                                                : (EagleStructType *)ty;
     pos = LLVMBuildBitCast(cb->builder, pos, LLVMPointerType(LLVMInt8Type(), 0), "");
 
     LLVMValueRef func = ac_gen_struct_destructor_func(st->name, cb);

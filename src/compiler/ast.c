@@ -267,7 +267,11 @@ AST *ast_make_weak(AST *ast)
     if(a->etype->type != ETPointer)
         die(a->lineno, "Only pointer types may be declared weak.");
     EaglePointerType *ep = (EaglePointerType *)a->etype;
+    if(!ep->counted)
+        die(a->lineno, "Only counted pointers may be declared weak.");
+
     ep->weak = 1;
+    ep->counted = 0;
 
     return ast;
 }
