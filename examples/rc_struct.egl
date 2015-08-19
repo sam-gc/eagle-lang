@@ -27,7 +27,7 @@ func main() : int
     puts sumTest(t)
     puts sumTest(t)
 
-    weak Test* u = t
+    weak Test^ u = t
     if yes
         t = nil
 

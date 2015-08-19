@@ -1,4 +1,4 @@
-func test(weak int* a, int^* b) : void
+func test(weak int^ a, int^* b) : void
 {
     puts a
     b^ = nil
@@ -8,7 +8,7 @@ func test(weak int* a, int^* b) : void
 func main() : int
 {
     int^ a = new int
-    weak int* b = a
+    weak int^ b = a
 
     test(b, &a)
     puts b
