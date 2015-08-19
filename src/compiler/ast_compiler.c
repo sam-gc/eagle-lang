@@ -439,10 +439,12 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb)
         ac_remove_weak_pointer(cb, pos, totype);
         ac_add_weak_pointer(cb, r, pos, totype);
     }
-    else if(a->resultantType->type == ETStruct)
+    else if(a->resultantType->type == ETStruct && ty_needs_destructor(a->resultantType))
     {
         ac_call_destructor(cb, pos, a->resultantType);
         r = LLVMBuildLoad(cb->builder, r, "");
+        if(hst_remove_key(&cb->loadedTransients, a->right, ahhd, ahed))
+            transient = 1;
         //ac_call_constr(cb, r, a->resultantType);
     }
 
@@ -450,7 +452,7 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb)
     
     if(ET_IS_COUNTED(a->resultantType) && !transient)
         ac_incr_pointer(cb, &ptrPos, totype);
-    else if(a->resultantType->type == ETStruct)
+    else if(a->resultantType->type == ETStruct && ty_needs_destructor(a->resultantType) && !transient)
         ac_call_copy_constructor(cb, pos, a->resultantType);
 
     return LLVMBuildLoad(cb->builder, pos, "loadtmp");
@@ -754,7 +756,10 @@ void ac_decr_loaded_transients(void *key, void *val, void *data)
     AST *ast = key;
     LLVMValueRef pos = val;
 
-    ac_decr_val_pointer(cb, &pos, ast->resultantType);
+    if(ast->resultantType->type == ETPointer)
+        ac_decr_val_pointer(cb, &pos, ast->resultantType);
+    else
+        ac_call_destructor(cb, pos, ast->resultantType);
 }
 
 void ac_decr_transients(void *key, void *val, void *data)
@@ -951,6 +956,8 @@ int ac_compile_block(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
 
             if(!ett_are_same(t, o))
                 val = ac_build_conversion(cb->builder, val, t, o);
+            if(t->type == ETStruct)
+                val = LLVMBuildLoad(cb->builder, val, "");
 
             if(ET_IS_COUNTED(o))
                 ac_incr_val_pointer(cb, &val, o);
@@ -990,6 +997,8 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
         EagleTypeType *rt = p->resultantType;
         if(!ett_are_same(rt, ett->params[i]))
             val = ac_build_conversion(cb->builder, val, rt, ett->params[i]);
+        if(rt->type == ETStruct)
+            val = LLVMBuildLoad(cb->builder, val, "");
 
         hst_remove_key(&cb->transients, p, ahhd, ahed);
         // hst_remove_key(&cb->loadedTransients, p, ahhd, ahed);
@@ -997,7 +1006,7 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
     }
 
     LLVMValueRef out = LLVMBuildCall(cb->builder, func, args, ct, ett->retType->type == ETVoid ? "" : "callout");
-    if(ET_IS_COUNTED(ett->retType))
+    if(ET_IS_COUNTED(ett->retType) || (ett->retType->type == ETStruct && ty_needs_destructor(ett->retType)))
     {
         hst_put(&cb->loadedTransients, ast, out, ahhd, ahed);
     }
@@ -1048,12 +1057,15 @@ void ac_compile_function(AST *ast, CompilerBundle *cb)
         AST *p = a->params;
         for(i = 0; p; p = p->next, i++)
         {
+            EagleTypeType *ty = eparam_types[i];
             LLVMValueRef pos = ac_compile_var_decl(p, cb);
             LLVMBuildStore(cb->builder, LLVMGetParam(func, i), pos);
-            if(ET_IS_COUNTED(eparam_types[i]))
+            if(ET_IS_COUNTED(ty))
                 ac_incr_pointer(cb, &pos, eparam_types[i]);
-            if(ET_IS_WEAK(eparam_types[i]))
+            if(ET_IS_WEAK(ty))
                 ac_add_weak_pointer(cb, LLVMGetParam(func, i), pos, eparam_types[i]);
+            if(ty->type == ETStruct && ty_needs_destructor(ty))
+                ac_call_copy_constructor(cb, pos, ty);
         }
     }
 
