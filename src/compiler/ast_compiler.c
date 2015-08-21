@@ -662,18 +662,20 @@ LLVMValueRef ac_compile_get_address(AST *of, CompilerBundle *cb)
     return NULL;
 }
 
-void ac_replace_with_counted(CompilerBundle *cb, char *ident)
+void ac_replace_with_counted(CompilerBundle *cb, VarBundle *b)
 {
+    /*
     VarBundle *b = vs_get(cb->varScope, ident);
     if(!b)
         die(-1, "Var name not found");
+    */
 
     LLVMBasicBlockRef isb = LLVMGetInsertBlock(cb->builder);
     LLVMValueRef val = b->value;
     LLVMPositionBuilderBefore(cb->builder, val);
 
     LLVMValueRef mal = ac_compile_malloc_counted(b->type, &b->type, val, cb);
-    LLVMValueRef pos = LLVMBuildAlloca(cb->builder, ett_llvm_type(b->type), ident);
+    LLVMValueRef pos = LLVMBuildAlloca(cb->builder, ett_llvm_type(b->type), "");
     LLVMBuildStore(cb->builder, mal, pos);
     ac_incr_pointer(cb, &pos, b->type);
 
@@ -703,8 +705,8 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
 
     if(a->op == 't')
     {
-        ASTValue *v = (ASTValue *)a->val;
-        ac_replace_with_counted(cb, v->value.id);
+        //ASTValue *v = (ASTValue *)a->val;
+        //ac_replace_with_counted(cb, v->value.id);
         return NULL;
     }
 
@@ -1090,6 +1092,65 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
     }
 
     return out;
+}
+
+char *ac_closure_context_name(char *name)
+{
+    char *str = malloc(strlen(name) + 11);
+    sprintf(str, "__egl_ctx_%s", name);
+    return str;
+}
+
+char *ac_closure_code_name(char *name)
+{
+    char *str = malloc(strlen(name) + 12);
+    sprintf(str, "__egl_code_%s", name);
+    return str;
+}
+
+char *ac_closure_closure_name(char *name)
+{
+    char *str = malloc(strlen(name) + 11);
+    sprintf(str, "__egl_clj_%s", name);
+    return str;
+}
+
+char *ac_closure_destructor_name(char *name)
+{
+    char *str = malloc(strlen(name) + 10);
+    sprintf(str, "__egl_cx_%s", name);
+    return str;
+}
+
+void ac_pre_prepare_closure(CompilerBundle *cb, char *name)
+{
+
+}
+
+void ac_closure_callback(VarBundle *vb, void *data)
+{
+    CompilerBundle *cb = data;
+    ac_replace_with_counted(cb, vb);
+}
+
+void ac_compile_closure(AST *ast, CompilerBundle *cb)
+{
+    ASTFuncDecl *a = (ASTFuncDecl *)ast;
+
+    char *cname = ac_closure_closure_name(a->ident);
+    char *cdest = ac_closure_destructor_name(a->ident);
+    char *cctx  = ac_closure_context_name(a->ident);
+    char *ccode = ac_closure_code_name(a->ident);
+
+    int i;
+    AST *p = a->params;
+    for(i = 0; p; p = p->next, i++);
+
+    int ct = i;
+    LLVMTypeRef ctxType = LLVMStructCreateNamed(LLVMGetGlobalContext(), cctx);
+    
+
+    free(cname); free(cdest); free(cctx); free(ccode);
 }
 
 void ac_compile_function(AST *ast, CompilerBundle *cb)

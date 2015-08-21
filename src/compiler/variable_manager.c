@@ -1,6 +1,9 @@
 #include <stdlib.h>
 #include "variable_manager.h"
 
+#define SCOPE 1
+#define BARRIER 2
+
 VarScopeStack vs_make()
 {
     VarScopeStack vs;
@@ -22,6 +25,7 @@ void vs_push(VarScopeStack *vs)
     VarScope *scope = malloc(sizeof(VarScope));
     scope->table = hst_create();
     scope->table.duplicate_keys = 1;
+    scope->scope = SCOPE;
 
     scope->next = vs->scope;
 
@@ -35,7 +39,9 @@ void vs_pop(VarScopeStack *vs)
         return;
 
     vs->scope = s->next;
-    hst_free(&s->table);
+
+    if(s->scope == SCOPE)
+        hst_free(&s->table);
     free(s);
 }
 
@@ -44,6 +50,25 @@ VarBundle *vs_get(VarScopeStack *vs, char *ident)
     VarScope *s = vs->scope;
     for(; s; s = s->next)
     {
+        if(s->scope == BARRIER)
+        {
+            VarScopeStack temp;
+            temp.scope = s->next;
+
+            VarBundle *o = vs_get(&temp, ident);
+            if(o)
+            {
+                VarBarrier *vb = (VarBarrier *)s;
+                vb->closedCallback(o, vb->closedData);
+                
+                // We expect the callback to alter the scope stack so the
+                // following code doesn't recurse forever
+                return vs_get(vs, ident);
+            }
+
+            return NULL;
+        }
+
         VarBundle *o = hst_get(&s->table, ident, NULL, NULL);
         if(o)
             return o;
@@ -52,7 +77,17 @@ VarBundle *vs_get(VarScopeStack *vs, char *ident)
     return NULL;
 }
 
+void vs_push_closure(VarScopeStack *vs, ClosedCallback cb, void *data)
+{
+    VarBarrier *barrier = malloc(sizeof(VarBarrier));
+    barrier->scope = BARRIER;
 
+    barrier->closedCallback = cb;
+    barrier->closedData = data;
+
+    barrier->next = vs->scope;
+    vs->scope = (VarScope *)barrier;
+}
 
 void vs_put_global(VarScopeStack *vs, char *ident, LLVMValueRef val, EagleTypeType *type)
 {

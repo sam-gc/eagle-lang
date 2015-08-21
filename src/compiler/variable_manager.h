@@ -15,10 +15,21 @@ typedef struct {
     void *scopeData;
 } VarBundle;
 
+typedef void(*ClosedCallback)(VarBundle *, void *);
+
 typedef struct VarScope {
+    int scope;
     struct VarScope *next;
     hashtable table;
 } VarScope;
+
+typedef struct {
+    int scope;
+    struct VarScope *next;
+
+    ClosedCallback closedCallback;
+    void *closedData;
+} VarBarrier;
 
 typedef struct {
     mempool pool;
@@ -32,6 +43,7 @@ VarBundle *vs_get(VarScopeStack *vs, char *ident);
 void vs_put(VarScopeStack *vs, char *ident, LLVMValueRef val, EagleTypeType *type);
 void vs_put_global(VarScopeStack *vs, char *ident, LLVMValueRef val, EagleTypeType *type);
 VarBundle *vs_get_global(VarScopeStack *vs, char *ident);
+void vs_push_closure(VarScopeStack *vs, ClosedCallback cb, void *data);
 void vs_push(VarScopeStack *vs);
 void vs_pop(VarScopeStack *vs);
 
