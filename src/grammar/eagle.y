@@ -17,7 +17,7 @@
     AST *node;
 }
 
-%token <string> TIDENTIFIER TINT TDOUBLE TTYPE TCOUNTED TNEW TSTRUCT
+%token <string> TIDENTIFIER TINT TDOUBLE TTYPE TCOUNTED TNEW TSTRUCT TTOUCH
 %token <token> TPLUS TMINUS TEQUALS TMUL TDIV TGT TLT TEQ TNE TGTE TLTE TNOT TPOW
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TLBRACKET TRBRACKET
 %token <token> TFUNC TRETURN TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF TFOR TWEAK TUNWRAP
@@ -29,7 +29,7 @@
 %type <node> expr singexpr binexpr unexpr ounexpr forstatement
 
 %nonassoc TNEW;
-%nonassoc TCOUNTED TWEAK TUNWRAP;
+%nonassoc TCOUNTED TWEAK TUNWRAP TTOUCH;
 %right TEQUALS;
 %left TNOT;
 %left TEQ TNE TLT TGT TLTE TGTE
@@ -96,6 +96,7 @@ statement           : expr TSEMI { $$ = $1; }
                     | TSEMI { $$ = NULL; }
                     | ifstatement { $$ = $1; }
                     | forstatement { $$ = $1; }
+                    | TTOUCH expr TSEMI { $$ = ast_make_unary($2, 't'); }
                     ;
 
 forstatement        : TFOR expr block { $$ = ast_make_loop(NULL, $2, NULL, $3); }

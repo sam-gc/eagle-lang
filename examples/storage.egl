@@ -1,0 +1,49 @@
+func sum(int a, int b) : void
+{
+    puts a + b
+}
+
+struct Test {
+    int a
+    int b
+    int^ c
+}
+
+func strct() : void
+{
+    Test t
+    t.a = 50
+    touch t
+    t.b = 6
+    t.c = new int
+
+    puts t.a + t.b
+}
+
+func ptrtr() : void
+{
+    double^ d = new double
+    d^ = 101
+    touch d
+
+    puts d^
+}
+
+func main() : int
+{
+    int t
+    t = 5
+
+    t = 6
+    touch t
+    puts t
+
+    sum(t, 11)
+
+    t = 11
+    puts t
+
+    strct()
+    ptrtr()
+    return 0
+}

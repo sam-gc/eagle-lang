@@ -148,6 +148,7 @@ EagleTypeType *ett_pointer_type(EagleTypeType *to)
     ett->to = to;
     ett->counted = 0;
     ett->weak = 0;
+    ett->closed = 0;
 
     return (EagleTypeType *)ett;
 }

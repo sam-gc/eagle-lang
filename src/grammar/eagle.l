@@ -80,6 +80,7 @@ semi (";"|";"{whitechar}*"\n")
 "counted"   DISCARD_NL; return SET(TCOUNTED);
 "weak"      DISCARD_NL; return SET(TWEAK);
 "unwrap"    DISCARD_NL; return SET(TUNWRAP);
+"touch"     DISCARD_NL; return SET(TTOUCH);
 "new"       DISCARD_NL; return SET(TNEW);
 "if"        DISCARD_NL; return SET(TIF);
 "for"       DISCARD_NL; return SET(TFOR);

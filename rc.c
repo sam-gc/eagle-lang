@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <sys/time.h>
 
 typedef struct {
     int64_t memcount;
@@ -11,6 +12,19 @@ typedef struct {
     void ***wrefs;
     void (*teardown)(void *, int);
 } __egl_ptr;
+
+typedef struct {
+    __egl_ptr main;
+    __egl_ptr *to;
+} __egl_ptr_ptr;
+
+int64_t __egl_millis()
+{
+    struct timeval t;
+    gettimeofday(&t, 0);
+    int64_t millitime = t.tv_sec * INT64_C(1000) + t.tv_usec / 1000;
+    return millitime;
+}
 
 void __egl_prepare(__egl_ptr *ptr)
 {
@@ -50,6 +64,11 @@ void __egl_decr_ptr(__egl_ptr *ptr)
         if(ptr->teardown) ptr->teardown(ptr, 1);
         free(ptr);
     }
+}
+
+void __egl_counted_destructor(__egl_ptr_ptr *ptr, int i)
+{
+    __egl_decr_ptr(ptr->to);
 }
 
 void __egl_check_ptr(__egl_ptr *ptr)

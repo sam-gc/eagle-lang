@@ -1,0 +1,12 @@
+func main() : int
+{
+    int^^^^^ i = new int^^^^
+    i^ = new int^^^
+    i^^ = new int^^
+    i^^^ = new int^
+    i^^^^ = new int
+    i^^^^^ = 5
+
+    puts i^^^^^
+    return 0
+}

@@ -18,6 +18,7 @@
 #define ET_IS_GEN_ARR(e) (((EagleArrayType *)(e))->ct < 0)
 #define ET_IS_COUNTED(p) ((p)->type == ETPointer && ((EaglePointerType *)(p))->counted)
 #define ET_IS_WEAK(p) ((p)->type == ETPointer && ((EaglePointerType *)(p))->weak)
+#define ET_IS_CLOSED(p) ((p)->type == ETPointer && ((EaglePointerType *)(p))->closed)
 
 extern LLVMTargetDataRef etTargetData;
 extern LLVMModuleRef the_module;
@@ -47,6 +48,7 @@ typedef struct {
     EagleTypeType *to;
     int counted;
     int weak;
+    int closed;
 } EaglePointerType;
 
 typedef struct {

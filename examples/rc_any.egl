@@ -1,0 +1,14 @@
+func test() : any^
+{
+    int^ a = new int
+    a^ = 11
+    return a
+}
+
+func main() : void
+{
+    int^ e = test()
+
+    puts e^
+}
+
