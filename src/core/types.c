@@ -118,6 +118,17 @@ LLVMTypeRef ett_llvm_type(EagleTypeType *type)
                 else
                     return LLVMArrayType(ett_llvm_type(at->of), at->ct);
             }
+        case ETFunction:
+            {
+                EagleFunctionType *ft = (EagleFunctionType *)type;
+                LLVMTypeRef *tys = malloc(sizeof(LLVMTypeRef) * ft->pct);
+                int i;
+                for(i = 0; i < ft->pct; i++)
+                    tys[i] = ett_llvm_type(ft->params[i]);
+                LLVMTypeRef out = LLVMFunctionType(ett_llvm_type(ft->retType), tys, ft->pct, 0);
+                free(tys);
+                return out;
+            }
         default:
             return NULL;
     }
@@ -171,6 +182,7 @@ EagleTypeType *ett_function_type(EagleTypeType *retVal, EagleTypeType **params, 
     ett->params = malloc(sizeof(EagleTypeType *) * pct);
     memcpy(ett->params, params, sizeof(EagleTypeType *) * pct);
     ett->pct = pct;
+    ett->closure = NO_CLOSURE;
 
     return (EagleTypeType *)ett;
 }

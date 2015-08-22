@@ -59,7 +59,7 @@ VarBundle *vs_get(VarScopeStack *vs, char *ident)
             if(o)
             {
                 VarBarrier *vb = (VarBarrier *)s;
-                vb->closedCallback(o, vb->closedData);
+                vb->closedCallback(o, ident, vb->closedData);
                 
                 // We expect the callback to alter the scope stack so the
                 // following code doesn't recurse forever
@@ -104,7 +104,7 @@ VarBundle *vs_get_global(VarScopeStack *vs, char *ident)
     return hst_get(&vs->globals, ident, NULL, NULL);
 }
 
-void vs_put(VarScopeStack *vs, char *ident, LLVMValueRef val, EagleTypeType *type)
+VarBundle *vs_put(VarScopeStack *vs, char *ident, LLVMValueRef val, EagleTypeType *type)
 {
     VarBundle *vb = malloc(sizeof(VarBundle));
     vb->type = type;
@@ -116,6 +116,8 @@ void vs_put(VarScopeStack *vs, char *ident, LLVMValueRef val, EagleTypeType *typ
 
     hst_put(&s->table, ident, vb, NULL, NULL);
     pool_add(&vs->pool, vb);
+
+    return vb;
 }
 
 void vs_add_callback(VarScopeStack *vs, char *ident, LostScopeCallback callback, void *data)

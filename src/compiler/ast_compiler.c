@@ -51,6 +51,7 @@ void ac_dispatch_statement(AST *ast, CompilerBundle *cb);
 void ac_dispatch_declaration(AST *ast, CompilerBundle *cb);
 
 void ac_compile_function(AST *ast, CompilerBundle *cb);
+LLVMValueRef ac_compile_closure(AST *ast, CompilerBundle *cb);
 int ac_compile_block(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb);
 void ac_compile_if(AST *ast, CompilerBundle *cb, LLVMBasicBlockRef mergeBB);
 void ac_compile_loop(AST *ast, CompilerBundle *cb);
@@ -275,6 +276,29 @@ LLVMValueRef ac_compile_struct_member(AST *ast, CompilerBundle *cb, int keepPoin
     if(keepPointer || type->type == ETStruct)
         return gep;
     return LLVMBuildLoad(cb->builder, gep, "");
+}
+
+LLVMValueRef ac_compile_malloc_counted_raw(LLVMTypeRef rt, LLVMTypeRef *out, CompilerBundle *cb)
+{
+    LLVMTypeRef ptmp[2];
+    ptmp[0] = LLVMPointerType(LLVMInt8Type(), 0);
+    ptmp[1] = LLVMInt1Type();
+    
+    LLVMTypeRef tys[6];
+    tys[0] = LLVMInt64Type();
+    tys[1] = LLVMInt16Type();
+    tys[2] = LLVMInt16Type();
+    tys[3] = LLVMPointerType(LLVMInt8Type(), 0);
+    tys[4] = LLVMPointerType(LLVMFunctionType(LLVMVoidType(), ptmp, 2, 0), 0);
+    tys[5] = rt;
+    LLVMTypeRef tt = LLVMStructType(tys, 6, 0);
+    LLVMValueRef mal = LLVMBuildMalloc(cb->builder, tt, "new");
+
+    *out = tt;
+
+    ac_prepare_pointer(cb, mal, NULL);
+
+    return mal;
 }
 
 LLVMValueRef ac_compile_malloc_counted(EagleTypeType *type, EagleTypeType **res, LLVMValueRef ib, CompilerBundle *cb)
@@ -887,6 +911,9 @@ void ac_dispatch_statement(AST *ast, CompilerBundle *cb)
         case AALLOC:
             ac_compile_new_decl(ast, cb);
             break;
+        case AFUNCDECL:
+            ac_compile_closure(ast, cb);
+            break;
         default:
             die(ALN, "Invalid statement type.");
     }
@@ -1072,7 +1099,7 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
     for(p = a->params, i = 0; p; p = p->next, i++);
     int ct = i;
 
-    LLVMValueRef args[ct];
+    LLVMValueRef args[ct + 1];
     for(p = a->params, i = 0; p; p = p->next, i++)
     {
         LLVMValueRef val = ac_dispatch_expression(p, cb);
@@ -1082,10 +1109,27 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
 
         hst_remove_key(&cb->transients, p, ahhd, ahed);
         // hst_remove_key(&cb->loadedTransients, p, ahhd, ahed);
-        args[i] = val;
+        args[i + 1] = val;
     }
 
-    LLVMValueRef out = LLVMBuildCall(cb->builder, func, args, ct, ett->retType->type == ETVoid ? "" : "callout");
+    LLVMValueRef out;
+    if(ET_IS_CLOSURE(ett))
+    {
+        func = LLVMBuildLoad(cb->builder, func, "");
+        ac_unwrap_pointer(cb, &func, NULL, 0);
+        if(ET_HAS_CLOASED(ett))
+            args[0] = LLVMBuildBitCast(cb->builder, LLVMBuildStructGEP(cb->builder, func, 1, ""),
+                                       LLVMPointerType(LLVMInt8Type(), 0), "");
+        else
+            args[0] = LLVMConstPointerNull(LLVMPointerType(LLVMInt8Type(), 0));
+
+        func = LLVMBuildStructGEP(cb->builder, func, 0, "");
+        func = LLVMBuildLoad(cb->builder, func, "");
+        out = LLVMBuildCall(cb->builder, func, args, ct + 1, "");
+    }
+    else
+        out = LLVMBuildCall(cb->builder, func, args + 1, ct, ett->retType->type == ETVoid ? "" : "callout");
+
     if(ET_IS_COUNTED(ett->retType) || (ett->retType->type == ETStruct && ty_needs_destructor(ett->retType)))
     {
         hst_put(&cb->loadedTransients, ast, out, ahhd, ahed);
@@ -1122,20 +1166,182 @@ char *ac_closure_destructor_name(char *name)
     return str;
 }
 
-void ac_pre_prepare_closure(CompilerBundle *cb, char *name)
-{
+typedef struct {
+    char *name;
+    CompilerBundle *cb;
+    LLVMValueRef context;
 
+    arraylist *contextTypes;
+    arraylist *contextVals;
+    arraylist *outerContextVals;
+
+    LLVMTypeRef contextType;
+
+    LLVMBasicBlockRef cfib;
+    LLVMBasicBlockRef entry;
+    LLVMValueRef function;
+    LLVMTypeRef funcType;
+
+    LLVMValueRef outerContext;
+} ClosureBundle;
+
+void ac_pre_prepare_closure(CompilerBundle *cb, char *name, ClosureBundle *bun)
+{
+    bun->name = name;
+    bun->cb = cb;
+    bun->cfib = LLVMGetInsertBlock(cb->builder);
+
+    bun->outerContext = NULL;
+    bun->context = NULL;
 }
 
-void ac_closure_callback(VarBundle *vb, void *data)
+LLVMValueRef ac_finish_closure(CompilerBundle *cb, ClosureBundle *bun, LLVMTypeRef *storageType)
 {
-    CompilerBundle *cb = data;
-    ac_replace_with_counted(cb, vb);
+    char *cloname = ac_closure_closure_name(bun->name);
+    LLVMTypeRef cloType = LLVMStructCreateNamed(LLVMGetGlobalContext(), cloname);
+    free(cloname);
+
+    bun->contextType = NULL;
+    if(bun->contextTypes->count)
+    {
+        char *ctxname = ac_closure_context_name(bun->name);
+        bun->contextType = LLVMStructCreateNamed(LLVMGetGlobalContext(), ctxname);
+        free(ctxname);
+        LLVMStructSetBody(bun->contextType, (LLVMTypeRef *)bun->contextTypes->items, bun->contextTypes->count, 0);
+    }
+
+    LLVMTypeRef strTys[bun->contextType ? 2 : 1];
+
+    strTys[0] = LLVMPointerType(bun->funcType, 0);
+    if(bun->contextType)
+        strTys[1] = bun->contextType;
+
+    LLVMStructSetBody(cloType, strTys, bun->contextType ? 2 : 1, 0);
+
+    LLVMPositionBuilderAtEnd(cb->builder, bun->cfib);
+
+    LLVMTypeRef ultType;
+    LLVMValueRef countedFunc = ac_compile_malloc_counted_raw(cloType, &ultType, cb);
+    LLVMValueRef theFunc = LLVMBuildStructGEP(cb->builder, countedFunc, 5, "");
+    *storageType = ultType;
+
+    // Make sure that we bump the closure's count to 1 since we never set it equal
+    // to anything
+    LLVMValueRef memPos = LLVMBuildStructGEP(cb->builder, countedFunc, 0, "");
+    LLVMBuildStore(cb->builder, LLVMConstInt(LLVMInt64Type(), 1, 0), memPos);
+    
+    LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, theFunc, 0, "");
+    LLVMBuildStore(cb->builder, bun->function, pos);
+
+    if(bun->contextTypes->count)
+    {
+        bun->outerContext = LLVMBuildStructGEP(cb->builder, theFunc, 1, "blockContext");
+
+        int i;
+        for(i = 0; i < bun->outerContextVals->count; i++)
+        {
+            VarBundle *o = bun->outerContextVals->items[i];
+
+            LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, bun->outerContext, i, "");
+            LLVMBuildStore(cb->builder, LLVMBuildLoad(cb->builder, o->value, ""), pos);
+            ac_incr_pointer(cb, &pos, o->type);
+        }
+
+        LLVMValueRef first = LLVMGetFirstInstruction(bun->entry);
+        LLVMPositionBuilderBefore(cb->builder, first);
+
+        LLVMValueRef tmp = LLVMGetParam(bun->function, 0);
+        bun->context = LLVMBuildBitCast(cb->builder, tmp, LLVMPointerType(bun->contextType, 0), "context");
+
+        for(i = 0; i < bun->contextVals->count; i++)
+        {
+            LLVMValueRef temp = bun->contextVals->items[i];
+            LLVMValueRef var = LLVMBuildStructGEP(cb->builder, bun->context, i, "");
+
+            LLVMReplaceAllUsesWith(temp, var);
+        }
+        for(i = 0; i < bun->contextVals->count; i++)
+        {
+            LLVMValueRef temp = bun->contextVals->items[i];
+            LLVMInstructionEraseFromParent(temp);
+        }
+
+        LLVMTypeRef des_params[2];
+        des_params[0] = LLVMPointerType(LLVMInt8Type(), 0);
+        des_params[1] = LLVMInt1Type();
+
+        char *desname = ac_closure_destructor_name(bun->name);
+        LLVMTypeRef des_func = LLVMFunctionType(LLVMVoidType(), des_params, 2, 0);
+        LLVMValueRef func_des = LLVMAddFunction(cb->module, desname, des_func);
+        free(desname);
+
+        LLVMBasicBlockRef dentry = LLVMAppendBasicBlock(func_des, "entry");
+
+        LLVMPositionBuilderAtEnd(cb->builder, dentry);
+        LLVMValueRef strct = LLVMBuildBitCast(cb->builder, LLVMGetParam(func_des, 0), LLVMPointerType(ultType, 0), "");
+        strct = LLVMBuildStructGEP(cb->builder, strct, 5, "");
+        strct = LLVMBuildStructGEP(cb->builder, strct, 1, "");
+
+        for(i = 0; i < bun->contextTypes->count; i++)
+        {
+            LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, strct, i, "");
+            ac_decr_pointer(cb, &pos, NULL);
+        }
+
+        LLVMBuildRetVoid(cb->builder);
+
+        LLVMPositionBuilderAtEnd(cb->builder, bun->cfib);
+        LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, countedFunc, 4, "");
+        LLVMBuildStore(cb->builder, func_des, pos);
+    }
+
+    LLVMPositionBuilderAtEnd(cb->builder, bun->cfib);
+
+    return countedFunc;
 }
 
-void ac_compile_closure(AST *ast, CompilerBundle *cb)
+void ac_closure_callback(VarBundle *vb, char *ident, void *data)
+{
+    ClosureBundle *bun = data;
+    CompilerBundle *cb = bun->cb;
+
+    if(!ET_IS_CLOSED(vb->type))
+        ac_replace_with_counted(cb, vb);
+
+    arr_append(bun->contextTypes, ett_llvm_type(vb->type));
+
+    LLVMBasicBlockRef curPos = LLVMGetInsertBlock(cb->builder);
+    LLVMPositionBuilderAtEnd(cb->builder, bun->cfib);
+
+    arr_append(bun->outerContextVals, vb);
+
+    LLVMPositionBuilderAtEnd(cb->builder, bun->entry);
+
+    LLVMValueRef temp = LLVMBuildAlloca(cb->builder, ett_llvm_type(vb->type), "TEMP___TEMP");
+    vs_put(cb->varScope, ident, temp, vb->type);
+    arr_append(bun->contextVals, temp);
+
+    LLVMPositionBuilderAtEnd(cb->builder, curPos);
+}
+
+LLVMValueRef ac_compile_closure(AST *ast, CompilerBundle *cb)
 {
     ASTFuncDecl *a = (ASTFuncDecl *)ast;
+
+    EagleFunctionType *l_ftype = cb->currentFunctionType;
+    LLVMValueRef l_cf = cb->currentFunction;
+    LLVMBasicBlockRef l_entry = cb->currentFunctionEntry;
+    VarScope *l_scope = cb->currentFunctionScope;
+
+    ClosureBundle cloclo;
+    ac_pre_prepare_closure(cb, a->ident, &cloclo);
+
+    arraylist list = arr_create(8);
+    arraylist l2 = arr_create(8);
+    arraylist l3 = arr_create(8);
+    cloclo.contextTypes = &list;
+    cloclo.contextVals = &l2;
+    cloclo.outerContextVals = &l3;
 
     char *cname = ac_closure_closure_name(a->ident);
     char *cdest = ac_closure_destructor_name(a->ident);
@@ -1146,11 +1352,96 @@ void ac_compile_closure(AST *ast, CompilerBundle *cb)
     AST *p = a->params;
     for(i = 0; p; p = p->next, i++);
 
-    int ct = i;
-    LLVMTypeRef ctxType = LLVMStructCreateNamed(LLVMGetGlobalContext(), cctx);
-    
+    int ct = i + 1;
+    EagleTypeType *eparam_types[ct];
+    LLVMTypeRef param_types[ct];
+    for(i = 1, p = a->params; i < ct; p = p->next, i++)
+    {
+        ASTTypeDecl *type = (ASTTypeDecl *)((ASTVarDecl *)p)->atype;
+        eparam_types[i] = type->etype;
+        param_types[i] = ett_llvm_type(type->etype);
+    }
+    eparam_types[0] = ett_pointer_type(ett_base_type(ETInt8));
+    param_types[0] = LLVMPointerType(LLVMInt8Type(), 0);
 
+    ASTTypeDecl *retType = (ASTTypeDecl *)a->retType;
+
+    EagleTypeType *ultimateEType = ett_function_type(retType->etype, eparam_types + 1, ct - 1);
+
+    LLVMTypeRef funcType = LLVMFunctionType(ett_llvm_type(retType->etype), param_types, ct, 0);
+
+    LLVMValueRef func = LLVMAddFunction(cb->module, ccode, funcType);
+    cloclo.funcType = funcType;
+    
+    cloclo.function = func;
+
+    cb->currentFunctionType = (EagleFunctionType *)ett_function_type(retType->etype, eparam_types, ct);
+
+    LLVMBasicBlockRef entry = LLVMAppendBasicBlock(func, "entry");
+    LLVMPositionBuilderAtEnd(cb->builder, entry);
+    
+    vs_push_closure(cb->varScope, ac_closure_callback, &cloclo);
+    vs_push(cb->varScope);
+
+
+    cb->currentFunctionEntry = entry;
+    cb->currentFunction = func;
+    cb->currentFunctionScope = cb->varScope->scope;
+
+    cloclo.entry = entry;
+
+    if(a->params)
+    {
+        int i;
+        AST *p = a->params;
+        for(i = 1; p; p = p->next, i++)
+        {
+            EagleTypeType *ty = eparam_types[i];
+            LLVMValueRef pos = ac_compile_var_decl(p, cb);
+            LLVMBuildStore(cb->builder, LLVMGetParam(func, i), pos);
+            if(ET_IS_COUNTED(ty))
+                ac_incr_pointer(cb, &pos, eparam_types[i]);
+            if(ET_IS_WEAK(ty))
+                ac_add_weak_pointer(cb, LLVMGetParam(func, i), pos, eparam_types[i]);
+        }
+    }
+
+    if(!ac_compile_block(a->body, entry, cb) && retType->etype->type != ETVoid)
+        die(ALN, "Function must return a value.");
+
+    if(retType->etype->type == ETVoid)
+    {
+        vs_run_callbacks_through(cb->varScope, cb->varScope->scope);
+        LLVMBuildRetVoid(cb->builder);
+    }
+
+    vs_pop(cb->varScope);
+    vs_pop(cb->varScope);
+
+    LLVMTypeRef ultType = NULL;
+    LLVMValueRef built = ac_finish_closure(cb, &cloclo, &ultType);
+    cb->currentFunctionEntry = NULL;
+
+    ((EagleFunctionType *)ultimateEType)->closure = list.count == 0 ? CLOSURE_NO_CLOSE : CLOSURE_CLOSE;
+
+    arr_free(&list);
+    arr_free(&l2);
+    arr_free(&l3);
     free(cname); free(cdest); free(cctx); free(ccode);
+
+    cb->currentFunctionType = l_ftype;
+    cb->currentFunction = l_cf;
+    cb->currentFunctionEntry = l_entry;
+    cb->currentFunctionScope = l_scope;
+
+    LLVMPositionBuilderAtEnd(cb->builder, cloclo.cfib);
+
+    LLVMValueRef out = LLVMBuildAlloca(cb->builder, LLVMPointerType(ultType, 0), "");
+    LLVMBuildStore(cb->builder, built, out);
+    vs_put(cb->varScope, a->ident, out, ultimateEType);
+    vs_add_callback(cb->varScope, a->ident, ac_scope_leave_callback, cb);
+
+    return out;
 }
 
 void ac_compile_function(AST *ast, CompilerBundle *cb)
@@ -1760,9 +2051,12 @@ LLVMValueRef ac_make_comp(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef 
 
 void ac_unwrap_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty, int keepptr)
 {
-    EaglePointerType *pt = (EaglePointerType *)ty;
-    if(!pt->counted && !pt->weak)
-        return;
+    if(ty)
+    {
+        EaglePointerType *pt = (EaglePointerType *)ty;
+        if(!pt->counted && !pt->weak)
+            return;
+    }
 
     LLVMValueRef tptr = *ptr;//LLVMBuildLoad(cb->builder, *ptr, "tptr");
 
@@ -1829,7 +2123,7 @@ void ac_check_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty)
 
 void ac_prepare_pointer(CompilerBundle *cb, LLVMValueRef ptr, EagleTypeType *ty)
 {
-    if(!ET_IS_COUNTED(ty))
+    if(ty && !ET_IS_COUNTED(ty))
         return;
 
     LLVMValueRef tptr = LLVMBuildBitCast(cb->builder, ptr, LLVMPointerType(LLVMInt64Type(), 0), "");
@@ -1940,9 +2234,13 @@ void ac_decr_in_array(CompilerBundle *cb, LLVMValueRef arr, int ct)
 void ac_decr_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty)
 {
     LLVMBuilderRef builder = cb->builder;
-    EaglePointerType *pt = (EaglePointerType *)ty;
-    if(!pt->counted)
-        return;
+
+    if(ty)
+    {
+        EaglePointerType *pt = (EaglePointerType *)ty;
+        if(!pt->counted)
+            return;
+    }
 
     LLVMValueRef tptr = LLVMBuildLoad(builder, *ptr, "tptr");
     tptr = LLVMBuildBitCast(builder, tptr, LLVMPointerType(LLVMInt64Type(), 0), "cast");

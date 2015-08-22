@@ -97,6 +97,7 @@ statement           : expr TSEMI { $$ = $1; }
                     | ifstatement { $$ = $1; }
                     | forstatement { $$ = $1; }
                     | TTOUCH expr TSEMI { $$ = ast_make_unary($2, 't'); }
+                    | funcdecl { $$ = $1; }
                     ;
 
 forstatement        : TFOR expr block { $$ = ast_make_loop(NULL, $2, NULL, $3); }

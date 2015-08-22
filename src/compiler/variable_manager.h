@@ -15,7 +15,7 @@ typedef struct {
     void *scopeData;
 } VarBundle;
 
-typedef void(*ClosedCallback)(VarBundle *, void *);
+typedef void(*ClosedCallback)(VarBundle *, char *, void *);
 
 typedef struct VarScope {
     int scope;
@@ -40,7 +40,7 @@ typedef struct {
 VarScopeStack vs_make();
 void vs_free(VarScopeStack *vs);
 VarBundle *vs_get(VarScopeStack *vs, char *ident);
-void vs_put(VarScopeStack *vs, char *ident, LLVMValueRef val, EagleTypeType *type);
+VarBundle *vs_put(VarScopeStack *vs, char *ident, LLVMValueRef val, EagleTypeType *type);
 void vs_put_global(VarScopeStack *vs, char *ident, LLVMValueRef val, EagleTypeType *type);
 VarBundle *vs_get_global(VarScopeStack *vs, char *ident);
 void vs_push_closure(VarScopeStack *vs, ClosedCallback cb, void *data);
