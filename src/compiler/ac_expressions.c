@@ -152,6 +152,8 @@ LLVMValueRef ac_compile_malloc_counted_raw(LLVMTypeRef rt, LLVMTypeRef *out, Com
     tys[4] = LLVMPointerType(LLVMFunctionType(LLVMVoidType(), ptmp, 2, 0), 0);
     tys[5] = rt;
     LLVMTypeRef tt = LLVMStructType(tys, 6, 0);
+    tt = ty_get_counted(tt);
+    
     LLVMValueRef mal = LLVMBuildMalloc(cb->builder, tt, "new");
 
     *out = tt;
@@ -175,6 +177,8 @@ LLVMValueRef ac_compile_malloc_counted(EagleTypeType *type, EagleTypeType **res,
     tys[4] = LLVMPointerType(LLVMFunctionType(LLVMVoidType(), ptmp, 2, 0), 0);
     tys[5] = ett_llvm_type(type);
     LLVMTypeRef tt = LLVMStructType(tys, 6, 0);
+
+    tt = ty_get_counted(tt);
 
     LLVMValueRef mal;
     if(ib)

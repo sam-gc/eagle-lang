@@ -108,5 +108,6 @@ void ty_teardown();
 void ty_add_struct_def(char *name, arraylist *names, arraylist *types);
 void ty_struct_member_index(EagleTypeType *ett, char *member, int *index, EagleTypeType **type);
 int ty_needs_destructor(EagleTypeType *ett);
+LLVMTypeRef ty_get_counted(LLVMTypeRef in);
 
 #endif /* defined(__Eagle__types__) */

@@ -106,7 +106,8 @@ LLVMTypeRef ett_llvm_type(EagleTypeType *type)
                 tys[3] = LLVMPointerType(LLVMInt8Type(), 0);
                 tys[4] = LLVMPointerType(LLVMFunctionType(LLVMVoidType(), ptmp, 2, 0), 0);
                 tys[5] = ett_llvm_type(pt->to);
-                return LLVMPointerType(LLVMStructType(tys, 6, 0), 0);
+
+                return LLVMPointerType(ty_get_counted(LLVMStructType(tys, 6, 0)), 0);
             }
             return LLVMPointerType(ett_llvm_type(((EaglePointerType *)type)->to), 0);
         }
@@ -336,6 +337,7 @@ int ett_array_count(EagleTypeType *t)
 static hashtable name_table;
 static hashtable struct_table;
 static hashtable types_table;
+static hashtable counted_table;
 void ty_prepare()
 {
     name_table = hst_create();
@@ -346,6 +348,9 @@ void ty_prepare()
 
     types_table = hst_create();
     types_table.duplicate_keys = 1;
+
+    counted_table = hst_create();
+    counted_table.duplicate_keys = 1;
 }
 
 void ty_add_name(char *name)
@@ -363,6 +368,7 @@ void ty_teardown()
     hst_free(&name_table);
     hst_free(&struct_table);
     hst_free(&types_table);
+    hst_free(&counted_table);
 }
 
 void ty_add_struct_def(char *name, arraylist *names, arraylist *types)
@@ -426,3 +432,22 @@ int ty_needs_destructor(EagleTypeType *ett)
     return 0;
 }
 
+LLVMTypeRef ty_get_counted(LLVMTypeRef in)
+{
+    char *translated = LLVMPrintTypeToString(in);
+    LLVMTypeRef ref = hst_get(&counted_table, translated, NULL, NULL);
+
+    if(!ref)
+    {
+        ref = LLVMStructCreateNamed(LLVMGetGlobalContext(), "");
+        LLVMTypeRef tys[6];
+        LLVMGetStructElementTypes(in, tys);
+
+        LLVMStructSetBody(ref, tys, 6, 0);
+        hst_put(&counted_table, translated, ref, NULL, NULL);
+    }
+
+    LLVMDisposeMessage(translated);
+
+    return ref;
+}
