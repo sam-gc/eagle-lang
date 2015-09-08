@@ -1,0 +1,51 @@
+func callback((int : void)^ fct) : void
+{
+    fct(11)
+}
+
+func factory(int step) : (: int)^
+{
+    int i = 0
+    (: int)^ out = func() : int {
+        int j = i
+        i = i + step
+        return j
+    }
+
+    return out
+}
+
+func main() : int
+{
+    func(int i) : void {
+        puts i + 1
+    }(5)
+
+    int j = 7
+
+    func() : void {
+        puts j * 2
+    }()
+
+    (int : void)^ test = func(int i) : void {
+        puts i + j
+    }
+
+    test(2)
+    callback(test)
+
+    (: int)^ ones = factory(1)
+    puts ones()
+    puts ones()
+    puts ones()
+
+    (: int)^ twos = factory(2)
+    puts twos()
+    puts twos()
+    puts twos()
+    puts twos()
+
+    puts ones()
+
+    return 0
+}

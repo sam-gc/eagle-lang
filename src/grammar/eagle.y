@@ -25,8 +25,8 @@
 %token <token> TYES TNO TNIL
 %type <node> program declarations declaration statements statement block funcdecl ifstatement
 %type <node> variabledecl vardecllist funccall calllist funcident funcsident externdecl typelist type
-%type <node> elifstatement elifblock elsestatement singif structdecl structlist
-%type <node> expr singexpr binexpr unexpr ounexpr forstatement
+%type <node> elifstatement elifblock elsestatement singif structdecl structlist blockalt
+%type <node> expr singexpr binexpr unexpr ounexpr forstatement clodecl
 
 %nonassoc TNEW;
 %nonassoc TCOUNTED TWEAK TUNWRAP TTOUCH;
@@ -52,7 +52,7 @@ declarations        : declaration { if($1) $$ = $1; else $$ = ast_make(); }
 
 declaration         : externdecl TSEMI { $$ = $1; }
                     | funcdecl { $$ = $1; }
-                    | structdecl { $$ = $1; };
+                    | structdecl TSEMI { $$ = $1; };
 
 type                : TTYPE { $$ = ast_make_type($1); }
                     | type TMUL { $$ = ast_make_pointer($1); }
@@ -61,6 +61,8 @@ type                : TTYPE { $$ = ast_make_type($1); }
                     | TCOUNTED type { $$ = ast_make_counted($2); }
                     | TWEAK type { $$ = ast_make_weak($2); }
                     | type TPOW { $$ = ast_make_counted(ast_make_pointer($1)); }
+                    | TLPAREN typelist TCOLON type TRPAREN { $$ = ast_make_closure_type($2, $4); }
+                    | TLPAREN TCOLON type TRPAREN { $$ = ast_make_closure_type(NULL, $3); }
                     ;
 
 structdecl          : TSTRUCT TTYPE TLBRACE structlist TRBRACE { $$ = $4; ast_struct_name($$, $2); };
@@ -77,6 +79,10 @@ externdecl          : TEXTERN funcident { $$ = $2; }
 funcident           : TFUNC TIDENTIFIER TLPAREN TRPAREN TCOLON type { $$ = ast_make_func_decl($6, $2, NULL, NULL); }
                     | TFUNC TIDENTIFIER TLPAREN vardecllist TRPAREN TCOLON type { $$ = ast_make_func_decl($7, $2, NULL, $4); };
 
+clodecl             : TFUNC TLPAREN TRPAREN TCOLON type blockalt { $$ = ast_make_func_decl($5, NULL, $6, NULL); }
+                    | TFUNC TLPAREN vardecllist TRPAREN TCOLON type blockalt { $$ = ast_make_func_decl($6, NULL, $7, $3); }
+                    ;
+
 funcsident          : TFUNC TIDENTIFIER TLPAREN typelist TRPAREN TCOLON type { $$ = ast_make_func_decl($7, $2, NULL, $4); };
 
 typelist            : type { $$ = ast_make_var_decl($1, NULL); }
@@ -85,7 +91,9 @@ typelist            : type { $$ = ast_make_var_decl($1, NULL); }
 vardecllist         : variabledecl { $$ = $1; }
                     | variabledecl TCOMMA vardecllist { $1->next = $3; $$ = $1; };
 
-block               : TLBRACE statements TRBRACE { $$ = $2; };
+block               : TLBRACE statements TRBRACE TSEMI { $$ = $2; };
+
+blockalt            : TLBRACE statements TRBRACE { $$ = $2; };
 
 statements          : statement { if($1) $$ = $1; else $$ = ast_make(); }
                     | statement statements { if($1) $1->next = $2; $$ = $1 ? $1 : $2; };
@@ -97,7 +105,7 @@ statement           : expr TSEMI { $$ = $1; }
                     | ifstatement { $$ = $1; }
                     | forstatement { $$ = $1; }
                     | TTOUCH expr TSEMI { $$ = ast_make_unary($2, 't'); }
-                    | funcdecl { $$ = $1; }
+                    /*| funcdecl { $$ = $1; }*/
                     ;
 
 forstatement        : TFOR expr block { $$ = ast_make_loop(NULL, $2, NULL, $3); }
@@ -168,6 +176,7 @@ ounexpr             : singexpr { $$ = $1; }
 
 singexpr            : TINT { $$ = ast_make_int32($1); }
                     | TDOUBLE { $$ = ast_make_double($1); }
+                    | clodecl { $$ = $1; }
                     | TYES { $$ = ast_make_bool(1); }
                     | TNO { $$ = ast_make_bool(0); }
                     | TNIL { $$ = ast_make_nil(); }

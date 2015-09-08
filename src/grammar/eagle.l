@@ -68,7 +68,7 @@ semi (";"|";"{whitechar}*"\n")
 "("         DISCARD_NL; return SET(TLPAREN);
 ")"         SAVE_NL; return SET(TRPAREN);
 {lbrace}    OVEROVERIDE; return SET(TLBRACE);
-"}"         DISCARD_NL; return SET(TRBRACE);
+"}"         SAVE_NL; return SET(TRBRACE);
 "["         DISCARD_NL; return SET(TLBRACKET);
 "]"         SAVE_NL; return SET(TRBRACKET);
 "return"    DISCARD_NL; return SET(TRETURN);

@@ -53,26 +53,25 @@ LLVMValueRef ac_finish_closure(CompilerBundle *cb, ClosureBundle *bun, LLVMTypeR
         LLVMStructSetBody(bun->contextType, (LLVMTypeRef *)bun->contextTypes->items, bun->contextTypes->count, 0);
     }
 
-    LLVMTypeRef strTys[bun->contextType ? 2 : 1];
+    LLVMTypeRef strTys[2];
 
     strTys[0] = LLVMPointerType(bun->funcType, 0);
-    if(bun->contextType)
-        strTys[1] = bun->contextType;
+    strTys[1] = LLVMPointerType(LLVMInt8Type(), 0);
 
-    LLVMStructSetBody(cloType, strTys, bun->contextType ? 2 : 1, 0);
+    LLVMStructSetBody(cloType, strTys, 2, 0);
 
     LLVMPositionBuilderAtEnd(cb->builder, bun->cfib);
 
     LLVMTypeRef ultType;
     LLVMValueRef countedFunc = ac_compile_malloc_counted_raw(cloType, &ultType, cb);
+
+    LLVMValueRef contextTypeStruct = NULL;
+    if(bun->contextTypes->count > 0)
+        contextTypeStruct = LLVMBuildMalloc(cb->builder, bun->contextType, "");
+
     LLVMValueRef theFunc = LLVMBuildStructGEP(cb->builder, countedFunc, 5, "");
     *storageType = ultType;
 
-    // Make sure that we bump the closure's count to 1 since we never set it equal
-    // to anything
-    LLVMValueRef memPos = LLVMBuildStructGEP(cb->builder, countedFunc, 0, "");
-    LLVMBuildStore(cb->builder, LLVMConstInt(LLVMInt64Type(), 1, 0), memPos);
-    
     LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, theFunc, 0, "");
     LLVMBuildStore(cb->builder, bun->function, pos);
 
@@ -80,12 +79,19 @@ LLVMValueRef ac_finish_closure(CompilerBundle *cb, ClosureBundle *bun, LLVMTypeR
     {
         bun->outerContext = LLVMBuildStructGEP(cb->builder, theFunc, 1, "blockContext");
 
+        LLVMBuildStore(cb->builder, LLVMBuildBitCast(cb->builder, contextTypeStruct, LLVMPointerType(LLVMInt8Type(), 0), ""), bun->outerContext);
+        // bun->outerContext = LLVMBuildBitCast(cb->builder, , bun->contextType, "");
+
+
+        // LLVMValueRef checkPos = LLVMBuildStructGEP(cb->builder, theFunc, 1, "");
+        // LLVMBuildStore(cb->builder, LLVMConstInt(LLVMInt1Type(), 1, 0), checkPos);
+
         int i;
         for(i = 0; i < bun->outerContextVals->count; i++)
         {
             VarBundle *o = bun->outerContextVals->items[i];
 
-            LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, bun->outerContext, i, "");
+            LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, contextTypeStruct, i, "");
             LLVMBuildStore(cb->builder, LLVMBuildLoad(cb->builder, o->value, ""), pos);
             ac_incr_pointer(cb, &pos, o->type);
         }
@@ -123,7 +129,11 @@ LLVMValueRef ac_finish_closure(CompilerBundle *cb, ClosureBundle *bun, LLVMTypeR
         LLVMPositionBuilderAtEnd(cb->builder, dentry);
         LLVMValueRef strct = LLVMBuildBitCast(cb->builder, LLVMGetParam(func_des, 0), LLVMPointerType(ultType, 0), "");
         strct = LLVMBuildStructGEP(cb->builder, strct, 5, "");
+
         strct = LLVMBuildStructGEP(cb->builder, strct, 1, "");
+        strct = LLVMBuildLoad(cb->builder, strct, "");
+
+        strct = LLVMBuildBitCast(cb->builder, strct, LLVMPointerType(bun->contextType, 0), "");
 
         for(i = 0; i < bun->contextTypes->count; i++)
         {
@@ -131,11 +141,18 @@ LLVMValueRef ac_finish_closure(CompilerBundle *cb, ClosureBundle *bun, LLVMTypeR
             ac_decr_pointer(cb, &pos, NULL);
         }
 
+        LLVMBuildFree(cb->builder, strct);
+
         LLVMBuildRetVoid(cb->builder);
 
         LLVMPositionBuilderAtEnd(cb->builder, bun->cfib);
         LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, countedFunc, 4, "");
         LLVMBuildStore(cb->builder, func_des, pos);
+    }
+    else
+    {
+        LLVMValueRef ctxPos = LLVMBuildStructGEP(cb->builder, theFunc, 1, "");
+        LLVMBuildStore(cb->builder, LLVMConstPointerNull(LLVMPointerType(LLVMInt8Type(), 0)), ctxPos);
     }
 
     LLVMPositionBuilderAtEnd(cb->builder, bun->cfib);
@@ -279,12 +296,20 @@ LLVMValueRef ac_compile_closure(AST *ast, CompilerBundle *cb)
 
     LLVMPositionBuilderAtEnd(cb->builder, cloclo.cfib);
 
+    ultimateEType = ett_pointer_type(ultimateEType);
+    ((EaglePointerType *)ultimateEType)->counted = 1;
+
+    /*
     LLVMValueRef out = LLVMBuildAlloca(cb->builder, LLVMPointerType(ultType, 0), "");
     LLVMBuildStore(cb->builder, built, out);
     vs_put(cb->varScope, a->ident, out, ultimateEType);
     vs_add_callback(cb->varScope, a->ident, ac_scope_leave_callback, cb);
+    */
 
-    return out;
+    ast->resultantType = ultimateEType;
+    hst_put(&cb->transients, ast, built, ahhd, ahed);
+
+    return LLVMBuildBitCast(cb->builder, built, ett_llvm_type(ultimateEType), "");
 }
 
 void ac_compile_function(AST *ast, CompilerBundle *cb)

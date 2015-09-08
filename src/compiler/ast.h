@@ -188,6 +188,7 @@ AST *ast_make_struct_get(AST *left, char *ident);
 void ast_set_counted(AST *ast);
 AST *ast_make_arr_decl(AST *type, char *ident, AST *expr);
 AST *ast_make_type(char *type);
+AST *ast_make_closure_type(AST *tysList, AST *resType);
 AST *ast_make_pointer(AST *ast);
 AST *ast_make_counted(AST *ast);
 AST *ast_make_weak(AST *ast);

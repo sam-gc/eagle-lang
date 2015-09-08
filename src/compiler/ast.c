@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include "ast.h"
 #include "ast_compiler.h"
+#include "core/arraylist.h"
 
 extern int yylineno;
 int yyerror(const char *text)
@@ -133,7 +134,7 @@ AST *ast_make_func_decl(AST *type, char *ident, AST *body, AST *params)
     ast->type = AFUNCDECL;
     ast->retType = type;
     ast->body = body;
-    ast->ident = ident;
+    ast->ident = ident ? ident : "close";
     ast->params = params;
     
     return (AST *)ast;
@@ -223,6 +224,25 @@ AST *ast_make_type(char *type)
     ASTTypeDecl *ast = ast_malloc(sizeof(ASTTypeDecl));
     ast->type = ATYPE;
     ast->etype = et_parse_string(type);
+
+    return (AST *)ast;
+}
+
+AST *ast_make_closure_type(AST *tysList, AST *resType)
+{
+    ASTTypeDecl *ast = ast_malloc(sizeof(ASTTypeDecl));
+    ast->type = ATYPE;
+
+    arraylist list = arr_create(10);
+    ASTVarDecl *vd = (ASTVarDecl *)tysList;
+    for(; vd; vd = (ASTVarDecl *)vd->next)
+    {
+        ASTTypeDecl *t = (ASTTypeDecl *)vd->atype;
+        arr_append(&list, t->etype);
+    }
+
+    ast->etype = ett_function_type(((ASTTypeDecl *)resType)->etype, (EagleTypeType **)list.items, list.count);
+    ((EagleFunctionType *)ast->etype)->closure = CLOSURE_NO_CLOSE;
 
     return (AST *)ast;
 }

@@ -1,0 +1,16 @@
+func main() : int
+{
+    weak (int:int)^ blah = nil
+    (int:int)^ test = func(int i) : int
+    {
+        if i == 0
+            return 1
+        return blah(i - 1) * i
+    }
+
+    blah = test
+
+    puts test(5)
+
+    return 0
+}

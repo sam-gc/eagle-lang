@@ -89,6 +89,7 @@ EagleTypeType *ett_array_type(EagleTypeType *of, int ct);
 EagleTypeType *ett_function_type(EagleTypeType *retVal, EagleTypeType **params, int pct);
 EagleTypeType *ett_struct_type(char *name);
 
+LLVMTypeRef ett_closure_type(EagleTypeType *type);
 EagleType ett_get_base_type(EagleTypeType *type);
 LLVMTypeRef ett_llvm_type(EagleTypeType *type);
 int ett_are_same(EagleTypeType *left, EagleTypeType *right);

@@ -13,7 +13,8 @@ func main() : int
         puts rand()
         puts 111
         return 1
-    } else {
+    }
+    else {
         puts 11
     }
 

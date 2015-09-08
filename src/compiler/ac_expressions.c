@@ -534,8 +534,14 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
     ASTFuncCall *a = (ASTFuncCall *)ast;
 
     LLVMValueRef func = ac_dispatch_expression(a->callee, cb);
-    
-    EagleFunctionType *ett = (EagleFunctionType *)a->callee->resultantType;
+
+    EagleTypeType *orig = a->callee->resultantType;
+
+    EagleFunctionType *ett;
+    if(orig->type == ETFunction)
+        ett = (EagleFunctionType *)orig;
+    else
+        ett = (EagleFunctionType *)((EaglePointerType *)orig)->to;
 
     a->resultantType = ett->retType;
 
@@ -560,16 +566,20 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
     LLVMValueRef out;
     if(ET_IS_CLOSURE(ett))
     {
-        func = LLVMBuildLoad(cb->builder, func, "");
+        // func = LLVMBuildLoad(cb->builder, func, "");
         ac_unwrap_pointer(cb, &func, NULL, 0);
-        if(ET_HAS_CLOASED(ett))
-            args[0] = LLVMBuildBitCast(cb->builder, LLVMBuildStructGEP(cb->builder, func, 1, ""),
-                                       LLVMPointerType(LLVMInt8Type(), 0), "");
-        else
-            args[0] = LLVMConstPointerNull(LLVMPointerType(LLVMInt8Type(), 0));
+
+
+        // if(ET_HAS_CLOASED(ett))
+        args[0] = LLVMBuildLoad(cb->builder, LLVMBuildStructGEP(cb->builder, func, 1, ""), "");
+        // else
+        //     args[0] = LLVMConstPointerNull(LLVMPointerType(LLVMInt8Type(), 0));
+
 
         func = LLVMBuildStructGEP(cb->builder, func, 0, "");
         func = LLVMBuildLoad(cb->builder, func, "");
+        func = LLVMBuildBitCast(cb->builder, func, LLVMPointerType(ett_closure_type((EagleTypeType *)ett), 0), "");
+        
         out = LLVMBuildCall(cb->builder, func, args, ct + 1, "");
     }
     else

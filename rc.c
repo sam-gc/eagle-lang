@@ -50,7 +50,7 @@ void __egl_set_nil(void ***vals, int16_t ct)
 
 void __egl_decr_ptr(__egl_ptr *ptr)
 {
-    if(!ptr)
+    if(!ptr || ptr->memcount < 0)
         return;
 
     ptr->memcount = ptr->memcount - 1;
@@ -73,7 +73,7 @@ void __egl_counted_destructor(__egl_ptr_ptr *ptr, int i)
 
 void __egl_check_ptr(__egl_ptr *ptr)
 {
-    if(!ptr)
+    if(!ptr || ptr->memcount < 0)
         return;
 
     if(!ptr->memcount)
@@ -90,7 +90,7 @@ void __egl_check_ptr(__egl_ptr *ptr)
 
 void __egl_add_weak(__egl_ptr *ptr, void **pos)
 {
-    if(!ptr)
+    if(!ptr || ptr->memcount < 0)
         return;
 
     if(ptr->wrefal == ptr->wrefct)

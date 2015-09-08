@@ -172,6 +172,9 @@ LLVMValueRef ac_dispatch_expression(AST *ast, CompilerBundle *cb)
         case ASTRUCTMEMBER:
             val = ac_compile_struct_member(ast, cb, 0);
             break;
+        case AFUNCDECL:
+            val = ac_compile_closure(ast, cb);
+            break;
         default:
             die(ALN, "Invalid expression type.");
             return NULL;
