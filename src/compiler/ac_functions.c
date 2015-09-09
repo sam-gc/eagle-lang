@@ -203,9 +203,6 @@ LLVMValueRef ac_compile_closure(AST *ast, CompilerBundle *cb)
     cloclo.contextVals = &l2;
     cloclo.outerContextVals = &l3;
 
-    char *cname = ac_closure_closure_name(a->ident);
-    char *cdest = ac_closure_destructor_name(a->ident);
-    char *cctx  = ac_closure_context_name(a->ident);
     char *ccode = ac_closure_code_name(a->ident);
 
     int i;
@@ -243,7 +240,6 @@ LLVMValueRef ac_compile_closure(AST *ast, CompilerBundle *cb)
     vs_push_closure(cb->varScope, ac_closure_callback, &cloclo);
     vs_push(cb->varScope);
 
-
     cb->currentFunctionEntry = entry;
     cb->currentFunction = func;
     cb->currentFunctionScope = cb->varScope->scope;
@@ -266,6 +262,20 @@ LLVMValueRef ac_compile_closure(AST *ast, CompilerBundle *cb)
         }
     }
 
+    ((EagleFunctionType *)ultimateEType)->closure = CLOSURE_RECURSE;
+    EagleTypeType *penultEType = ultimateEType;
+    LLVMValueRef pos = LLVMBuildAlloca(cb->builder, ett_llvm_type(penultEType), "recur");
+
+    LLVMValueRef posa = LLVMBuildStructGEP(cb->builder, pos, 0, "");
+    LLVMValueRef conv = LLVMBuildBitCast(cb->builder, LLVMGetNamedFunction(cb->module, ccode), LLVMPointerType(LLVMInt8Type(), 0), "");
+    LLVMBuildStore(cb->builder, conv, posa);
+
+    LLVMValueRef posb = LLVMBuildStructGEP(cb->builder, pos, 1, "");
+    conv = LLVMBuildBitCast(cb->builder, LLVMGetParam(func, 0), LLVMPointerType(LLVMInt8Type(), 0), "");
+    LLVMBuildStore(cb->builder, conv, posb);
+
+    vs_put(cb->varScope, "recur", pos, penultEType);
+
     if(!ac_compile_block(a->body, entry, cb) && retType->etype->type != ETVoid)
         die(ALN, "Function must return a value.");
 
@@ -287,7 +297,7 @@ LLVMValueRef ac_compile_closure(AST *ast, CompilerBundle *cb)
     arr_free(&list);
     arr_free(&l2);
     arr_free(&l3);
-    free(cname); free(cdest); free(cctx); free(ccode);
+    free(ccode);
 
     cb->currentFunctionType = l_ftype;
     cb->currentFunction = l_cf;

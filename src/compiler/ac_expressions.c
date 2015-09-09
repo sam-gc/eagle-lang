@@ -567,7 +567,8 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
     if(ET_IS_CLOSURE(ett))
     {
         // func = LLVMBuildLoad(cb->builder, func, "");
-        ac_unwrap_pointer(cb, &func, NULL, 0);
+        if(!ET_IS_RECURSE(ett))
+            ac_unwrap_pointer(cb, &func, NULL, 0);
 
 
         // if(ET_HAS_CLOASED(ett))

@@ -16,6 +16,7 @@
 #define NO_CLOSURE 0
 #define CLOSURE_NO_CLOSE 1
 #define CLOSURE_CLOSE 2
+#define CLOSURE_RECURSE 3
 
 #define ET_IS_INT(e) ((e) == ETInt8 || (e) == ETInt32 || (e) == ETInt64)
 #define ET_IS_REAL(e) ((e) == ETDouble)
@@ -25,6 +26,7 @@
 #define ET_IS_CLOSED(p) ((p)->type == ETPointer && ((EaglePointerType *)(p))->closed)
 #define ET_IS_CLOSURE(p) ((p)->type == ETFunction && ((EagleFunctionType *)(p))->closure)
 #define ET_HAS_CLOASED(p) ((p)->type == ETFunction && ((EagleFunctionType *)(p))->closure == CLOSURE_CLOSE)
+#define ET_IS_RECURSE(p) ((p)->type == ETFunction && ((EagleFunctionType *)(p))->closure == CLOSURE_RECURSE)
 
 extern LLVMTargetDataRef etTargetData;
 extern LLVMModuleRef the_module;
