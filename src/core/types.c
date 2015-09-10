@@ -386,7 +386,7 @@ void ty_add_name(char *name)
 
 int ty_is_name(char *name)
 {
-    return (int)hst_get(&name_table, name, NULL, NULL);
+    return (int)(uintptr_t)hst_get(&name_table, name, NULL, NULL);
 }
 
 void ty_teardown()
