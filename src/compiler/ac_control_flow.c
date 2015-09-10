@@ -16,8 +16,16 @@ int ac_compile_block(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
                 val = LLVMBuildLoad(cb->builder, val, "");
 
             if(ET_IS_COUNTED(o))
+            {
                 ac_incr_val_pointer(cb, &val, o);
 
+                // We want to make sure that transients don't leak into returns (this only
+                // applies to closures since transients are implicitly destroyed on a normal
+                // function)
+
+                hst_remove_key(&cb->transients, ((ASTUnary *)ast)->val, ahhd, ahed);
+            }
+            
             vs_run_callbacks_through(cb->varScope, cb->currentFunctionScope);
 
             LLVMBuildRet(cb->builder, val);
