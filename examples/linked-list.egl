@@ -44,6 +44,14 @@ func printList(Node^ head) : void
     }
 }
 
+func listForEach(Node^ head, (int : void)^ callback) : void
+{
+    for head; head; head = head->next
+    {
+        callback(head->payload)
+    }
+}
+
 func main() : int
 {
     Node^ head = makeNode(11)
@@ -55,6 +63,11 @@ func main() : int
     removeNode(head, 1)
 
     printList(head)
+
+    int scalar = 2
+    listForEach(head, func(int payload) : void {
+        puts payload * scalar
+    })
 
     return 0
 }
