@@ -11,6 +11,8 @@ extern int yylineno;
 
 extern AST *ast_root;
 
+hashtable global_args;
+
 void first_pass()
 {
     int token;
@@ -32,11 +34,19 @@ void first_pass()
 int main(int argc, const char *argv[])
 {
     etTargetData = LLVMCreateTargetData("");
+    global_args = hst_create();
 
     if(argc < 2)
     {
-        printf("Usage: %s <file>\n", argv[0]);
+        printf("Usage: %s <file> [args]\n", argv[0]);
         return 0;
+    }
+
+    if(argc > 2)
+    {
+        int i;
+        for(i = 2; i < argc; i++)
+            hst_put(&global_args, (char *)argv[i], (void *)1, NULL, NULL);
     }
 
     yyin = fopen(argv[1], "r");

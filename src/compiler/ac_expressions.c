@@ -330,9 +330,18 @@ LLVMValueRef ac_compile_binary(AST *ast, CompilerBundle *cb)
 
     if(a->left->resultantType->type == ETPointer || a->right->resultantType->type == ETPointer)
     {
+        if(a->op == 'e')
+        {
+            l = LLVMBuildPtrToInt(cb->builder, l, LLVMInt64Type(), "");
+            r = LLVMBuildPtrToInt(cb->builder, r, LLVMInt64Type(), "");
+
+            ast->resultantType = ett_base_type(ETInt1);
+            return LLVMBuildICmp(cb->builder, LLVMIntEQ, l, r, "");
+        }
+
         EagleTypeType *lt = a->left->resultantType;
         EagleTypeType *rt = a->right->resultantType;
-        if(a->op != '+' && a->op != '-')
+        if(a->op != '+' && a->op != '-' && a->op != 'e')
             die(ALN, "Operation '%c' not valid for pointer types.", a->op);
         if(lt->type == ETPointer && !ET_IS_INT(rt->type))
             die(ALN, "Pointer arithmetic is only valid with integer and non-any pointer types.");
@@ -514,12 +523,14 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
                 return LLVMBuildLoad(cb->builder, r, "dereftmp");
             }
             */
+        /*
         case 'b':
             LLVMBuildBr(cb->builder, cb->currentLoopExit);
             break;
         case 'c':
             LLVMBuildBr(cb->builder, cb->currentLoopEntry);
             break;
+            */
         case 'u':
             {
                 if(!ET_IS_COUNTED(a->val->resultantType) && !ET_IS_WEAK(a->val->resultantType))

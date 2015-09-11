@@ -1,0 +1,152 @@
+extern func memset(any*, int, long) : any*
+extern func free(any*) : void
+extern func realloc(any*, long) : any*
+extern func memmove(any*, any*, long) : any*
+
+struct __egl_ptr {
+    long    memcount
+    short   wrefct
+    short   wrefal
+    any***  wrefs
+    [any*, int : void]* teardown
+}
+
+struct __egl_ptr_ptr {
+    __egl_ptr main
+    __egl_ptr* to
+}
+
+func __egl_prepare(__egl_ptr* ptr) : void
+{
+    ptr->memcount = 0
+    ptr->wrefct   = 0
+    ptr->wrefal   = 0
+    ptr->wrefs    = nil
+    ptr->teardown = nil
+}
+
+func __egl_incr_ptr(__egl_ptr* ptr) : void
+{
+    if ptr
+        ptr->memcount = ptr->memcount + 1
+}
+
+func __egl_set_nil(any*** vals, short ct) : void
+{
+    for int i = 0; i < ct; i = i + 1
+    {
+        vals[i]^ = nil
+    }
+}
+
+func __egl_decr_ptr(__egl_ptr* ptr) : void
+{
+    if ptr == nil
+        return
+    if ptr->memcount < 0
+        return
+
+    ptr->memcount = ptr->memcount - 1
+    if ptr->memcount == 0
+    {
+        if ptr->wrefs
+        {
+            __egl_set_nil(ptr->wrefs, ptr->wrefct)
+            free(ptr->wrefs)
+        }
+
+        if ptr->teardown
+            ptr->teardown(ptr, 1)
+        free(ptr)
+    }
+}
+
+func __egl_counted_destructor(__egl_ptr_ptr* ptr, int i) : void
+{
+    __egl_decr_ptr(ptr->to)
+}
+
+func __egl_check_ptr(__egl_ptr* ptr) : void
+{
+    if ptr == nil
+        return
+    if ptr->memcount < 0
+        return
+
+    if ptr->memcount == 0
+    {
+        if ptr->wrefs
+        {
+            __egl_set_nil(ptr->wrefs, ptr->wrefct)
+            free(ptr->wrefs)
+        }
+
+        if(ptr->teardown)
+            ptr->teardown(ptr, 1)
+        free(ptr)
+    }
+}
+
+func __egl_add_weak(__egl_ptr* ptr, any** pos) : void
+{
+    if ptr == nil
+        return
+    if ptr->memcount < 0
+        return
+
+    if ptr->wrefal == ptr->wrefct
+    {
+        ptr->wrefs = realloc(ptr->wrefs, (ptr->wrefct + 10) * sizeof(any*))
+        ptr->wrefal = ptr->wrefal + 10
+    }
+
+    ptr->wrefs[ptr->wrefct] = pos
+    ptr->wrefct = ptr->wrefct + 1
+}
+
+func __egl_remove_weak(__egl_ptr** pos) : void
+{
+    if pos == nil
+        return
+    if pos^ == nil
+        return
+
+    __egl_ptr* ptr = pos^
+
+    int idx = 0-1
+    for int i = 0; i < ptr->wrefct; i = i + 1
+    {
+        if ptr->wrefs[i] == pos
+        {
+            idx = i
+            break
+        }
+    }
+
+    if idx < 0
+        return
+    if idx == ptr->wrefct - 1
+    {
+        ptr->wrefct = ptr->wrefct - 1
+        ptr->wrefs[idx] = nil
+        return
+    }
+
+    memmove(pos + idx, pos + idx + 1, (ptr->wrefct - idx - 1) * sizeof(any*))
+    ptr->wrefct = ptr->wrefct - 1
+    ptr->wrefs[ptr->wrefct] = nil
+}
+
+func __egl_array_fill_nil(any* arr, long ct) : void
+{
+    memset(arr, 0, ct * sizeof(any*))
+}
+
+func __egl_array_decr_ptrs(any** arr, long ct) : void
+{
+    for long i = 0; i < ct; i = i + 1
+    {
+        __egl_decr_ptr(arr[i])
+    }
+}
+

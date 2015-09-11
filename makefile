@@ -60,8 +60,10 @@ obj/cpp/%.o: src/cpp/%.cpp
 	$(MKDIR) obj/cpp/
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-rc.o: rc.c
-	$(CC) -c -g rc.c -o rc.o
+rc.o: rc.egl
+	./eagle rc.egl --compile-rc 2> out.ll
+	llc out.ll
+	$(CC) -c -g out.s -o rc.o
 
 prog: out.ll rc.o
 	llc out.ll

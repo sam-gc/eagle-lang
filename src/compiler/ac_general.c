@@ -3,6 +3,8 @@
 #include <stdarg.h>
 #include "ast_compiler.h"
 
+extern hashtable global_args;
+
 void die(int lineno, const char *fmt, ...)
 {
     size_t len = strlen(fmt);
@@ -34,7 +36,8 @@ LLVMModuleRef ac_compile(AST *ast)
 
     vs_push(cb.varScope);
 
-    ac_prepare_module(cb.module);
+    if(!hst_get(&global_args, ARGS_COMPILE_RC, NULL, NULL))
+        ac_prepare_module(cb.module);
     the_module = cb.module;
     /*
     LLVMTypeRef st = LLVMStructCreateNamed(LLVMGetGlobalContext(), "teststruct");

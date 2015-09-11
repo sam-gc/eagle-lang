@@ -41,6 +41,18 @@ int ac_compile_block(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
             return 1;
         }
         
+        if(ast->type == AUNARY && ((ASTUnary *)ast)->op == 'b') // Handle the special break case
+        {
+            LLVMBuildBr(cb->builder, cb->currentLoopExit);
+            return 1;
+        }
+
+        if(ast->type == AUNARY && ((ASTUnary *)ast)->op == 'c') // Handle the special continue case
+        {
+            LLVMBuildBr(cb->builder, cb->currentLoopEntry);
+            return 1;
+        }
+        
         ac_dispatch_statement(ast, cb);
     }
 
