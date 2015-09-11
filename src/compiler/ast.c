@@ -134,7 +134,7 @@ AST *ast_make_func_decl(AST *type, char *ident, AST *body, AST *params)
     ast->type = AFUNCDECL;
     ast->retType = type;
     ast->body = body;
-    ast->ident = ident ? ident : "close";
+    ast->ident = ident ? ident : (char *)"close";
     ast->params = params;
     
     return (AST *)ast;
@@ -160,7 +160,7 @@ AST *ast_make_auto_decl(char *ident)
 {
     ASTVarDecl *ast = ast_malloc(sizeof(ASTVarDecl));
     ast->type = AVARDECL;
-    ast->atype = ast_make_type("auto");
+    ast->atype = ast_make_type((char *)"auto");
     ast->ident = ident;
     ast->arrct = NULL;
 

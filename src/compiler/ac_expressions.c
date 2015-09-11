@@ -104,8 +104,7 @@ LLVMValueRef ac_compile_var_decl_ext(EagleTypeType *type, char *ident, CompilerB
         ac_nil_fill_array(cb, pos, ett_array_count(type));
         vs_add_callback(cb->varScope, ident, ac_scope_leave_array_callback, cb);
     }
-
-
+    
     return pos;
 }
 

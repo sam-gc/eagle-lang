@@ -274,7 +274,7 @@ LLVMValueRef ac_compile_closure(AST *ast, CompilerBundle *cb)
     conv = LLVMBuildBitCast(cb->builder, LLVMGetParam(func, 0), LLVMPointerType(LLVMInt8Type(), 0), "");
     LLVMBuildStore(cb->builder, conv, posb);
 
-    vs_put(cb->varScope, "recur", pos, penultEType);
+    vs_put(cb->varScope, (char *)"recur", pos, penultEType);
 
     if(!ac_compile_block(a->body, entry, cb) && retType->etype->type != ETVoid)
         die(ALN, "Function must return a value.");
