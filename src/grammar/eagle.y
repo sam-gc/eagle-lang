@@ -21,7 +21,7 @@
 %token <token> TPLUS TMINUS TEQUALS TMUL TDIV TGT TLT TEQ TNE TGTE TLTE TNOT TPOW
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TLBRACKET TRBRACKET
 %token <token> TFUNC TRETURN TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF TFOR TWEAK TUNWRAP
-%token <token> TBREAK TCONTINUE
+%token <token> TBREAK TCONTINUE TVAR
 %token <token> TCOLON TSEMI TNEWLINE TCOMMA TDOT TAMP TAT TARROW
 %token <token> TYES TNO TNIL
 %type <node> program declarations declaration statements statement block funcdecl ifstatement
@@ -150,6 +150,7 @@ expr                : binexpr { $$ = $1; }
                     | unexpr { $$ = $1; }
                     | singexpr { $$ = $1; }
                     | variabledecl { $$ = $1; }
+                    | TVAR TIDENTIFIER { $$ = ast_make_auto_decl($2); }
                     | type TAT ounexpr { $$ = ast_make_cast($1, $3); }
                     | TNEW type { $$ = ast_make_allocater('n', $2); }
                     ;

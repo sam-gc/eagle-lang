@@ -156,6 +156,17 @@ AST *ast_make_var_decl(AST *atype, char *ident)
     return ast_make_arr_decl(atype, ident, NULL);
 }
 
+AST *ast_make_auto_decl(char *ident)
+{
+    ASTVarDecl *ast = ast_malloc(sizeof(ASTVarDecl));
+    ast->type = AVARDECL;
+    ast->atype = ast_make_type("auto");
+    ast->ident = ident;
+    ast->arrct = NULL;
+
+    return (AST *)ast;
+}
+
 AST *ast_make_struct_decl()
 {
     ASTStructDecl *ast = ast_malloc(sizeof(ASTStructDecl));

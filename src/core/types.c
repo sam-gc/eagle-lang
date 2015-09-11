@@ -20,6 +20,7 @@ LLVMTargetDataRef etTargetData = NULL;
 
 EagleTypeType *et_parse_string(char *text)
 {
+    TTEST(text, "auto", ETAuto);
     TTEST(text, "any", ETAny);
     TTEST(text, "bool", ETInt1);
     TTEST(text, "byte", ETInt8);

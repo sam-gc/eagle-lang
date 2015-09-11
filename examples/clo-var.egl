@@ -1,0 +1,20 @@
+func makeAdder(int step) : (:int)^
+{
+    var cur = 0
+    return func() : int {
+        var old = cur
+        cur = cur + step
+        return old
+    }
+}
+
+func main() : int
+{
+    var adder = makeAdder(20)
+    puts adder()
+    puts adder()
+    puts adder()
+
+    return 0
+}
+

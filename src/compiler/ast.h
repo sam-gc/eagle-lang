@@ -181,6 +181,7 @@ AST *ast_make_identifier(char *ident);
 AST *ast_make_func_decl(AST *type, char *ident, AST *body, AST *params);
 AST *ast_make_func_call(AST *callee, AST *params);
 AST *ast_make_var_decl(AST *type, char *ident);
+AST *ast_make_auto_decl(char *ident);
 AST *ast_make_struct_decl();
 AST *ast_struct_add(AST *ast, AST *var);
 AST *ast_struct_name(AST *ast, char *name);

@@ -34,6 +34,7 @@ extern LLVMModuleRef the_module;
 typedef enum {
     ETNone,
     ETAny,
+    ETAuto,
     ETNil,
     ETInt1,
     ETInt8,

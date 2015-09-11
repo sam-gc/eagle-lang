@@ -30,6 +30,8 @@ LLVMValueRef ac_compile_identifier(AST *ast, CompilerBundle *cb)
 
     if(!b) // We are dealing with a local variable
         die(ALN, "Undeclared Identifier (%s)", a->value.id);
+    if(b->type->type == ETAuto)
+        die(ALN, "Trying to read variable of unknown type (%s)", a->value.id);
 
     if(b->type->type == ETFunction)
     {
@@ -63,48 +65,64 @@ LLVMValueRef ac_compile_identifier(AST *ast, CompilerBundle *cb)
     return LLVMBuildLoad(cb->builder, b->value, "loadtmp");
 }
 
-LLVMValueRef ac_compile_var_decl(AST *ast, CompilerBundle *cb)
+LLVMValueRef ac_compile_var_decl_ext(EagleTypeType *type, char *ident, CompilerBundle *cb)
 {
-    ASTVarDecl *a = (ASTVarDecl *)ast;
 
     LLVMBasicBlockRef curblock = LLVMGetInsertBlock(cb->builder);
     LLVMPositionBuilderAtEnd(cb->builder, cb->currentFunctionEntry);
 
-    ASTTypeDecl *type = (ASTTypeDecl *)a->atype;
-
     LLVMValueRef begin = LLVMGetFirstInstruction(cb->currentFunctionEntry);
     if(begin)
         LLVMPositionBuilderBefore(cb->builder, begin);
-    LLVMValueRef pos = LLVMBuildAlloca(cb->builder, ett_llvm_type(type->etype), a->ident);
+    LLVMValueRef pos = LLVMBuildAlloca(cb->builder, ett_llvm_type(type), ident);
 
     LLVMPositionBuilderAtEnd(cb->builder, curblock);
 
-    vs_put(cb->varScope, a->ident, pos, type->etype);
+    VarBundle *b = vs_get(cb->varScope, ident);
+    if(b && !b->value)
+        b->value = pos;
 
-    if(ET_IS_COUNTED(type->etype))
+    if(ET_IS_COUNTED(type))
     {
-        LLVMBuildStore(cb->builder, LLVMConstPointerNull(ett_llvm_type(type->etype)), pos);
+        LLVMBuildStore(cb->builder, LLVMConstPointerNull(ett_llvm_type(type)), pos);
 
-        vs_add_callback(cb->varScope, a->ident, ac_scope_leave_callback, cb);
+        vs_add_callback(cb->varScope, ident, ac_scope_leave_callback, cb);
     }
-    else if(ET_IS_WEAK(type->etype))
+    else if(ET_IS_WEAK(type))
     {
-        LLVMBuildStore(cb->builder, LLVMConstPointerNull(ett_llvm_type(type->etype)), pos);
-        vs_add_callback(cb->varScope, a->ident, ac_scope_leave_weak_callback, cb);
+        LLVMBuildStore(cb->builder, LLVMConstPointerNull(ett_llvm_type(type)), pos);
+        vs_add_callback(cb->varScope, ident, ac_scope_leave_weak_callback, cb);
     }
-    else if(type->etype->type == ETStruct && ty_needs_destructor(type->etype))
+    else if(type->type == ETStruct && ty_needs_destructor(type))
     {
-        ac_call_constructor(cb, pos, type->etype);
-        vs_add_callback(cb->varScope, a->ident, ac_scope_leave_struct_callback, cb);
-    }
-
-    if(type->etype->type == ETArray && ett_array_has_counted(type->etype))
-    {
-        ac_nil_fill_array(cb, pos, ett_array_count(type->etype));
-        vs_add_callback(cb->varScope, a->ident, ac_scope_leave_array_callback, cb);
+        ac_call_constructor(cb, pos, type);
+        vs_add_callback(cb->varScope, ident, ac_scope_leave_struct_callback, cb);
     }
 
+    if(type->type == ETArray && ett_array_has_counted(type))
+    {
+        ac_nil_fill_array(cb, pos, ett_array_count(type));
+        vs_add_callback(cb->varScope, ident, ac_scope_leave_array_callback, cb);
+    }
+
+
+    return pos;
+}
+
+LLVMValueRef ac_compile_var_decl(AST *ast, CompilerBundle *cb)
+{
+    ASTVarDecl *a = (ASTVarDecl *)ast;
+    ASTTypeDecl *type = (ASTTypeDecl *)a->atype;
     ast->resultantType = type->etype;
+
+    if(type->etype->type == ETAuto)
+    {
+        vs_put(cb->varScope, a->ident, NULL, type->etype);
+        return NULL;
+    }
+
+    vs_put(cb->varScope, a->ident, NULL, type->etype);
+    LLVMValueRef pos = ac_compile_var_decl_ext(type->etype, a->ident, cb);
 
     return pos;
 }
@@ -631,6 +649,9 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb)
     EagleTypeType *totype;
     LLVMValueRef pos;
 
+    VarBundle *storageBundle = NULL;
+    char *storageIdent = NULL;
+
     if(a->left->type == AIDENT)
     {
         ASTValue *l = (ASTValue *)a->left;
@@ -647,6 +668,9 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb)
             totype = b->type;
             pos = b->value;
         }
+
+        storageIdent = l->value.id;
+        storageBundle = b;
     }
     else if(a->left->type == AUNARY && ((ASTUnary *)a->left)->op == '*')
     {
@@ -671,6 +695,12 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb)
     {
         pos = ac_dispatch_expression(a->left, cb);
         totype = a->left->resultantType;
+
+        if(!pos)
+        {
+            storageIdent = ((ASTVarDecl *)a->left)->ident;
+            storageBundle = vs_get(cb->varScope, storageIdent);
+        }
     }
     else if(a->left->type == ABINARY && ((ASTBinary *)a->left)->op == '[')
     {
@@ -700,6 +730,16 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb)
 
     LLVMValueRef r = ac_dispatch_expression(a->right, cb);
     EagleTypeType *fromtype = a->right->resultantType;
+
+    if(totype->type == ETAuto)
+    {
+        totype = fromtype;
+        if(!storageBundle || !storageIdent)
+            die(ALN, "Internal compiler error!\nstorageBundle = %p; storageIdent = %p;", storageBundle, storageIdent);
+
+        pos = ac_compile_var_decl_ext(totype, storageIdent, cb);
+        storageBundle->type = totype;
+    }
 
     a->resultantType = totype;
 

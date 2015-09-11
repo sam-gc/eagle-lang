@@ -91,6 +91,7 @@ semi (";"|";"{whitechar}*"\n")
 "yes"       SAVE_NL; return SET(TYES);
 "no"        SAVE_NL; return SET(TNO);
 "nil"       SAVE_NL; return SET(TNIL);
+"var"       DISCARD_NL; return SET(TVAR);
 "bool"      SAVE_NL; SAVE_TOKEN; return TTYPE;
 "byte"      SAVE_NL; SAVE_TOKEN; return TTYPE; 
 "short"     SAVE_NL; SAVE_TOKEN; return TTYPE;

@@ -1,0 +1,12 @@
+func main() : int
+{
+    int j = 5
+    var i = 10
+    puts j + i
+
+    var k
+    k = 11
+    puts k + i
+
+    return i
+}
