@@ -68,7 +68,9 @@ type                : TTYPE { $$ = ast_make_type($1); }
                     | TLBRACKET TCOLON type TRBRACKET { $$ = ast_make_function_type(NULL, $3); }
                     ;
 
-structdecl          : TSTRUCT TTYPE TLBRACE structlist TRBRACE { $$ = $4; ast_struct_name($$, $2); };
+structdecl          : TSTRUCT TTYPE TLBRACE structlist TRBRACE { $$ = $4; ast_struct_name($$, $2); }
+structdecl          : TSTRUCT TTYPE TLBRACE TSEMI structlist TRBRACE { $$ = $5; ast_struct_name($$, $2); }
+                    ;
 
 structlist          : structlist variabledecl TSEMI { $$ = $1; ast_struct_add($$, $2); }
                     | variabledecl TSEMI { $$ = ast_make_struct_decl(); ast_struct_add($$, $1); }

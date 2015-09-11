@@ -3,7 +3,8 @@ extern func free(any*) : void
 extern func realloc(any*, long) : any*
 extern func memmove(any*, any*, long) : any*
 
-struct __egl_ptr {
+struct __egl_ptr
+{
     long    memcount
     short   wrefct
     short   wrefal
@@ -11,7 +12,8 @@ struct __egl_ptr {
     [any*, int : void]* teardown
 }
 
-struct __egl_ptr_ptr {
+struct __egl_ptr_ptr
+{
     __egl_ptr main
     __egl_ptr* to
 }
