@@ -43,7 +43,7 @@ func __egl_set_nil(any*** vals, short ct) : void
 
 func __egl_decr_ptr(__egl_ptr* ptr) : void
 {
-    if ptr == nil || ptr->memcount < 0
+    if !ptr || ptr->memcount < 0
         return
 
     ptr->memcount = ptr->memcount - 1
@@ -68,7 +68,7 @@ func __egl_counted_destructor(__egl_ptr_ptr* ptr, int i) : void
 
 func __egl_check_ptr(__egl_ptr* ptr) : void
 {
-    if ptr == nil || ptr->memcount < 0
+    if !ptr || ptr->memcount < 0
         return
 
     if ptr->memcount == 0
@@ -87,7 +87,7 @@ func __egl_check_ptr(__egl_ptr* ptr) : void
 
 func __egl_add_weak(__egl_ptr* ptr, any** pos) : void
 {
-    if ptr == nil || ptr->memcount < 0
+    if !ptr || ptr->memcount < 0
         return
 
     if ptr->wrefal == ptr->wrefct
@@ -102,7 +102,7 @@ func __egl_add_weak(__egl_ptr* ptr, any** pos) : void
 
 func __egl_remove_weak(__egl_ptr** pos) : void
 {
-    if pos == nil || pos^ == nil
+    if !pos || !pos^
         return
 
     __egl_ptr* ptr = pos^

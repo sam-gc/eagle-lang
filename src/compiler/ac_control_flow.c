@@ -170,6 +170,26 @@ void ac_compile_if(AST *ast, CompilerBundle *cb, LLVMBasicBlockRef mergeBB)
     LLVMPositionBuilderAtEnd(cb->builder, mergeBB);
 }
 
+LLVMValueRef ac_compile_ntest(AST *res, LLVMValueRef val, CompilerBundle *cb)
+{
+    LLVMValueRef cmp = NULL;
+    if(res->resultantType->type == ETInt1)
+        cmp = LLVMBuildICmp(cb->builder, LLVMIntEQ, val, LLVMConstInt(LLVMInt1Type(), 0, 0), "cmp");
+    else if(res->resultantType->type == ETInt8)
+        cmp = LLVMBuildICmp(cb->builder, LLVMIntEQ, val, LLVMConstInt(LLVMInt8Type(), 0, 0), "cmp");
+    else if(res->resultantType->type == ETInt32)
+        cmp = LLVMBuildICmp(cb->builder, LLVMIntEQ, val, LLVMConstInt(LLVMInt32Type(), 0, 0), "cmp");
+    else if(res->resultantType->type == ETInt64)
+        cmp = LLVMBuildICmp(cb->builder, LLVMIntEQ, val, LLVMConstInt(LLVMInt64Type(), 0, 0), "cmp");
+    else if(res->resultantType->type == ETDouble)
+        cmp = LLVMBuildFCmp(cb->builder, LLVMRealOEQ, val, LLVMConstReal(LLVMDoubleType(), 0.0), "cmp");
+    else if(res->resultantType->type == ETPointer)
+        cmp = LLVMBuildICmp(cb->builder, LLVMIntEQ, val, LLVMConstPointerNull(ett_llvm_type(res->resultantType)), "cmp");
+    else
+        die(LN(res), "Cannot test against given type.");
+    return cmp;
+}
+
 LLVMValueRef ac_compile_test(AST *res, LLVMValueRef val, CompilerBundle *cb)
 {
     LLVMValueRef cmp = NULL;

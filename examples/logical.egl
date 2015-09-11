@@ -16,10 +16,32 @@ func testor(int i, int j) : bool
     return out
 }
 
+func not(int i) : bool
+{
+    var j = new int
+    j^ = i
+    
+    return !j^
+}
+
+func allocate(int i) : int^
+{
+    var j = new int
+    j^ = i
+
+    return j
+}
+
 func main() : int
 {
     puts testand(0, 1)
     puts testor(0, 0)
+
+    puts not(0)
+
+    puts 0 || new int
+
+    puts allocate(11) && allocate(12)^ && 0
 
     return 0
 }

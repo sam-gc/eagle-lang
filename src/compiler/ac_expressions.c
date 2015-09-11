@@ -357,16 +357,36 @@ LLVMValueRef ac_compile_logical_or(AST *ast, CompilerBundle *cb)
         LLVMValueRef cmp = ac_compile_test(trees.items[i], val, cb);
 
         LLVMBasicBlockRef nextBB = LLVMAppendBasicBlock(cb->currentFunction, "next");
-        LLVMBuildCondBr(cb->builder, cmp, mergeBB, nextBB);
 
         arr_append(&values, LLVMConstInt(LLVMInt1Type(), 1, 0));
         arr_append(&blocks, LLVMGetInsertBlock(cb->builder));
+
+        hst_for_each(&cb->transients, ac_decr_transients, cb);
+        hst_for_each(&cb->loadedTransients, ac_decr_loaded_transients, cb);
+        
+        hst_free(&cb->transients);
+        hst_free(&cb->loadedTransients);
+
+        cb->transients = hst_create();
+        cb->loadedTransients = hst_create();
+
+        LLVMBuildCondBr(cb->builder, cmp, mergeBB, nextBB);
 
         LLVMPositionBuilderAtEnd(cb->builder, nextBB);
     }
 
     LLVMValueRef val = ac_dispatch_expression(trees.items[0], cb);
     LLVMValueRef cmp = ac_compile_test(trees.items[0], val, cb);
+
+    hst_for_each(&cb->transients, ac_decr_transients, cb);
+    hst_for_each(&cb->loadedTransients, ac_decr_loaded_transients, cb);
+    
+    hst_free(&cb->transients);
+    hst_free(&cb->loadedTransients);
+
+    cb->transients = hst_create();
+    cb->loadedTransients = hst_create();
+
     LLVMBuildBr(cb->builder, mergeBB);
 
     arr_append(&values, cmp);
@@ -409,6 +429,18 @@ LLVMValueRef ac_compile_logical_and(AST *ast, CompilerBundle *cb)
         LLVMValueRef val = ac_dispatch_expression(trees.items[i], cb);
         LLVMValueRef cmp = ac_compile_test(trees.items[i], val, cb);
 
+        // Any allocations made in the phi block must be destroyed there.
+        // ==============================================================
+        hst_for_each(&cb->transients, ac_decr_transients, cb);
+        hst_for_each(&cb->loadedTransients, ac_decr_loaded_transients, cb);
+        
+        hst_free(&cb->transients);
+        hst_free(&cb->loadedTransients);
+
+        cb->transients = hst_create();
+        cb->loadedTransients = hst_create();
+        // ==============================================================
+
         LLVMBasicBlockRef nextBB = LLVMAppendBasicBlock(cb->currentFunction, "next");
         LLVMBuildCondBr(cb->builder, cmp, nextBB, mergeBB);
 
@@ -420,6 +452,18 @@ LLVMValueRef ac_compile_logical_and(AST *ast, CompilerBundle *cb)
 
     LLVMValueRef val = ac_dispatch_expression(trees.items[0], cb);
     LLVMValueRef cmp = ac_compile_test(trees.items[0], val, cb);
+
+    // ==============================================================
+    hst_for_each(&cb->transients, ac_decr_transients, cb);
+    hst_for_each(&cb->loadedTransients, ac_decr_loaded_transients, cb);
+    
+    hst_free(&cb->transients);
+    hst_free(&cb->loadedTransients);
+
+    cb->transients = hst_create();
+    cb->loadedTransients = hst_create();
+    // ==============================================================
+        
     LLVMBuildBr(cb->builder, mergeBB);
 
     arr_append(&values, cmp);
@@ -678,7 +722,8 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
             }
         case '!':
             // TODO: Broken
-            return LLVMBuildNot(cb->builder, v, "nottmp");
+            a->resultantType = ett_base_type(ETInt1);
+            return ac_compile_ntest(a->val, v, cb);
         default:
             die(ALN, "Invalid unary operator (%c).", a->op);
             break;
