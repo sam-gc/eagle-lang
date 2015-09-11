@@ -57,6 +57,8 @@ semi (";"|";"{whitechar}*"\n")
 "!="        DISCARD_NL; return SET(TNE);
 "!"         DISCARD_NL; return SET(TNOT);
 "="         DISCARD_NL; return SET(TEQUALS);
+"&&"        DISCARD_NL; return SET(TLOGAND);
+"||"        DISCARD_NL; return SET(TLOGOR);
 "func"      DISCARD_NL; return SET(TFUNC);
 ":"         DISCARD_NL; return SET(TCOLON);
 ","         DISCARD_NL; return SET(TCOMMA);

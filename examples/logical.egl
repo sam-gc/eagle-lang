@@ -1,0 +1,25 @@
+func side_effect() : int
+{
+    puts 100
+    return 0
+}
+
+func testand(int i, int j) : bool
+{
+    var out = i && j && side_effect()
+    return out
+}
+
+func testor(int i, int j) : bool
+{
+    var out = i || j || side_effect()
+    return out
+}
+
+func main() : int
+{
+    puts testand(0, 1)
+    puts testor(0, 0)
+
+    return 0
+}

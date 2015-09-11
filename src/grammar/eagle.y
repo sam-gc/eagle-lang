@@ -18,7 +18,7 @@
 }
 
 %token <string> TIDENTIFIER TINT TDOUBLE TTYPE TCOUNTED TNEW TSTRUCT TTOUCH
-%token <token> TPLUS TMINUS TEQUALS TMUL TDIV TGT TLT TEQ TNE TGTE TLTE TNOT TPOW
+%token <token> TPLUS TMINUS TEQUALS TMUL TDIV TGT TLT TEQ TNE TGTE TLTE TNOT TPOW TLOGAND TLOGOR
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TLBRACKET TRBRACKET
 %token <token> TFUNC TRETURN TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF TFOR TWEAK TUNWRAP
 %token <token> TBREAK TCONTINUE TVAR
@@ -32,6 +32,8 @@
 %nonassoc TNEW;
 %nonassoc TCOUNTED TWEAK TUNWRAP TTOUCH;
 %right TEQUALS;
+%left TLOGOR;
+%left TLOGAND;
 %left TNOT;
 %left TEQ TNE TLT TGT TLTE TGTE
 %left TPLUS TMINUS;
@@ -166,6 +168,8 @@ binexpr             : expr TPLUS expr { $$ = ast_make_binary($1, $3, '+'); }
                     | expr TLT expr { $$ = ast_make_binary($1, $3, 'l'); }
                     | expr TLTE expr { $$ = ast_make_binary($1, $3, 'L'); }
                     | expr TNE expr { $$ = ast_make_binary($1, $3, 'n'); }
+                    | expr TLOGAND expr { $$ = ast_make_binary($1, $3, '&'); }
+                    | expr TLOGOR expr { $$ = ast_make_binary($1, $3, '|'); }
                     ;
 
 unexpr              : ounexpr TPOW { $$ = ast_make_unary($1, '*'); }

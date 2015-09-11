@@ -104,7 +104,7 @@ LLVMValueRef ac_compile_var_decl_ext(EagleTypeType *type, char *ident, CompilerB
         ac_nil_fill_array(cb, pos, ett_array_count(type));
         vs_add_callback(cb->varScope, ident, ac_scope_leave_array_callback, cb);
     }
-    
+
     return pos;
 }
 
@@ -334,6 +334,112 @@ LLVMValueRef ac_compile_index(AST *ast, int keepPointer, CompilerBundle *cb)
     return LLVMBuildLoad(cb->builder, gep, "dereftmp");
 }
 
+// Short circuited logical or
+LLVMValueRef ac_compile_logical_or(AST *ast, CompilerBundle *cb)
+{
+    ASTBinary *a = (ASTBinary *)ast;
+
+    arraylist trees = arr_create(10);
+    arraylist values = arr_create(10);
+    arraylist blocks = arr_create(10);
+
+    for(; a->type == ABINARY && ((ASTBinary *)a)->op == '|'; a = (ASTBinary *)a->left)
+        arr_append(&trees, a->right);
+
+    arr_append(&trees, a);
+
+    LLVMBasicBlockRef mergeBB = LLVMAppendBasicBlock(cb->currentFunction, "merge");
+
+    int i;
+    for(i = trees.count - 1; i > 0; i--)
+    {
+        LLVMValueRef val = ac_dispatch_expression(trees.items[i], cb);
+        LLVMValueRef cmp = ac_compile_test(trees.items[i], val, cb);
+
+        LLVMBasicBlockRef nextBB = LLVMAppendBasicBlock(cb->currentFunction, "next");
+        LLVMBuildCondBr(cb->builder, cmp, mergeBB, nextBB);
+
+        arr_append(&values, LLVMConstInt(LLVMInt1Type(), 1, 0));
+        arr_append(&blocks, LLVMGetInsertBlock(cb->builder));
+
+        LLVMPositionBuilderAtEnd(cb->builder, nextBB);
+    }
+
+    LLVMValueRef val = ac_dispatch_expression(trees.items[0], cb);
+    LLVMValueRef cmp = ac_compile_test(trees.items[0], val, cb);
+    LLVMBuildBr(cb->builder, mergeBB);
+
+    arr_append(&values, cmp);
+    arr_append(&blocks, LLVMGetInsertBlock(cb->builder));
+
+    LLVMMoveBasicBlockAfter(mergeBB, LLVMGetInsertBlock(cb->builder));
+    LLVMPositionBuilderAtEnd(cb->builder, mergeBB);
+
+    LLVMValueRef phi = LLVMBuildPhi(cb->builder, LLVMInt1Type(), "phi");
+    LLVMAddIncoming(phi, (LLVMValueRef *)values.items, (LLVMBasicBlockRef *)blocks.items, values.count);
+
+    ast->resultantType = ett_base_type(ETInt1);
+
+    arr_free(&trees);
+    arr_free(&blocks);
+    arr_free(&values);
+
+    return phi;
+}
+
+// Short circuited logical and
+LLVMValueRef ac_compile_logical_and(AST *ast, CompilerBundle *cb)
+{
+    ASTBinary *a = (ASTBinary *)ast;
+
+    arraylist trees = arr_create(10);
+    arraylist values = arr_create(10);
+    arraylist blocks = arr_create(10);
+
+    for(; a->type == ABINARY && ((ASTBinary *)a)->op == '&'; a = (ASTBinary *)a->left)
+        arr_append(&trees, a->right);
+
+    arr_append(&trees, a);
+
+    LLVMBasicBlockRef mergeBB = LLVMAppendBasicBlock(cb->currentFunction, "merge");
+
+    int i;
+    for(i = trees.count - 1; i > 0; i--)
+    {
+        LLVMValueRef val = ac_dispatch_expression(trees.items[i], cb);
+        LLVMValueRef cmp = ac_compile_test(trees.items[i], val, cb);
+
+        LLVMBasicBlockRef nextBB = LLVMAppendBasicBlock(cb->currentFunction, "next");
+        LLVMBuildCondBr(cb->builder, cmp, nextBB, mergeBB);
+
+        arr_append(&values, LLVMConstInt(LLVMInt1Type(), 0, 0));
+        arr_append(&blocks, LLVMGetInsertBlock(cb->builder));
+
+        LLVMPositionBuilderAtEnd(cb->builder, nextBB);
+    }
+
+    LLVMValueRef val = ac_dispatch_expression(trees.items[0], cb);
+    LLVMValueRef cmp = ac_compile_test(trees.items[0], val, cb);
+    LLVMBuildBr(cb->builder, mergeBB);
+
+    arr_append(&values, cmp);
+    arr_append(&blocks, LLVMGetInsertBlock(cb->builder));
+
+    LLVMMoveBasicBlockAfter(mergeBB, LLVMGetInsertBlock(cb->builder));
+    LLVMPositionBuilderAtEnd(cb->builder, mergeBB);
+
+    LLVMValueRef phi = LLVMBuildPhi(cb->builder, LLVMInt1Type(), "phi");
+    LLVMAddIncoming(phi, (LLVMValueRef *)values.items, (LLVMBasicBlockRef *)blocks.items, values.count);
+
+    ast->resultantType = ett_base_type(ETInt1);
+
+    arr_free(&trees);
+    arr_free(&blocks);
+    arr_free(&values);
+
+    return phi;
+}
+
 LLVMValueRef ac_compile_binary(AST *ast, CompilerBundle *cb)
 {
     ASTBinary *a = (ASTBinary *)ast;
@@ -341,6 +447,10 @@ LLVMValueRef ac_compile_binary(AST *ast, CompilerBundle *cb)
         return ac_build_store(ast, cb);
     else if(a->op == '[')
         return ac_compile_index(ast, 0, cb);
+    else if(a->op == '&')
+        return ac_compile_logical_and(ast, cb);
+    else if(a->op == '|')
+        return ac_compile_logical_or(ast, cb);
 
     LLVMValueRef l = ac_dispatch_expression(a->left, cb);
     LLVMValueRef r = ac_dispatch_expression(a->right, cb);
