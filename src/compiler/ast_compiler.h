@@ -17,8 +17,12 @@ typedef struct {
     LLVMModuleRef module;
     LLVMBuilderRef builder;
 
+    LLVMTargetDataRef td;
+
     EagleFunctionType *currentFunctionType;
     LLVMBasicBlockRef currentFunctionEntry;
+    LLVMBasicBlockRef currentLoopEntry;
+    LLVMBasicBlockRef currentLoopExit;
     LLVMValueRef currentFunction;
     VarScope *currentFunctionScope;
 

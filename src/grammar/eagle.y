@@ -21,6 +21,7 @@
 %token <token> TPLUS TMINUS TEQUALS TMUL TDIV TGT TLT TEQ TNE TGTE TLTE TNOT TPOW
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TLBRACKET TRBRACKET
 %token <token> TFUNC TRETURN TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF TFOR TWEAK TUNWRAP
+%token <token> TBREAK TCONTINUE
 %token <token> TCOLON TSEMI TNEWLINE TCOMMA TDOT TAMP TAT TARROW
 %token <token> TYES TNO TNIL
 %type <node> program declarations declaration statements statement block funcdecl ifstatement
@@ -63,6 +64,8 @@ type                : TTYPE { $$ = ast_make_type($1); }
                     | type TPOW { $$ = ast_make_counted(ast_make_pointer($1)); }
                     | TLPAREN typelist TCOLON type TRPAREN { $$ = ast_make_closure_type($2, $4); }
                     | TLPAREN TCOLON type TRPAREN { $$ = ast_make_closure_type(NULL, $3); }
+                    | TLBRACKET typelist TCOLON type TRBRACKET { $$ = ast_make_function_type($2, $4); }
+                    | TLBRACKET TCOLON type TRBRACKET { $$ = ast_make_function_type(NULL, $3); }
                     ;
 
 structdecl          : TSTRUCT TTYPE TLBRACE structlist TRBRACE { $$ = $4; ast_struct_name($$, $2); };
@@ -99,6 +102,9 @@ statements          : statement { if($1) $$ = $1; else $$ = ast_make(); }
                     | statement statements { if($1) $1->next = $2; $$ = $1 ? $1 : $2; };
 
 statement           : expr TSEMI { $$ = $1; }
+                    | TBREAK TSEMI { $$ = ast_make_unary(NULL, 'b'); }
+                    | TCONTINUE TSEMI { $$ = ast_make_unary(NULL, 'c'); }
+                    | TRETURN TSEMI { $$ = ast_make_unary(NULL, 'r'); }
                     | TRETURN expr TSEMI { $$ = ast_make_unary($2, 'r'); }
                     | TPUTS expr TSEMI { $$ = ast_make_unary($2, 'p'); }
                     | TSEMI { $$ = NULL; }
@@ -162,7 +168,7 @@ binexpr             : expr TPLUS expr { $$ = ast_make_binary($1, $3, '+'); }
 unexpr              : ounexpr TPOW { $$ = ast_make_unary($1, '*'); }
                     | TAMP ounexpr { $$ = ast_make_unary($2, '&'); }
                     | TNOT ounexpr { $$ = ast_make_unary($2, '!'); }
-                    | TSIZEOF ounexpr { $$ = ast_make_unary($2, 's'); }
+                    | TSIZEOF TLPAREN type TRPAREN { $$ = ast_make_unary($3, 's'); }
                     | TCOUNTOF ounexpr { $$ = ast_make_unary($2, 'c'); }
                     | TUNWRAP ounexpr { $$ = ast_make_unary($2, 'u'); }
                     | ounexpr TLBRACKET expr TRBRACKET { $$ = ast_make_binary($1, $3, '['); }

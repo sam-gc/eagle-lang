@@ -247,6 +247,25 @@ AST *ast_make_closure_type(AST *tysList, AST *resType)
     return (AST *)ast;
 }
 
+AST *ast_make_function_type(AST *tysList, AST *resType)
+{
+    ASTTypeDecl *ast = ast_malloc(sizeof(ASTTypeDecl));
+    ast->type = ATYPE;
+
+    arraylist list = arr_create(10);
+    ASTVarDecl *vd = (ASTVarDecl *)tysList;
+    for(; vd; vd = (ASTVarDecl *)vd->next)
+    {
+        ASTTypeDecl *t = (ASTTypeDecl *)vd->atype;
+        arr_append(&list, t->etype);
+    }
+
+    ast->etype = ett_function_type(((ASTTypeDecl *)resType)->etype, (EagleTypeType **)list.items, list.count);
+    ((EagleFunctionType *)ast->etype)->closure = 0;
+
+    return (AST *)ast;
+}
+
 AST *ast_make_pointer(AST *ast)
 {
     ASTTypeDecl *a = (ASTTypeDecl *)ast;

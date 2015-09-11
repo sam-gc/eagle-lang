@@ -23,6 +23,7 @@ EagleTypeType *et_parse_string(char *text)
     TTEST(text, "any", ETAny);
     TTEST(text, "bool", ETInt1);
     TTEST(text, "byte", ETInt8);
+    TTEST(text, "short", ETInt16);
     TTEST(text, "int", ETInt32);
     TTEST(text, "long", ETInt64);
     TTEST(text, "double", ETDouble);
@@ -94,6 +95,8 @@ LLVMTypeRef ett_llvm_type(EagleTypeType *type)
         case ETAny:
         case ETInt8:
             return LLVMInt8Type();
+        case ETInt16:
+            return LLVMInt16Type();
         case ETInt32:
             return LLVMInt32Type();
         case ETInt64:
@@ -287,6 +290,7 @@ int ett_is_numeric(EagleTypeType *t)
     {
         case ETInt1:
         case ETInt8:
+        case ETInt16:
         case ETInt32:
         case ETInt64:
         case ETDouble:
@@ -311,6 +315,8 @@ void ett_debug_print(EagleTypeType *t)
         case ETInt8:
             printf("Byte\n");
             return;
+        case ETInt16:
+            printf("Short\n");
         case ETInt32:
             printf("Int\n");
             return;

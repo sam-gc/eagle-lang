@@ -37,6 +37,7 @@ typedef enum {
     ETNil,
     ETInt1,
     ETInt8,
+    ETInt16,
     ETInt32,
     ETInt64,
     ETDouble,

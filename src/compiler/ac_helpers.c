@@ -44,6 +44,7 @@ LLVMValueRef ac_build_conversion(LLVMBuilderRef builder, LLVMValueRef val, Eagle
         }
         case ETInt1:
         case ETInt8:
+        case ETInt16:
         case ETInt32:
         case ETInt64:
             switch(to->type)
@@ -51,6 +52,7 @@ LLVMValueRef ac_build_conversion(LLVMBuilderRef builder, LLVMValueRef val, Eagle
                 case ETInt1:
                     return LLVMBuildICmp(builder, LLVMIntNE, val, LLVMConstInt(ett_llvm_type(from), 0, 0), "cmp");
                 case ETInt8:
+                case ETInt16:
                 case ETInt32:
                 case ETInt64:
                     return LLVMBuildIntCast(builder, val, ett_llvm_type(to), "conv");
@@ -68,6 +70,7 @@ LLVMValueRef ac_build_conversion(LLVMBuilderRef builder, LLVMValueRef val, Eagle
                 case ETInt1:
                     return LLVMBuildFCmp(builder, LLVMRealONE, val, LLVMConstReal(0, 0), "cmp");
                 case ETInt8:
+                case ETInt16:
                 case ETInt32:
                 case ETInt64:
                     return LLVMBuildFPToSI(builder, val, ett_llvm_type(to), "conv");
@@ -91,6 +94,7 @@ LLVMValueRef ac_make_add(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
         case ETDouble:
             return LLVMBuildFAdd(builder, left, right, "addtmp");
         case ETInt8:
+        case ETInt16:
         case ETInt32:
         case ETInt64:
             return LLVMBuildAdd(builder, left, right, "addtmp");
@@ -107,6 +111,7 @@ LLVMValueRef ac_make_sub(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
         case ETDouble:
             return LLVMBuildFSub(builder, left, right, "subtmp");
         case ETInt8:
+        case ETInt16:
         case ETInt32:
         case ETInt64:
             return LLVMBuildSub(builder, left, right, "subtmp");
@@ -123,6 +128,7 @@ LLVMValueRef ac_make_mul(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
         case ETDouble:
             return LLVMBuildFMul(builder, left, right, "multmp");
         case ETInt8:
+        case ETInt16:
         case ETInt32:
         case ETInt64:
             return LLVMBuildMul(builder, left, right, "multmp");
@@ -139,6 +145,7 @@ LLVMValueRef ac_make_div(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
         case ETDouble:
             return LLVMBuildFDiv(builder, left, right, "divtmp");
         case ETInt8:
+        case ETInt16:
         case ETInt32:
         case ETInt64:
             return LLVMBuildSDiv(builder, left, right, "divtmp");
@@ -191,6 +198,7 @@ LLVMValueRef ac_make_comp(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef 
             return LLVMBuildFCmp(builder, rp, left, right, "eqtmp");
         case ETInt1:
         case ETInt8:
+        case ETInt16:
         case ETInt32:
         case ETInt64:
             return LLVMBuildICmp(builder, ip, left, right, "eqtmp");

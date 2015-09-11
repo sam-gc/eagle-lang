@@ -71,7 +71,9 @@ semi (";"|";"{whitechar}*"\n")
 "}"         SAVE_NL; return SET(TRBRACE);
 "["         DISCARD_NL; return SET(TLBRACKET);
 "]"         SAVE_NL; return SET(TRBRACKET);
-"return"    DISCARD_NL; return SET(TRETURN);
+"return"    SAVE_NL; return SET(TRETURN);
+"break"     SAVE_NL; return SET(TBREAK);
+"continue"  SAVE_NL; return SET(TCONTINUE);
 "struct"    DISCARD_NL; return SET(TSTRUCT);
 "puts"      DISCARD_NL; return SET(TPUTS);
 "extern"    DISCARD_NL; OVERRIDE; return SET(TEXTERN);
@@ -91,6 +93,7 @@ semi (";"|";"{whitechar}*"\n")
 "nil"       SAVE_NL; return SET(TNIL);
 "bool"      SAVE_NL; SAVE_TOKEN; return TTYPE;
 "byte"      SAVE_NL; SAVE_TOKEN; return TTYPE; 
+"short"     SAVE_NL; SAVE_TOKEN; return TTYPE;
 "int"       { SAVE_NL; SAVE_TOKEN; return TTYPE; }
 "long"      { SAVE_NL; SAVE_TOKEN; return TTYPE; }
 "double"    { SAVE_NL; SAVE_TOKEN; return TTYPE; }

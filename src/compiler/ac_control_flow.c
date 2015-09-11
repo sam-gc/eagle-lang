@@ -6,29 +6,37 @@ int ac_compile_block(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
     {
         if(ast->type == AUNARY && ((ASTUnary *)ast)->op == 'r') // Handle the special return case
         {
-            LLVMValueRef val = ac_dispatch_expression(((ASTUnary *)ast)->val, cb);
-            EagleTypeType *t = ((ASTUnary *)ast)->val->resultantType;
-            EagleTypeType *o = cb->currentFunctionType->retType;
+            ASTUnary *reta = (ASTUnary *)ast;
 
-            if(!ett_are_same(t, o))
-                val = ac_build_conversion(cb->builder, val, t, o);
-            if(t->type == ETStruct)
-                val = LLVMBuildLoad(cb->builder, val, "");
+            LLVMValueRef val = NULL;
 
-            if(ET_IS_COUNTED(o))
+            if(reta->val)
             {
-                ac_incr_val_pointer(cb, &val, o);
+                val = ac_dispatch_expression(reta->val, cb);
+                EagleTypeType *t = reta->val->resultantType;
+                EagleTypeType *o = cb->currentFunctionType->retType;
 
-                // We want to make sure that transients don't leak into returns (this only
-                // applies to closures since transients are implicitly destroyed on a normal
-                // function)
+                if(!ett_are_same(t, o))
+                    val = ac_build_conversion(cb->builder, val, t, o);
+                if(t->type == ETStruct)
+                    val = LLVMBuildLoad(cb->builder, val, "");
 
-                hst_remove_key(&cb->transients, ((ASTUnary *)ast)->val, ahhd, ahed);
+                if(ET_IS_COUNTED(o))
+                {
+                    ac_incr_val_pointer(cb, &val, o);
+
+                    // We want to make sure that transients don't leak into returns (this only
+                    // applies to closures since transients are implicitly destroyed on a normal
+                    // function)
+
+                    hst_remove_key(&cb->transients, ((ASTUnary *)ast)->val, ahhd, ahed);
+                }
             }
             
             vs_run_callbacks_through(cb->varScope, cb->currentFunctionScope);
 
-            LLVMBuildRet(cb->builder, val);
+            if(val) LLVMBuildRet(cb->builder, val);
+            else    LLVMBuildRetVoid(cb->builder);
 
             return 1;
         }
@@ -44,7 +52,15 @@ void ac_compile_loop(AST *ast, CompilerBundle *cb)
     ASTLoopBlock *a = (ASTLoopBlock *)ast;
     LLVMBasicBlockRef testBB = LLVMAppendBasicBlock(cb->currentFunction, "test");
     LLVMBasicBlockRef loopBB = LLVMAppendBasicBlock(cb->currentFunction, "loop");
+    LLVMBasicBlockRef incrBB = LLVMAppendBasicBlock(cb->currentFunction, "incr");
+    LLVMBasicBlockRef cleanupBB = LLVMAppendBasicBlock(cb->currentFunction, "clean");
     LLVMBasicBlockRef mergeBB = LLVMAppendBasicBlock(cb->currentFunction, "merge");
+
+    LLVMBasicBlockRef oldStart = cb->currentLoopEntry;
+    LLVMBasicBlockRef oldExit = cb->currentLoopExit;
+
+    cb->currentLoopEntry = incrBB;
+    cb->currentLoopExit = cleanupBB;
 
     vs_push(cb->varScope);
     if(a->setup)
@@ -60,19 +76,32 @@ void ac_compile_loop(AST *ast, CompilerBundle *cb)
 
     if(!ac_compile_block(a->block, loopBB, cb))
     {
+        LLVMBuildBr(cb->builder, incrBB);
+        LLVMPositionBuilderAtEnd(cb->builder, incrBB);
         if(a->update)
             ac_dispatch_expression(a->update, cb);
+
         vs_run_callbacks_through(cb->varScope, cb->varScope->scope);
-        vs_pop(cb->varScope);
         LLVMBuildBr(cb->builder, testBB);
+
+        LLVMPositionBuilderAtEnd(cb->builder, cleanupBB);
+        vs_run_callbacks_through(cb->varScope, cb->varScope->scope);
+        LLVMBuildBr(cb->builder, mergeBB);
+
+        vs_pop(cb->varScope);
     }
 
     LLVMBasicBlockRef last = LLVMGetLastBasicBlock(cb->currentFunction);
-    LLVMMoveBasicBlockAfter(mergeBB, last);
+    LLVMMoveBasicBlockAfter(incrBB, last);
+    LLVMMoveBasicBlockAfter(cleanupBB, incrBB);
+    LLVMMoveBasicBlockAfter(mergeBB, cleanupBB);
 
     LLVMPositionBuilderAtEnd(cb->builder, mergeBB);
     vs_run_callbacks_through(cb->varScope, cb->varScope->scope);
     vs_pop(cb->varScope);
+
+    cb->currentLoopEntry = oldStart;
+    cb->currentLoopExit = oldExit;
 }
 
 void ac_compile_if(AST *ast, CompilerBundle *cb, LLVMBasicBlockRef mergeBB)

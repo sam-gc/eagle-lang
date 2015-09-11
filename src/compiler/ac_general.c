@@ -24,6 +24,10 @@ LLVMModuleRef ac_compile(AST *ast)
     cb.builder = LLVMCreateBuilder();
     cb.transients = hst_create();
     cb.loadedTransients = hst_create();
+
+    cb.currentLoopEntry = cb.currentLoopExit = NULL;
+
+    cb.td = LLVMCreateTargetData("");
     
     VarScopeStack vs = vs_make();
     cb.varScope = &vs;
@@ -56,6 +60,7 @@ LLVMModuleRef ac_compile(AST *ast)
     vs_pop(cb.varScope);
 
     LLVMDisposeBuilder(cb.builder);
+    LLVMDisposeTargetData(cb.td);
     vs_free(cb.varScope);
     return cb.module;
 }

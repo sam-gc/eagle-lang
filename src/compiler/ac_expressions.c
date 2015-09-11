@@ -449,7 +449,9 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
         return NULL;
     }
 
-    LLVMValueRef v = ac_dispatch_expression(a->val, cb);
+    LLVMValueRef v;
+    if(a->op != 's' && a->val)
+        v = ac_dispatch_expression(a->val, cb);
 
     switch(a->op)
     {
@@ -501,6 +503,7 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
                     r = LLVMBuildLoad(cb->builder, v, "dereftmp");
                 return r;
             }
+            /*
         case 'c':
             {
                 if(a->val->resultantType->type != ETArray)
@@ -510,6 +513,13 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
                 a->resultantType = ett_base_type(ETInt64);
                 return LLVMBuildLoad(cb->builder, r, "dereftmp");
             }
+            */
+        case 'b':
+            LLVMBuildBr(cb->builder, cb->currentLoopExit);
+            break;
+        case 'c':
+            LLVMBuildBr(cb->builder, cb->currentLoopEntry);
+            break;
         case 'u':
             {
                 if(!ET_IS_COUNTED(a->val->resultantType) && !ET_IS_WEAK(a->val->resultantType))
@@ -517,6 +527,16 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
 
                 a->resultantType = ett_pointer_type(((EaglePointerType *)a->val->resultantType)->to);
                 return LLVMBuildStructGEP(cb->builder, v, 5, "unwrap");
+            }
+        case 's':
+            {
+                ASTTypeDecl *aty = (ASTTypeDecl *)a->val;
+                LLVMTypeRef ty = ett_llvm_type(aty->etype);
+
+                unsigned long size = LLVMABISizeOfType(cb->td, ty);
+                a->resultantType = ett_base_type(ETInt64);
+
+                return LLVMConstInt(LLVMInt64Type(), size, 0);
             }
         case '!':
             // TODO: Broken
