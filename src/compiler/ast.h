@@ -172,7 +172,7 @@ AST *ast_make();
 void ast_append(AST *old, AST *n);
 AST *ast_make_binary(AST *left, AST *right, char op);
 AST *ast_make_unary(AST *val, char op);
-AST *ast_make_allocater(char op, AST *val);
+AST *ast_make_allocater(char op, AST *val, AST *init);
 AST *ast_make_bool(int i);
 AST *ast_make_nil();
 AST *ast_make_int32(char *text);

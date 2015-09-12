@@ -239,11 +239,20 @@ LLVMValueRef ac_compile_malloc_counted(EagleTypeType *type, EagleTypeType **res,
 
 LLVMValueRef ac_compile_new_decl(AST *ast, CompilerBundle *cb)
 {
-    ASTUnary *a = (ASTUnary *)ast;
-    ASTTypeDecl *type = (ASTTypeDecl *)a->val;
+    ASTBinary *a = (ASTBinary *)ast;
+    ASTTypeDecl *type = (ASTTypeDecl *)a->left;
     
     LLVMValueRef val = ac_compile_malloc_counted(type->etype, &ast->resultantType, NULL, cb);
     hst_put(&cb->transients, ast, val, ahhd, ahed);
+
+    if(a->right)
+    {
+        LLVMValueRef init = ac_dispatch_expression(a->right, cb);
+        if(!ett_are_same(a->right->resultantType, type->etype))
+            init = ac_build_conversion(cb->builder, init, a->right->resultantType, type->etype);
+        LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, val, 5, "");
+        LLVMBuildStore(cb->builder, init, pos);
+    }
 
     return val;
 }

@@ -7,8 +7,7 @@ func test(int^ a) : void
 func creation(int ct) : void
 {
     if ct {
-        int^ t = new int
-        t^ = ct
+        int^ t = new int(ct)
         puts t^
         creation(t^ - 1)
     }
@@ -16,8 +15,7 @@ func creation(int ct) : void
 
 func rettest() : int^
 {
-    int^ a = new int
-    a^ = 101
+    var a = new int(101)
     return a
 }
 

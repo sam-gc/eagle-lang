@@ -154,7 +154,8 @@ expr                : binexpr { $$ = $1; }
                     | variabledecl { $$ = $1; }
                     | TVAR TIDENTIFIER { $$ = ast_make_auto_decl($2); }
                     | type TAT ounexpr { $$ = ast_make_cast($1, $3); }
-                    | TNEW type { $$ = ast_make_allocater('n', $2); }
+                    | TNEW type { $$ = ast_make_allocater('n', $2, NULL); }
+                    | TNEW type TLPAREN expr TRPAREN { $$ = ast_make_allocater('n', $2, $4); }
                     ;
 
 binexpr             : expr TPLUS expr { $$ = ast_make_binary($1, $3, '+'); }

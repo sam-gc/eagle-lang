@@ -72,9 +72,9 @@ AST *ast_make_unary(AST *val, char op)
     return (AST *)ast;
 }
 
-AST *ast_make_allocater(char op, AST *val)
+AST *ast_make_allocater(char op, AST *val, AST *init)
 {
-    AST *ast = ast_make_unary(val, op);
+    AST *ast = ast_make_binary(val, init, op);
     ast->type = AALLOC;
     return ast;
 }
