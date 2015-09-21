@@ -1,0 +1,10 @@
+extern func sprintf(byte*, byte*, int) : int
+
+func main(int argc) : int {
+    byte[10] test
+    sprintf(test, 'test %d', argc)
+
+    byte* b = test
+    puts b
+    return 0
+}

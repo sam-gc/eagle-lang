@@ -14,6 +14,9 @@ LLVMValueRef ac_compile_value(AST *ast, CompilerBundle *cb)
         case ETDouble:
             a->resultantType = ett_base_type(ETDouble);
             return LLVMConstReal(LLVMDoubleType(), a->value.d);
+        case ETCString:
+            a->resultantType = ett_pointer_type(ett_base_type(ETInt8));
+            return LLVMBuildGlobalStringPtr(cb->builder, a->value.id, "str");
         case ETNil:
             a->resultantType = ett_pointer_type(ett_base_type(ETAny));
             return LLVMConstPointerNull(ett_llvm_type(a->resultantType));
@@ -663,7 +666,8 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
                         fmt = LLVMBuildGlobalStringPtr(cb->builder, "%ld\n", "prfLI");
                         break;
                     case ETPointer:
-                        fmt = LLVMBuildGlobalStringPtr(cb->builder, "%p\n", "prfPTR");
+                        fmt = LLVMBuildGlobalStringPtr(cb->builder, 
+                                (((EaglePointerType *)a->val->resultantType)->to->type == ETInt8 ? "%s\n" : "%p\n"), "prfPTR");
                         break;
                     default:
                         die(ALN, "The requested type may not be printed.");

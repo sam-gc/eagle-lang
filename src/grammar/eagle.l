@@ -29,12 +29,13 @@ integer {digit}+
 exponent [eE][+-]?{integer}
 real {integer}("."{digit}*){exponent}?
 nvar {alpha}({alpha}|{digit})*
-strlit (\"(\\.|[^"])*\"|'(\\.|[^'])*')
+strlit \"(\\.|[^"])*\"
 comment (\#|(\-\-)).*(\n)
 lbrace ("{"|"{"{whitechar}*"\n"|"\n"{whitechar}*"{")
 rbrace ("}"|"}"{whitechar}*"\n")
 func ("func"|"func"{whitechar}*"\n")
 semi (";"|";"{whitechar}*"\n")
+cstr '(\\.|[^'])*'
 
 %%
 
@@ -60,6 +61,7 @@ semi (";"|";"{whitechar}*"\n")
 "&&"        DISCARD_NL; return SET(TLOGAND);
 "||"        DISCARD_NL; return SET(TLOGOR);
 "func"      DISCARD_NL; return SET(TFUNC);
+"gen"       DISCARD_NL; return SET(TGEN);
 ":"         DISCARD_NL; return SET(TCOLON);
 ","         DISCARD_NL; return SET(TCOMMA);
 "."         DISCARD_NL; return SET(TDOT);
@@ -103,4 +105,5 @@ semi (";"|";"{whitechar}*"\n")
 "void"      { SAVE_NL; SAVE_TOKEN; return TTYPE; }
 "any"       { SAVE_NL; SAVE_TOKEN; return TTYPE; }
 {alpha}       { SAVE_NL; SAVE_TOKEN; return ty_is_name(yytext) ? TTYPE : TIDENTIFIER; }
+{cstr}      SAVE_NL; SAVE_TOKEN; return TCSTR;
 %%

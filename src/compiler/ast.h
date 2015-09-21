@@ -20,6 +20,7 @@ typedef enum {
     AUNARY,
     AVALUE,
     AFUNCDECL,
+    AGENDECL,
     AFUNCCALL,
     AVARDECL,
     ASTRUCTDECL,
@@ -177,8 +178,10 @@ AST *ast_make_bool(int i);
 AST *ast_make_nil();
 AST *ast_make_int32(char *text);
 AST *ast_make_double(char *text);
+AST *ast_make_cstr(char *text);
 AST *ast_make_identifier(char *ident);
 AST *ast_make_func_decl(AST *type, char *ident, AST *body, AST *params);
+AST *ast_make_gen_decl(AST *type, char *ident, AST *body, AST *params);
 AST *ast_make_func_call(AST *callee, AST *params);
 AST *ast_make_var_decl(AST *type, char *ident);
 AST *ast_make_auto_decl(char *ident);

@@ -102,6 +102,8 @@ LLVMTypeRef ett_llvm_type(EagleTypeType *type)
             return LLVMInt32Type();
         case ETInt64:
             return LLVMInt64Type();
+        case ETCString:
+            return LLVMPointerType(LLVMInt8Type(), 0);
         case ETStruct:
         {
             EagleStructType *st = (EagleStructType *)type;

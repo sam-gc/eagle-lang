@@ -118,6 +118,19 @@ AST *ast_make_double(char *text)
     return (AST *)ast;
 }
 
+AST *ast_make_cstr(char *text)
+{
+    ASTValue *ast = ast_malloc(sizeof(ASTValue));
+    ast->type = AVALUE;
+    ast->etype = ETCString;
+
+    text += 1;
+    text[strlen(text) - 1] = '\0';
+    ast->value.id = strdup(text);
+
+    return (AST *)ast;
+}
+
 AST *ast_make_identifier(char *ident)
 {
     ASTValue *ast = ast_malloc(sizeof(ASTValue));
@@ -132,6 +145,18 @@ AST *ast_make_func_decl(AST *type, char *ident, AST *body, AST *params)
 {
     ASTFuncDecl *ast = ast_malloc(sizeof(ASTFuncDecl));
     ast->type = AFUNCDECL;
+    ast->retType = type;
+    ast->body = body;
+    ast->ident = ident ? ident : (char *)"close";
+    ast->params = params;
+    
+    return (AST *)ast;
+}
+
+AST *ast_make_gen_decl(AST *type, char *ident, AST *body, AST *params)
+{
+    ASTFuncDecl *ast = ast_malloc(sizeof(ASTFuncDecl));
+    ast->type = AGENDECL;
     ast->retType = type;
     ast->body = body;
     ast->ident = ident ? ident : (char *)"close";

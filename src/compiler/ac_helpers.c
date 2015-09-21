@@ -79,6 +79,13 @@ LLVMValueRef ac_build_conversion(LLVMBuilderRef builder, LLVMValueRef val, Eagle
                     break;
             }
             break;
+        case ETCString:
+            if(to->type == ETCString)
+                return val;
+            if(to->type == ETPointer && ((EaglePointerType *)to)->to->type == ETInt8)
+                return val;
+            die(-1, "Invalid implicit conversion to C string.");
+            break;
         default:
             die(-1, "Invalid implicit conversion.");
             break;

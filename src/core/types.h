@@ -42,10 +42,12 @@ typedef enum {
     ETInt32,
     ETInt64,
     ETDouble,
+    ETCString,
     ETPointer,
     ETArray,
     ETVoid,
     ETFunction,
+    ETGenerator,
     ETStruct
 } EagleType;
 
