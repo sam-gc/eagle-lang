@@ -29,5 +29,6 @@ LLVMValueRef ac_finish_closure(CompilerBundle *cb, ClosureBundle *bun, LLVMTypeR
 void ac_closure_callback(VarBundle *vb, char *ident, void *data);
 LLVMValueRef ac_compile_closure(AST *ast, CompilerBundle *cb);
 void ac_compile_function(AST *ast, CompilerBundle *cb);
+void ac_compile_function_ex(AST *ast, CompilerBundle *cb, LLVMValueRef func, EagleFunctionType *ft);
 
 #endif

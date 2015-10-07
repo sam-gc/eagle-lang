@@ -1,0 +1,38 @@
+class TestClass
+{
+    int second
+
+    func setSecond(int s)
+    {
+        self->second = s
+    }
+
+    func test(int i)
+    {
+        puts 3 + self->second + i
+    }
+
+    func wea()
+    {
+        weak TestClass^ t = self
+        t->setSecond(42)
+        puts self->second
+    }
+}
+
+struct Blah
+{
+    int x
+}
+
+func main()
+{
+    int j = 5
+
+    var i = new TestClass
+    weak TestClass^ p = i
+    i->setSecond(11)
+    i->test(5)
+
+    i->wea()
+}

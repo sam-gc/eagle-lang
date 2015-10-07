@@ -54,6 +54,7 @@ LLVMModuleRef ac_compile(AST *ast)
     ast = old;
 
     ac_make_struct_definitions(ast, &cb);
+    ac_make_class_definitions(ast, &cb);
 
     for(; ast; ast = ast->next)
     {
@@ -113,6 +114,12 @@ void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
     if(ast->type == ASTRUCTDECL)
     {
         ac_add_struct_declaration(ast, cb);
+        return;
+    }
+
+    if(ast->type == ACLASSDECL)
+    {
+        ac_add_class_declaration(ast, cb);
         return;
     }
 
@@ -252,6 +259,8 @@ void ac_dispatch_declaration(AST *ast, CompilerBundle *cb)
             ac_compile_function(ast, cb);
             break;
         case ASTRUCTDECL:
+            break;
+        case ACLASSDECL:
             break;
         default:
             die(ALN, "Invalid declaration type.");

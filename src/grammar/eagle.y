@@ -17,7 +17,7 @@
     AST *node;
 }
 
-%token <string> TIDENTIFIER TINT TDOUBLE TTYPE TCOUNTED TNEW TSTRUCT TTOUCH TCSTR
+%token <string> TIDENTIFIER TINT TDOUBLE TTYPE TCOUNTED TNEW TSTRUCT TCLASS TTOUCH TCSTR
 %token <token> TPLUS TMINUS TEQUALS TMUL TDIV TGT TLT TEQ TNE TGTE TLTE TNOT TPOW TLOGAND TLOGOR
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TLBRACKET TRBRACKET
 %token <token> TFUNC TRETURN TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF TFOR TWEAK TUNWRAP
@@ -26,7 +26,7 @@
 %token <token> TYES TNO TNIL
 %type <node> program declarations declaration statements statement block funcdecl ifstatement
 %type <node> variabledecl vardecllist funccall calllist funcident funcsident externdecl typelist type
-%type <node> elifstatement elifblock elsestatement singif structdecl structlist blockalt
+%type <node> elifstatement elifblock elsestatement singif structdecl structlist blockalt classlist classdecl
 %type <node> expr singexpr binexpr unexpr ounexpr forstatement clodecl genident gendecl
 
 %nonassoc TNEW;
@@ -57,6 +57,7 @@ declaration         : externdecl TSEMI { $$ = $1; }
                     | funcdecl { $$ = $1; }
                     | structdecl TSEMI { $$ = $1; }
                     | gendecl { $$ = $1; }
+                    | classdecl TSEMI { $$ = $1; }
                     ;
 
 type                : TTYPE { $$ = ast_make_type($1); }
@@ -74,11 +75,21 @@ type                : TTYPE { $$ = ast_make_type($1); }
                     ;
 
 structdecl          : TSTRUCT TTYPE TLBRACE structlist TRBRACE { $$ = $4; ast_struct_name($$, $2); }
-structdecl          : TSTRUCT TTYPE TLBRACE TSEMI structlist TRBRACE { $$ = $5; ast_struct_name($$, $2); }
+                    | TSTRUCT TTYPE TLBRACE TSEMI structlist TRBRACE { $$ = $5; ast_struct_name($$, $2); }
                     ;
 
 structlist          : structlist variabledecl TSEMI { $$ = $1; ast_struct_add($$, $2); }
                     | variabledecl TSEMI { $$ = ast_make_struct_decl(); ast_struct_add($$, $1); }
+                    ;
+
+classdecl           : TCLASS TTYPE TLBRACE classlist TRBRACE { $$ = $4; ast_class_name($$, $2); }
+                    | TCLASS TTYPE TLBRACE TSEMI classlist TRBRACE { $$ = $5; ast_class_name($$, $2); }
+                    ;
+
+classlist           : classlist variabledecl TSEMI { $$ = $1; ast_class_var_add($$, $2); }
+                    | classlist funcdecl { $$ = $1; ast_class_method_add($$, $2); }
+                    | variabledecl TSEMI { $$ = ast_make_class_decl(); ast_class_var_add($$, $1); }
+                    | funcdecl { $$ = ast_make_class_decl(); ast_class_method_add($$, $1); }
                     ;
 
 funcdecl            : funcident block { ((ASTFuncDecl *)$1)->body = $2; $$ = $1; };

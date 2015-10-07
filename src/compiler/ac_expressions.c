@@ -47,7 +47,7 @@ LLVMValueRef ac_compile_identifier(AST *ast, CompilerBundle *cb)
         a->resultantType = ((EaglePointerType *)b->type)->to;
         LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, LLVMBuildLoad(cb->builder, b->value, ""), 5, "");
 
-        if(a->resultantType->type == ETArray || a->resultantType->type == ETStruct)
+        if(a->resultantType->type == ETArray || a->resultantType->type == ETStruct || a->resultantType->type == ETClass)
             return pos;
 
         return LLVMBuildLoad(cb->builder, pos, "loadtmp");
@@ -58,7 +58,7 @@ LLVMValueRef ac_compile_identifier(AST *ast, CompilerBundle *cb)
     if(b->type->type == ETArray && !ET_IS_GEN_ARR(b->type))
         return b->value;
 
-    if(b->type->type == ETStruct)
+    if(b->type->type == ETStruct || b->type->type == ETClass)
         return b->value;
     /*
     if((b->type->type == ETPointer && ((EaglePointerType *)b->type)->to->type == ETStruct) && (!ET_IS_COUNTED(b->type) && !ET_IS_WEAK(b->type)))
@@ -134,12 +134,18 @@ LLVMValueRef ac_compile_struct_member(AST *ast, CompilerBundle *cb, int keepPoin
     ASTStructMemberGet *a = (ASTStructMemberGet *)ast;
     LLVMValueRef left = ac_dispatch_expression(a->left, cb);
 
+        a->leftCompiled = a->left->type == AUNARY ? ((ASTUnary *)a->left)->savedWrapped : left;
+
     EagleTypeType *ty = a->left->resultantType;
 
-    if(ty->type != ETStruct)
+    if(ty->type != ETStruct && ty->type != ETClass)
         die(ALN, "Attempting to access member of non-struct type (%s).", a->ident);
-    if(ty->type == ETPointer && ((EaglePointerType *)ty)->to->type != ETStruct)
+    if(ty->type == ETPointer && ((EaglePointerType *)ty)->to->type != ETStruct && ((EaglePointerType *)ty)->to->type != ETClass)
         die(ALN, "Attempting to access member of non-struct pointer type (%s).", a->ident);
+
+    // Only save the value of the instance if we have a class and a method.
+    if((ty->type == ETClass || ty->type == ETStruct) && ty_method_lookup(((EagleStructType *)ty)->name, a->ident))
+        a->leftCompiled = a->left->type == AUNARY ? ((ASTUnary *)a->left)->savedWrapped : left;
 
     int index;
     EagleTypeType *type;
@@ -153,7 +159,7 @@ LLVMValueRef ac_compile_struct_member(AST *ast, CompilerBundle *cb, int keepPoin
     ast->resultantType = type;
 
     LLVMValueRef gep = LLVMBuildStructGEP(cb->builder, left, index, a->ident);
-    if(keepPointer || type->type == ETStruct)
+    if(keepPointer || type->type == ETStruct || type->type == ETClass)
         return gep;
     return LLVMBuildLoad(cb->builder, gep, "");
 }
@@ -198,8 +204,10 @@ LLVMValueRef ac_compile_malloc_counted(EagleTypeType *type, EagleTypeType **res,
     tys[5] = ett_llvm_type(type);
     LLVMTypeRef tt = LLVMStructType(tys, 6, 0);
 
+    //LLVMDumpType(ett_llvm_type(type));
     tt = ty_get_counted(tt);
 
+    //LLVMDumpType(tt);
     LLVMValueRef mal;
     if(ib)
         mal = EGLBuildMalloc(cb->builder, tt, ib, "new");
@@ -213,7 +221,7 @@ LLVMValueRef ac_compile_malloc_counted(EagleTypeType *type, EagleTypeType **res,
         *res = resultantType;
 
     ac_prepare_pointer(cb, mal, resultantType);
-    if(type->type == ETStruct && ty_needs_destructor(type))
+    if((type->type == ETStruct && ty_needs_destructor(type)) || type->type == ETClass)
     {
         LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, mal, 5, "");
         ac_call_constructor(cb, pos, type);
@@ -686,13 +694,14 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
                 if(IS_ANY_PTR(a->val->resultantType))
                     die(ALN, "Any pointers may not be dereferenced without cast.");
 
+                a->savedWrapped = v;
                 ac_unwrap_pointer(cb, &v, a->val->resultantType, 0);
 
                 EaglePointerType *pt = (EaglePointerType *)a->val->resultantType;
                 a->resultantType = pt->to;
 
                 LLVMValueRef r = v;
-                if(a->resultantType->type != ETStruct)
+                if(a->resultantType->type != ETStruct && a->resultantType->type != ETClass)
                     r = LLVMBuildLoad(cb->builder, v, "dereftmp");
                 return r;
             }
@@ -751,6 +760,14 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
 
     LLVMValueRef func = ac_dispatch_expression(a->callee, cb);
 
+    LLVMValueRef instanceOfClass = NULL;
+    if(a->callee->type == ASTRUCTMEMBER)
+    {
+        ASTStructMemberGet *asmg = (ASTStructMemberGet *)a->callee;
+        instanceOfClass = asmg->leftCompiled;
+        asmg->leftCompiled = NULL;
+    }
+
     EagleTypeType *orig = a->callee->resultantType;
 
     EagleFunctionType *ett;
@@ -761,22 +778,26 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
 
     a->resultantType = ett->retType;
 
+    int start = instanceOfClass ? 1 : 0;
+    int offset = instanceOfClass ? 0 : 1;
+
     AST *p;
     int i;
-    for(p = a->params, i = 0; p; p = p->next, i++);
+    for(p = a->params, i = start; p; p = p->next, i++);
     int ct = i;
 
-    LLVMValueRef args[ct + 1];
-    for(p = a->params, i = 0; p; p = p->next, i++)
+    LLVMValueRef args[ct + offset];
+    for(p = a->params, i = start; p; p = p->next, i++)
     {
         LLVMValueRef val = ac_dispatch_expression(p, cb);
         EagleTypeType *rt = p->resultantType;
+
         if(!ett_are_same(rt, ett->params[i]))
             val = ac_build_conversion(cb->builder, val, rt, ett->params[i]);
 
         hst_remove_key(&cb->transients, p, ahhd, ahed);
         // hst_remove_key(&cb->loadedTransients, p, ahhd, ahed);
-        args[i + 1] = val;
+        args[i + offset] = val;
     }
 
     LLVMValueRef out;
@@ -786,7 +807,8 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
         if(!ET_IS_RECURSE(ett))
             ac_unwrap_pointer(cb, &func, NULL, 0);
 
-
+        if(instanceOfClass)
+            die(ALN, "Internal compiler error!");
         // if(ET_HAS_CLOASED(ett))
         args[0] = LLVMBuildLoad(cb->builder, LLVMBuildStructGEP(cb->builder, func, 1, ""), "");
         // else
@@ -798,6 +820,12 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
         func = LLVMBuildBitCast(cb->builder, func, LLVMPointerType(ett_closure_type((EagleTypeType *)ett), 0), "");
         
         out = LLVMBuildCall(cb->builder, func, args, ct + 1, "");
+    }
+    else if(instanceOfClass)
+    {
+        args[0] = LLVMBuildBitCast(cb->builder, instanceOfClass, LLVMPointerType(LLVMInt8Type(), 0), "");
+
+        out = LLVMBuildCall(cb->builder, func, args, ct, ett->retType->type == ETVoid ? "" : "callout");
     }
     else
         out = LLVMBuildCall(cb->builder, func, args + 1, ct, ett->retType->type == ETVoid ? "" : "callout");

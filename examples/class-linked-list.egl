@@ -1,0 +1,83 @@
+struct Node
+{
+    int value
+    Node^ next
+    weak Node^ prev
+}
+
+class LinkedList
+{
+    Node^ head
+    Node^ tail
+
+    func append(int val)
+    {
+        var n = new Node
+        n->value = val
+
+        if !self->head
+        {
+            self->head = n
+            self->tail = n
+            return
+        }
+
+        n->prev = self->tail
+        self->tail->next = n
+        self->tail = n
+    }
+
+    func forEach((int:void)^ callback)
+    {
+        if !callback
+            return
+
+        Node^ n = self->head
+        for n; n; n = n->next
+        {
+            callback(n->value)
+        }
+    }
+
+    func map((int:int)^ mapper)
+    {
+        if !mapper
+            return
+
+        Node^ n = self->head
+        for n; n; n = n->next
+        {
+            n->value = mapper(n->value)
+        }
+    }
+}
+
+func main()
+{
+    var ll = new LinkedList
+    ll->append(11)
+    ll->append(22)
+    ll->append(33)
+    ll->append(44)
+    ll->append(55)
+
+    var mm = new LinkedList
+    mm->append(32)
+
+    var printer = func(int num) : void { puts num; }
+
+    ll->forEach(printer)
+
+    mm->forEach(func(int num) : void {
+        puts num * 2
+    })
+
+    puts '--------------------------'
+
+    ll->map(func(int num) : int {
+        return num / 11
+    })
+
+    ll->forEach(printer)
+}
+

@@ -16,15 +16,22 @@ hashtable global_args;
 void first_pass()
 {
     int token;
-    int saveNext = 0;
+    int saveNextStruct = 0;
+    int saveNextClass = 0;
     while((token = yylex()) != 0)
     {
-        if(saveNext)
+        if(saveNextStruct)
         {
             ty_add_name(yytext);
-            saveNext = 0;
+            saveNextStruct = 0;
         }
-        saveNext = token == TSTRUCT;
+        if(saveNextClass)
+        {
+            ty_register_class(yytext);
+            saveNextClass = 0;
+        }
+        saveNextStruct = (token == TSTRUCT || token == TCLASS);
+        saveNextClass = token == TCLASS;
     }
 
     rewind(yyin);

@@ -48,7 +48,8 @@ typedef enum {
     ETVoid,
     ETFunction,
     ETGenerator,
-    ETStruct
+    ETStruct,
+    ETClass
 } EagleType;
 
 typedef struct {
@@ -94,6 +95,7 @@ EagleTypeType *ett_pointer_type(EagleTypeType *to);
 EagleTypeType *ett_array_type(EagleTypeType *of, int ct);
 EagleTypeType *ett_function_type(EagleTypeType *retVal, EagleTypeType **params, int pct);
 EagleTypeType *ett_struct_type(char *name);
+EagleTypeType *ett_class_type(char *name);
 
 LLVMTypeRef ett_closure_type(EagleTypeType *type);
 EagleType ett_get_base_type(EagleTypeType *type);
@@ -110,8 +112,12 @@ void ett_debug_print(EagleTypeType *t);
 void ty_prepare();
 void ty_add_name(char *name);
 int ty_is_name(char *name);
+int ty_is_class(char *name);
 void ty_teardown();
 
+void ty_register_class(char *name);
+void ty_add_method(char *name, char *method, EagleTypeType *ty);
+EagleTypeType *ty_method_lookup(char *name, char *method);
 void ty_add_struct_def(char *name, arraylist *names, arraylist *types);
 void ty_struct_member_index(EagleTypeType *ett, char *member, int *index, EagleTypeType **type);
 int ty_needs_destructor(EagleTypeType *ett);

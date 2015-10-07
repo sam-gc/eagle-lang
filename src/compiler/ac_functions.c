@@ -322,7 +322,7 @@ LLVMValueRef ac_compile_closure(AST *ast, CompilerBundle *cb)
     return LLVMBuildBitCast(cb->builder, built, ett_llvm_type(ultimateEType), "");
 }
 
-void ac_compile_function(AST *ast, CompilerBundle *cb)
+void ac_compile_function_ex(AST *ast, CompilerBundle *cb, LLVMValueRef func, EagleFunctionType *ft)
 {
     ASTFuncDecl *a = (ASTFuncDecl *)ast;
 
@@ -344,11 +344,8 @@ void ac_compile_function(AST *ast, CompilerBundle *cb)
 
     ASTTypeDecl *retType = (ASTTypeDecl *)a->retType;
 
-    LLVMValueRef func = NULL;
-
-    VarBundle *vb = vs_get(cb->varScope, a->ident);
-    func = vb->value;
-    cb->currentFunctionType = (EagleFunctionType *)vb->type;
+    
+    cb->currentFunctionType = ft;
 
     LLVMBasicBlockRef entry = LLVMAppendBasicBlock(func, "entry");
     LLVMPositionBuilderAtEnd(cb->builder, entry);
@@ -386,4 +383,16 @@ void ac_compile_function(AST *ast, CompilerBundle *cb)
     vs_pop(cb->varScope);
 
     cb->currentFunctionEntry = NULL;
+}
+
+void ac_compile_function(AST *ast, CompilerBundle *cb)
+{
+    LLVMValueRef func = NULL;
+
+    ASTFuncDecl *a = (ASTFuncDecl *)ast;
+
+    VarBundle *vb = vs_get(cb->varScope, a->ident);
+    func = vb->value;
+
+    ac_compile_function_ex(ast, cb, func, (EagleFunctionType *)vb->type);
 }

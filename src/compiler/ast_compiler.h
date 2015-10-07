@@ -39,5 +39,6 @@ typedef struct {
 #include "ac_helpers.h"
 #include "ac_rc.h"
 #include "ac_struct.h"
+#include "ac_class.h"
 
 #endif

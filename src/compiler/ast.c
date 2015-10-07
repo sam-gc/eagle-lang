@@ -223,6 +223,67 @@ AST *ast_struct_name(AST *ast, char *name)
     return ast;
 }
 
+AST *ast_make_class_decl()
+{
+    ASTClassDecl *ast = ast_malloc(sizeof(ASTClassDecl));
+    ast->type = ACLASSDECL;
+
+    ast->name = NULL;
+    ast->names = arr_create(10);
+    ast->types = arr_create(10);
+    ast->methods = hst_create();
+
+    return (AST *)ast;
+}
+
+AST *ast_class_var_add(AST *ast, AST *var)
+{
+    ASTClassDecl *a = (ASTClassDecl *)ast;
+    ASTVarDecl *v = (ASTVarDecl *)var;
+    ASTTypeDecl *ty = (ASTTypeDecl *)v->atype;
+
+    arr_append(&a->types, ty->etype);
+    arr_append(&a->names, v->ident);
+
+    return ast;
+}
+
+AST *ast_class_method_add(AST *ast, AST *func)
+{
+    ASTClassDecl *a = (ASTClassDecl *)ast;
+    ASTFuncDecl *f = (ASTFuncDecl *)func;
+
+    AST *impl = ast_make_var_decl(ast_make_pointer(ast_make_type((char *)"any")), (char *)"self");
+    impl->next = f->params;
+    f->params = impl;
+
+    arraylist list = arr_create(10);
+    ASTVarDecl *vd = (ASTVarDecl *)f->params;
+    for(; vd; vd = (ASTVarDecl *)vd->next)
+    {
+        ASTTypeDecl *t = (ASTTypeDecl *)vd->atype;
+        arr_append(&list, t->etype);
+    }
+
+    EagleTypeType *ttype = ett_function_type(((ASTTypeDecl *)f->retType)->etype, (EagleTypeType **)list.items, list.count);
+    ((EagleFunctionType *)ttype)->closure = 0;
+    arr_free(&list);
+
+    arr_append(&a->types, ett_pointer_type(ttype));
+    arr_append(&a->names, f->ident);
+    hst_put(&a->methods, (void *)a->types.count, f, ahhd, ahed);
+
+    return ast;
+}
+
+AST *ast_class_name(AST *ast, char *name)
+{
+    ASTClassDecl *a = (ASTClassDecl *)ast;
+    a->name = name;
+
+    return ast;
+}
+
 AST *ast_make_struct_get(AST *left, char *ident)
 {
     ASTStructMemberGet *ast = ast_malloc(sizeof(ASTStructMemberGet));
@@ -230,6 +291,7 @@ AST *ast_make_struct_get(AST *left, char *ident)
 
     ast->left = left;
     ast->ident = ident;
+    ast->leftCompiled = NULL;
 
     return (AST *)ast;
 }

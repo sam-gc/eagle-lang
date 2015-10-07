@@ -79,6 +79,7 @@ cstr '(\\.|[^'])*'
 "break"     SAVE_NL; return SET(TBREAK);
 "continue"  SAVE_NL; return SET(TCONTINUE);
 "struct"    DISCARD_NL; return SET(TSTRUCT);
+"class"     DISCARD_NL; return SET(TCLASS);
 "puts"      DISCARD_NL; return SET(TPUTS);
 "extern"    DISCARD_NL; OVERRIDE; return SET(TEXTERN);
 "sizeof"    DISCARD_NL; return SET(TSIZEOF);

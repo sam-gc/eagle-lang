@@ -12,6 +12,7 @@
 #include <stdint.h>
 #include "core/types.h"
 #include "core/arraylist.h"
+#include "core/hashtable.h"
 
 typedef enum {
     ASKIP,
@@ -25,6 +26,8 @@ typedef enum {
     AVARDECL,
     ASTRUCTDECL,
     ASTRUCTMEMBER,
+    ACLASSDECL,
+    ACLASSMEMBER,
     AIDENT,
     AIF,
     ALOOP,
@@ -58,6 +61,8 @@ typedef struct {
 
     struct AST *val;
     char op;
+
+    LLVMValueRef savedWrapped; // Used for classes
 } ASTUnary;
 
 typedef struct {
@@ -167,7 +172,22 @@ typedef struct {
 
     AST *left;
     char *ident;
+
+    LLVMValueRef leftCompiled;
 } ASTStructMemberGet;
+
+typedef struct {
+    ASTType type;
+    EagleTypeType *resultantType;
+    struct AST *next;
+    long lineno;
+
+    char *name;
+    arraylist types;
+    arraylist names;
+
+    hashtable methods;
+} ASTClassDecl;
 
 AST *ast_make();
 void ast_append(AST *old, AST *n);
@@ -188,6 +208,10 @@ AST *ast_make_auto_decl(char *ident);
 AST *ast_make_struct_decl();
 AST *ast_struct_add(AST *ast, AST *var);
 AST *ast_struct_name(AST *ast, char *name);
+AST *ast_make_class_decl();
+AST *ast_class_var_add(AST *ast, AST *var);
+AST *ast_class_method_add(AST *ast, AST *func);
+AST *ast_class_name(AST *ast, char *name);
 AST *ast_make_struct_get(AST *left, char *ident);
 void ast_set_counted(AST *ast);
 AST *ast_make_arr_decl(AST *type, char *ident, AST *expr);

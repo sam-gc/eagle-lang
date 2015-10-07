@@ -11,6 +11,8 @@
 #include "hashtable.h"
 #include "types.h"
 
+extern void die(int, const char *, ...);
+
 #define TTEST(t, targ, out) if(!strcmp(t, targ)) return ett_base_type(out)
 #define ETEST(t, a, b) if(a == b) return t
 #define PLACEHOLDER ((void *)1)
@@ -32,7 +34,7 @@ EagleTypeType *et_parse_string(char *text)
 
     if(ty_is_name(text))
     {
-        return ett_struct_type(text);
+        return ty_is_class(text) ? ett_class_type(text) : ett_struct_type(text);
     }
     
     return NULL;
@@ -104,6 +106,7 @@ LLVMTypeRef ett_llvm_type(EagleTypeType *type)
             return LLVMInt64Type();
         case ETCString:
             return LLVMPointerType(LLVMInt8Type(), 0);
+        case ETClass:
         case ETStruct:
         {
             EagleStructType *st = (EagleStructType *)type;
@@ -224,6 +227,17 @@ EagleTypeType *ett_struct_type(char *name)
 {
     EagleStructType *ett = malloc(sizeof(EagleStructType));
     ett->type = ETStruct;
+    ett->types = arr_create(10);
+    ett->names = arr_create(10);
+    ett->name = name;
+
+    return (EagleTypeType *)ett;
+}
+
+EagleTypeType *ett_class_type(char *name)
+{
+    EagleStructType *ett = malloc(sizeof(EagleStructType));
+    ett->type = ETClass;
     ett->types = arr_create(10);
     ett->names = arr_create(10);
     ett->name = name;
@@ -373,6 +387,7 @@ static hashtable name_table;
 static hashtable struct_table;
 static hashtable types_table;
 static hashtable counted_table;
+static hashtable method_table;
 void ty_prepare()
 {
     name_table = hst_create();
@@ -386,6 +401,9 @@ void ty_prepare()
 
     counted_table = hst_create();
     counted_table.duplicate_keys = 1;
+
+    method_table = hst_create();
+    method_table.duplicate_keys = 1;
 }
 
 void ty_add_name(char *name)
@@ -398,12 +416,26 @@ int ty_is_name(char *name)
     return (int)(uintptr_t)hst_get(&name_table, name, NULL, NULL);
 }
 
+int ty_is_class(char *name)
+{
+    return (int)(uintptr_t)hst_get(&method_table, name, NULL, NULL);
+}
+
+void ty_method_free(void *k, void *v, void *d)
+{
+    hst_free(v);
+    free(v);
+}
+
 void ty_teardown()
 {
     hst_free(&name_table);
     hst_free(&struct_table);
     hst_free(&types_table);
     hst_free(&counted_table);
+
+    hst_for_each(&method_table, ty_method_free, NULL);
+    hst_free(&method_table);
 }
 
 void ty_add_struct_def(char *name, arraylist *names, arraylist *types)
@@ -416,6 +448,43 @@ void ty_add_struct_def(char *name, arraylist *names, arraylist *types)
     memcpy(copy, types, sizeof(arraylist));
     hst_put(&types_table, name, copy, NULL, NULL);
 }
+
+void ty_register_class(char *name)
+{
+    hashtable *lst = hst_get(&method_table, name, NULL, NULL);
+    if(lst)
+        die(-1, "Redeclaring class with name: %s", name);
+
+    lst = malloc(sizeof(hashtable));
+    *lst = hst_create();
+    lst->duplicate_keys = 1;
+    hst_put(&method_table, name, lst, NULL, NULL);
+}
+
+void ty_add_method(char *name, char *method, EagleTypeType *ty)
+{
+    hashtable *lst = hst_get(&method_table, name, NULL, NULL);
+    if(!lst)
+    {
+        lst = malloc(sizeof(hashtable));
+        *lst = hst_create();
+        lst->duplicate_keys = 1;
+        hst_put(&method_table, name, lst, NULL, NULL);
+    }
+
+    hst_put(lst, method, ty, NULL, NULL);
+}
+
+EagleTypeType *ty_method_lookup(char *name, char *method)
+{
+    hashtable *lst = hst_get(&method_table, name, NULL, NULL);
+    if(!lst)
+        return NULL;
+
+    return hst_get(lst, method, NULL, NULL);
+}
+
+// void ty_add_method_def(char *name, arraylist *)
 
 void ty_struct_member_index(EagleTypeType *ett, char *member, int *index, EagleTypeType **type)
 {
