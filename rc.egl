@@ -126,7 +126,7 @@ func __egl_remove_weak(__egl_ptr** pos) : void
         return
     }
 
-    memmove(pos + idx, pos + idx + 1, (ptr->wrefct - idx - 1) * sizeof(any*))
+    memmove(ptr->wrefs + idx, ptr->wrefs + idx + 1, (ptr->wrefct - idx - 1) * sizeof(any*))
     ptr->wrefct = ptr->wrefct - 1
     ptr->wrefs[ptr->wrefct] = nil
 }

@@ -134,7 +134,6 @@ LLVMValueRef ac_compile_struct_member(AST *ast, CompilerBundle *cb, int keepPoin
     ASTStructMemberGet *a = (ASTStructMemberGet *)ast;
     LLVMValueRef left = ac_dispatch_expression(a->left, cb);
 
-        a->leftCompiled = a->left->type == AUNARY ? ((ASTUnary *)a->left)->savedWrapped : left;
 
     EagleTypeType *ty = a->left->resultantType;
 
@@ -146,6 +145,7 @@ LLVMValueRef ac_compile_struct_member(AST *ast, CompilerBundle *cb, int keepPoin
     // Only save the value of the instance if we have a class and a method.
     if((ty->type == ETClass || ty->type == ETStruct) && ty_method_lookup(((EagleStructType *)ty)->name, a->ident))
         a->leftCompiled = a->left->type == AUNARY ? ((ASTUnary *)a->left)->savedWrapped : left;
+        //a->leftCompiled = a->left->type == AUNARY ? ((ASTUnary *)a->left)->savedWrapped : left;
 
     int index;
     EagleTypeType *type;

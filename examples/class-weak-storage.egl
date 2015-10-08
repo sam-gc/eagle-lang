@@ -1,0 +1,58 @@
+extern func strcmp(byte*, byte*) : int
+
+class Test
+{
+    (:void)^ cap
+
+    func init()
+    {
+        self->cap = func() : void {
+            puts self
+            puts self->cap
+            puts self->init
+        }
+    }
+
+    func safe_init()
+    {
+        weak Test^ safe_self = self
+        self->cap = func() : void {
+            puts safe_self
+            puts safe_self->cap
+            puts safe_self->init
+        }
+    }
+
+    func run()
+    {
+        if !self->cap
+            return
+        self->cap()
+    }
+}
+
+func main(int argc, byte** argv) : int
+{
+    if argc < 2
+    {
+        puts 'Usage: ./program <strong/weak>'
+        puts '(best tested with Valgrind)'
+        return 0
+    }
+
+    var t = new Test
+
+    if strequ(argv[1], 'strong')
+        t->init()
+    elif strequ(argv[1], 'weak')
+        t->safe_init()
+
+    t->run()
+
+    return 0
+}
+
+func strequ(byte* a, byte* b) : bool
+{
+    return strcmp(a, b) == 0
+}

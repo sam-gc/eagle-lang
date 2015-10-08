@@ -131,7 +131,7 @@ void __egl_remove_weak(__egl_ptr **pos)
         return;
     }
 
-    memmove(pos + idx, pos + idx + 1, (ptr->wrefct - idx - 1) * sizeof(void *));
+    memmove(ptr->wrefs + idx, ptr->wrefs + idx + 1, (ptr->wrefct - idx - 1) * sizeof(void *));
     ptr->wrefs[--ptr->wrefct] = NULL;
 }
 

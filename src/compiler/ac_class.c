@@ -32,6 +32,8 @@ void ac_compile_class_methods_each(void *key, void *val, void *data)
     LLVMTypeRef ft = ett_llvm_type((EagleTypeType *)ety);
     LLVMValueRef func = LLVMAddFunction(h->cb->module, method_name, ft);
 
+    ty_add_method(cd->name, fd->ident, (EagleTypeType *)ety);
+
     free(method_name);
 
     ac_compile_function_ex((AST *)fd, h->cb, func, ety);

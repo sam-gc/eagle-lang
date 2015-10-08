@@ -27,6 +27,24 @@ class LinkedList
         self->tail = n
     }
 
+    func remove(int val)
+    {
+        for var n = self->head; n; n = n->next
+        {
+            if n->value != val
+                continue
+            if !n->prev
+                self->head = n->next
+            else
+                n->prev->next = n->next
+
+            if !n->next
+                self->tail = n->prev
+            else
+                n->next->prev = n->prev
+        }
+    }
+
     func forEach((int:void)^ callback)
     {
         if !callback
@@ -50,6 +68,20 @@ class LinkedList
             n->value = mapper(n->value)
         }
     }
+
+    func reverse()
+    {
+        var head = self->head
+        self->head = self->tail
+        self->tail = head
+
+        for var n = self->head; n; n = n->next
+        {
+            var next = n->next
+            n->next = n->prev
+            n->prev = next
+        }
+    }
 }
 
 func main()
@@ -58,6 +90,7 @@ func main()
     ll->append(11)
     ll->append(22)
     ll->append(33)
+    ll->append(68)
     ll->append(44)
     ll->append(55)
 
@@ -74,10 +107,14 @@ func main()
 
     puts '--------------------------'
 
+    ll->remove(68)
+
     ll->map(func(int num) : int {
         return num / 11
     })
 
+    ll->forEach(printer)
+    ll->reverse()
     ll->forEach(printer)
 }
 

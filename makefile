@@ -64,6 +64,8 @@ rc.o: rc.egl
 	./eagle rc.egl --compile-rc 2> out.ll
 	llc out.ll
 	$(CC) -c -g out.s -o rc.o
+#rc.o: rc.c
+#	$(CC) rc.c -c -o rc.o -g
 
 prog: out.ll rc.o
 	llc out.ll
