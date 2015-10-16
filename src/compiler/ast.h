@@ -229,4 +229,6 @@ AST *ast_make_loop(AST *setup, AST *test, AST *update, AST *block);
 AST *ast_make_cast(AST *type, AST *val);
 void ast_add_if(AST *ast, AST *next);
 
+void ast_free_nodes();
+
 #endif /* defined(__Eagle__ast__) */

@@ -6,7 +6,7 @@
     #include "eagle.tab.h"
     
     #define SET(t) (yylval.token = t)
-    #define SAVE_TOKEN (yylval.string = strdup(yytext))
+    #define SAVE_TOKEN yylval.string = strdup(yytext); utl_register_memory(yylval.string)
     #define DISCARD_NL (save_newline = 0)
     #define SAVE_NL (save_newline = 1)
     #define OVERRIDE (override = 1)

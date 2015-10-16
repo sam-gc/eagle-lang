@@ -10,6 +10,7 @@
 #include <string.h>
 #include "hashtable.h"
 #include "types.h"
+#include "mempool.h"
 
 extern void die(int, const char *, ...);
 
@@ -19,6 +20,70 @@ extern void die(int, const char *, ...);
 
 LLVMModuleRef the_module = NULL;
 LLVMTargetDataRef etTargetData = NULL;
+
+void ty_method_free(void *k, void *v, void *d);
+void ty_struct_def_free(void *k, void *v, void *d);
+
+static mempool type_mempool;
+static mempool list_mempool;
+
+static hashtable name_table;
+static hashtable struct_table;
+static hashtable types_table;
+static hashtable counted_table;
+static hashtable method_table;
+static hashtable type_named_table;
+
+void list_mempool_free(void *datum)
+{
+    arraylist *list = datum;
+    arr_free(list);
+}
+
+void ty_prepare()
+{
+    name_table = hst_create();
+    name_table.duplicate_keys = 1;
+
+    struct_table = hst_create();
+    struct_table.duplicate_keys = 1;
+
+    types_table = hst_create();
+    types_table.duplicate_keys = 1;
+
+    counted_table = hst_create();
+    counted_table.duplicate_keys = 1;
+
+    method_table = hst_create();
+    method_table.duplicate_keys = 1;
+
+    type_named_table = hst_create();
+    type_named_table.duplicate_keys = 1;
+
+    type_mempool = pool_create();
+    list_mempool = pool_create();
+    list_mempool.free_func = list_mempool_free;
+}
+
+void ty_teardown()
+{
+    hst_free(&name_table);
+
+    hst_for_each(&struct_table, ty_struct_def_free, NULL);
+    hst_free(&struct_table);
+
+    hst_for_each(&types_table, ty_struct_def_free, NULL);
+    hst_free(&types_table);
+    hst_free(&counted_table);
+
+    hst_for_each(&method_table, ty_method_free, NULL);
+    hst_free(&method_table);
+
+    hst_free(&type_named_table);
+
+    pool_drain(&list_mempool);
+    pool_drain(&type_mempool);
+}
 
 EagleTypeType *et_parse_string(char *text)
 {
@@ -180,12 +245,31 @@ EagleType et_eagle_type(LLVMTypeRef ty)
     return ETNone;
 }
 
+#define TT(t) {ET ## t}
+static EagleTypeType base_types[] = {
+    TT(None),
+    TT(Any),
+    TT(Auto),
+    TT(Nil),
+    TT(Int1),
+    TT(Int8),
+    TT(Int16),
+    TT(Int32),
+    TT(Int64),
+    TT(Double),
+    TT(CString),
+    TT(Pointer),
+    TT(Array),
+    TT(Void),
+    TT(Function),
+    TT(Generator),
+    TT(Struct),
+    TT(Class),
+};
+
 EagleTypeType *ett_base_type(EagleType type)
 {
-    EagleTypeType *ett = malloc(sizeof(EagleTypeType));
-    ett->type = type;
-
-    return ett;
+    return &base_types[type];
 }
 
 EagleTypeType *ett_pointer_type(EagleTypeType *to)
@@ -197,6 +281,8 @@ EagleTypeType *ett_pointer_type(EagleTypeType *to)
     ett->weak = 0;
     ett->closed = 0;
 
+    pool_add(&type_mempool, ett);
+
     return (EagleTypeType *)ett;
 }
 
@@ -206,6 +292,8 @@ EagleTypeType *ett_array_type(EagleTypeType *of, int ct)
     ett->type = ETArray;
     ett->of = of;
     ett->ct = ct;
+
+    pool_add(&type_mempool, ett);
 
     return (EagleTypeType *)ett;
 }
@@ -220,27 +308,48 @@ EagleTypeType *ett_function_type(EagleTypeType *retVal, EagleTypeType **params, 
     ett->pct = pct;
     ett->closure = NO_CLOSURE;
 
+    pool_add(&type_mempool, ett);
+    pool_add(&type_mempool, ett->params);
+
     return (EagleTypeType *)ett;
 }
 
 EagleTypeType *ett_struct_type(char *name)
 {
+    EagleTypeType *et = hst_get(&type_named_table, name, NULL, NULL);
+    if(et)
+        return et;
+
     EagleStructType *ett = malloc(sizeof(EagleStructType));
     ett->type = ETStruct;
     ett->types = arr_create(10);
     ett->names = arr_create(10);
     ett->name = name;
 
+    hst_put(&type_named_table, name, ett, NULL, NULL);
+    pool_add(&type_mempool, ett);
+    pool_add(&list_mempool, &ett->types);
+    pool_add(&list_mempool, &ett->names);
+
     return (EagleTypeType *)ett;
 }
 
 EagleTypeType *ett_class_type(char *name)
 {
+    EagleTypeType *et = hst_get(&type_named_table, name, NULL, NULL);
+    if(et)
+        return et;
+
     EagleStructType *ett = malloc(sizeof(EagleStructType));
     ett->type = ETClass;
     ett->types = arr_create(10);
     ett->names = arr_create(10);
     ett->name = name;
+
+    hst_put(&type_named_table, name, ett, NULL, NULL);
+    pool_add(&type_mempool, ett);
+    pool_add(&list_mempool, &ett->types);
+    pool_add(&list_mempool, &ett->names);
 
     return (EagleTypeType *)ett;
 }
@@ -383,29 +492,6 @@ int ett_array_count(EagleTypeType *t)
     return 1;
 }
 
-static hashtable name_table;
-static hashtable struct_table;
-static hashtable types_table;
-static hashtable counted_table;
-static hashtable method_table;
-void ty_prepare()
-{
-    name_table = hst_create();
-    name_table.duplicate_keys = 1;
-
-    struct_table = hst_create();
-    struct_table.duplicate_keys = 1;
-
-    types_table = hst_create();
-    types_table.duplicate_keys = 1;
-
-    counted_table = hst_create();
-    counted_table.duplicate_keys = 1;
-
-    method_table = hst_create();
-    method_table.duplicate_keys = 1;
-}
-
 void ty_add_name(char *name)
 {
     hst_put(&name_table, name, PLACEHOLDER, NULL, NULL);
@@ -427,15 +513,9 @@ void ty_method_free(void *k, void *v, void *d)
     free(v);
 }
 
-void ty_teardown()
+void ty_struct_def_free(void *k, void *v, void *d)
 {
-    hst_free(&name_table);
-    hst_free(&struct_table);
-    hst_free(&types_table);
-    hst_free(&counted_table);
-
-    hst_for_each(&method_table, ty_method_free, NULL);
-    hst_free(&method_table);
+    free(v);
 }
 
 void ty_add_struct_def(char *name, arraylist *names, arraylist *types)

@@ -64,6 +64,10 @@ LLVMModuleRef ac_compile(AST *ast)
     LLVMDisposeBuilder(cb.builder);
     LLVMDisposeTargetData(cb.td);
     vs_free(cb.varScope);
+
+    hst_free(&cb.transients);
+    hst_free(&cb.loadedTransients);
+
     return cb.module;
 }
 

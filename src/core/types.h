@@ -32,7 +32,7 @@ extern LLVMTargetDataRef etTargetData;
 extern LLVMModuleRef the_module;
 
 typedef enum {
-    ETNone,
+    ETNone = 0,
     ETAny,
     ETAuto,
     ETNil,

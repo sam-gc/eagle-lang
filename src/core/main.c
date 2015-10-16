@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include "compiler/ast_compiler.h"
+#include "compiler/ast.h"
 #include "grammar/eagle.tab.h"
+#include "utils.h"
 
 extern char *yytext;
 
@@ -81,6 +83,9 @@ int main(int argc, const char *argv[])
     LLVMDisposeModule(module);
 
     LLVMDisposeTargetData(etTargetData);
+
+    utl_free_registered();
+    ast_free_nodes();
     
 //    int token;
 //    while ((token = yylex()) != 0)

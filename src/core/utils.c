@@ -1,10 +1,12 @@
 #include "utils.h"
+#include "mempool.h"
 #include "compiler/ast_compiler.h"
 #include <string.h>
 
 char *utl_gen_escaped_string(char *inp, int lineno)
 {
     char *n = malloc(strlen(inp) + 1);
+    utl_register_memory(n);
     unsigned i, j;
     for(i = j = 0; i < strlen(inp); i++, j++)
     {
@@ -57,4 +59,23 @@ char *utl_gen_escaped_string(char *inp, int lineno)
     n[j] = 0;
 
     return n;
+}
+
+static mempool utl_mempool;
+static int init_mempool = 0;
+
+void utl_register_memory(void *m)
+{
+    if(!init_mempool)
+    {
+        init_mempool = 1;
+        utl_mempool = pool_create();
+    }
+
+    pool_add(&utl_mempool, m);
+}
+
+void utl_free_registered()
+{
+    pool_drain(&utl_mempool);
 }

@@ -18,6 +18,7 @@ VarScopeStack vs_make()
 void vs_free(VarScopeStack *vs)
 {
     pool_drain(&vs->pool);
+    hst_free(&vs->globals);
 }
 
 void vs_push(VarScopeStack *vs)

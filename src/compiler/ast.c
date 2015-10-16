@@ -11,6 +11,30 @@
 #include "ast.h"
 #include "ast_compiler.h"
 #include "core/arraylist.h"
+#include "core/mempool.h"
+
+static mempool ast_mempool;
+static mempool ast_lst_mempool;
+static mempool ast_hst_mempool;
+static int init_pool = 0;
+
+void ast_free_nodes()
+{
+    pool_drain(&ast_hst_mempool);
+    pool_drain(&ast_lst_mempool);
+    pool_drain(&ast_mempool);
+    init_pool = 0;
+}
+
+void ast_free_lists(void *arr)
+{
+    arr_free(arr);
+}
+
+void ast_free_tables(void *hst)
+{
+    hst_free(hst);
+}
 
 extern int yylineno;
 int yyerror(const char *text)
@@ -24,6 +48,18 @@ void *ast_malloc(size_t size)
     AST *ast = malloc(size);
     ast->next = NULL;
     ast->lineno = yylineno;
+
+    if(!init_pool)
+    {
+        ast_mempool = pool_create();
+        ast_lst_mempool = pool_create();
+        ast_lst_mempool.free_func = ast_free_lists;
+        ast_hst_mempool = pool_create();
+        ast_hst_mempool.free_func = ast_free_tables;
+        init_pool = 1;
+    }
+
+    pool_add(&ast_mempool, ast);
     
     return ast;
 }
@@ -126,7 +162,8 @@ AST *ast_make_cstr(char *text)
 
     text += 1;
     text[strlen(text) - 1] = '\0';
-    ast->value.id = strdup(text);
+    ast->value.id = text;
+    // ast->value.id = strdup(text);
 
     return (AST *)ast;
 }
@@ -210,6 +247,9 @@ AST *ast_make_struct_decl()
     ast->names = arr_create(10);
     ast->types = arr_create(10);
 
+    pool_add(&ast_lst_mempool, &ast->names);
+    pool_add(&ast_lst_mempool, &ast->types);
+
     return (AST *)ast;
 }
 
@@ -241,6 +281,10 @@ AST *ast_make_class_decl()
     ast->names = arr_create(10);
     ast->types = arr_create(10);
     ast->methods = hst_create();
+
+    pool_add(&ast_lst_mempool, &ast->names);
+    pool_add(&ast_lst_mempool, &ast->types);
+    pool_add(&ast_hst_mempool, &ast->methods);
 
     return (AST *)ast;
 }
@@ -351,6 +395,8 @@ AST *ast_make_closure_type(AST *tysList, AST *resType)
     ast->etype = ett_function_type(((ASTTypeDecl *)resType)->etype, (EagleTypeType **)list.items, list.count);
     ((EagleFunctionType *)ast->etype)->closure = CLOSURE_NO_CLOSE;
 
+    arr_free(&list);
+
     return (AST *)ast;
 }
 
@@ -369,6 +415,8 @@ AST *ast_make_function_type(AST *tysList, AST *resType)
 
     ast->etype = ett_function_type(((ASTTypeDecl *)resType)->etype, (EagleTypeType **)list.items, list.count);
     ((EagleFunctionType *)ast->etype)->closure = 0;
+
+    arr_free(&list);
 
     return (AST *)ast;
 }

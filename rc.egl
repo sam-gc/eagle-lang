@@ -35,7 +35,7 @@ func __egl_incr_ptr(__egl_ptr* ptr) : void
 
 func __egl_set_nil(any*** vals, short ct) : void
 {
-    for int i = 0; i < ct; i = i + 1
+    for int i = 0; i < ct; i += 1
     {
         vals[i]^ = nil
     }
@@ -108,7 +108,7 @@ func __egl_remove_weak(__egl_ptr** pos) : void
     __egl_ptr* ptr = pos^
 
     int idx = 0-1
-    for int i = 0; i < ptr->wrefct; i = i + 1
+    for int i = 0; i < ptr->wrefct; i += 1
     {
         if ptr->wrefs[i] == pos
         {
@@ -138,7 +138,7 @@ func __egl_array_fill_nil(any* arr, long ct) : void
 
 func __egl_array_decr_ptrs(any** arr, long ct) : void
 {
-    for long i = 0; i < ct; i = i + 1
+    for long i = 0; i < ct; i += 1
     {
         __egl_decr_ptr(arr[i])
     }
