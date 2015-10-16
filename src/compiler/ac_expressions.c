@@ -508,13 +508,15 @@ LLVMValueRef ac_compile_binary(AST *ast, CompilerBundle *cb)
 {
     ASTBinary *a = (ASTBinary *)ast;
     if(a->op == '=')
-        return ac_build_store(ast, cb);
+        return ac_build_store(ast, cb, 0);
     else if(a->op == '[')
         return ac_compile_index(ast, 0, cb);
     else if(a->op == '&')
         return ac_compile_logical_and(ast, cb);
     else if(a->op == '|')
         return ac_compile_logical_or(ast, cb);
+    else if(a->op == 'P')
+        return ac_build_store(ast, cb, 1);
 
     LLVMValueRef l = ac_dispatch_expression(a->left, cb);
     LLVMValueRef r = ac_dispatch_expression(a->right, cb);
@@ -673,6 +675,7 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
                     case ETInt64:
                         fmt = LLVMBuildGlobalStringPtr(cb->builder, "%ld\n", "prfLI");
                         break;
+                    case ETArray:
                     case ETPointer:
                         fmt = LLVMBuildGlobalStringPtr(cb->builder, 
                                 (((EaglePointerType *)a->val->resultantType)->to->type == ETInt8 ? "%s\n" : "%p\n"), "prfPTR");
@@ -792,8 +795,11 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
         LLVMValueRef val = ac_dispatch_expression(p, cb);
         EagleTypeType *rt = p->resultantType;
 
-        if(!ett_are_same(rt, ett->params[i]))
-            val = ac_build_conversion(cb->builder, val, rt, ett->params[i]);
+        if(i < ett->pct)
+        {
+            if(!ett_are_same(rt, ett->params[i]))
+                val = ac_build_conversion(cb->builder, val, rt, ett->params[i]);
+        }
 
         hst_remove_key(&cb->transients, p, ahhd, ahed);
         // hst_remove_key(&cb->loadedTransients, p, ahhd, ahed);
@@ -838,7 +844,7 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
     return out;
 }
 
-LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb)
+LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update)
 {
     ASTBinary *a = (ASTBinary *)ast;
     EagleTypeType *totype;
@@ -967,6 +973,12 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb)
         if(hst_remove_key(&cb->loadedTransients, a->right, ahhd, ahed))
             transient = 1;
         //ac_call_constr(cb, r, a->resultantType);
+    }
+
+    if(update)
+    {
+        LLVMValueRef cur = LLVMBuildLoad(cb->builder, pos, "");
+        r = ac_make_add(cur, r, cb->builder, totype->type);
     }
 
     LLVMBuildStore(cb->builder, r, pos);

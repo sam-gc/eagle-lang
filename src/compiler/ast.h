@@ -89,6 +89,7 @@ typedef struct {
     struct AST *body;
     struct AST *params;
     char *ident;
+    int vararg;
 } ASTFuncDecl;
 
 typedef struct {
@@ -200,6 +201,7 @@ AST *ast_make_int32(char *text);
 AST *ast_make_double(char *text);
 AST *ast_make_cstr(char *text);
 AST *ast_make_identifier(char *ident);
+AST *ast_set_vararg(AST *ast);
 AST *ast_make_func_decl(AST *type, char *ident, AST *body, AST *params);
 AST *ast_make_gen_decl(AST *type, char *ident, AST *body, AST *params);
 AST *ast_make_func_call(AST *callee, AST *params);

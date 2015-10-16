@@ -19,9 +19,10 @@
 
 %token <string> TIDENTIFIER TINT TDOUBLE TTYPE TCOUNTED TNEW TSTRUCT TCLASS TTOUCH TCSTR
 %token <token> TPLUS TMINUS TEQUALS TMUL TDIV TGT TLT TEQ TNE TGTE TLTE TNOT TPOW TLOGAND TLOGOR
+%token <token> TPLUSE
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TLBRACKET TRBRACKET
 %token <token> TFUNC TRETURN TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF TFOR TWEAK TUNWRAP
-%token <token> TBREAK TCONTINUE TVAR TGEN 
+%token <token> TBREAK TCONTINUE TVAR TGEN  TELLIPSES
 %token <token> TCOLON TSEMI TNEWLINE TCOMMA TDOT TAMP TAT TARROW
 %token <token> TYES TNO TNIL
 %type <node> program declarations declaration statements statement block funcdecl ifstatement
@@ -36,6 +37,7 @@
 %left TLOGAND;
 %left TNOT;
 %left TEQ TNE TLT TGT TLTE TGTE
+%left TPLUSE;
 %left TPLUS TMINUS;
 %left TMUL TDIV;
 %left TAT TAMP;
@@ -114,6 +116,7 @@ clodecl             : TFUNC TLPAREN TRPAREN TCOLON type blockalt { $$ = ast_make
                     ;
 
 funcsident          : TFUNC TIDENTIFIER TLPAREN typelist TRPAREN TCOLON type { $$ = ast_make_func_decl($7, $2, NULL, $4); }
+                    | TFUNC TIDENTIFIER TLPAREN typelist TELLIPSES TRPAREN TCOLON type { $$ = ast_make_func_decl($8, $2, NULL, $4); ast_set_vararg($$); }
                     | TFUNC TIDENTIFIER TLPAREN typelist TRPAREN { $$ = ast_make_func_decl(ast_make_type((char *)"void"), $2, NULL, $4); }
                     ;
 
@@ -184,6 +187,7 @@ expr                : binexpr { $$ = $1; }
                     ;
 
 binexpr             : expr TPLUS expr { $$ = ast_make_binary($1, $3, '+'); }
+                    | expr TPLUSE expr { $$ = ast_make_binary($1, $3, 'P'); }
                     | expr TEQUALS expr { $$ = ast_make_binary($1, $3, '='); }
                     | expr TMINUS expr { $$ = ast_make_binary($1, $3, '-'); }
                     | expr TMUL expr { $$ = ast_make_binary($1, $3, '*'); }

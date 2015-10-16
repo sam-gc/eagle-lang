@@ -2,6 +2,7 @@
     #include <stdio.h>
     #include <string.h>
     #include "compiler/ast.h"
+    #include "core/utils.h"
     #include "eagle.tab.h"
     
     #define SET(t) (yylval.token = t)
@@ -46,6 +47,7 @@ cstr '(\\.|[^'])*'
 {integer}     { SAVE_NL; SAVE_TOKEN; return TINT; }
 {real}      { SAVE_NL; SAVE_TOKEN; return TDOUBLE; }
 "+"         DISCARD_NL; return SET(TPLUS);
+"+="        DISCARD_NL; return SET(TPLUSE);
 "-"         DISCARD_NL; return SET(TMINUS);
 "*"         DISCARD_NL; return SET(TMUL);
 "/"         DISCARD_NL; return SET(TDIV);
@@ -85,6 +87,7 @@ cstr '(\\.|[^'])*'
 "sizeof"    DISCARD_NL; return SET(TSIZEOF);
 "countof"   DISCARD_NL; return SET(TCOUNTOF);
 "counted"   DISCARD_NL; return SET(TCOUNTED);
+"..."       DISCARD_NL; return SET(TELLIPSES);
 "weak"      DISCARD_NL; return SET(TWEAK);
 "unwrap"    DISCARD_NL; return SET(TUNWRAP);
 "touch"     DISCARD_NL; return SET(TTOUCH);
@@ -106,5 +109,5 @@ cstr '(\\.|[^'])*'
 "void"      { SAVE_NL; SAVE_TOKEN; return TTYPE; }
 "any"       { SAVE_NL; SAVE_TOKEN; return TTYPE; }
 {alpha}       { SAVE_NL; SAVE_TOKEN; return ty_is_name(yytext) ? TTYPE : TIDENTIFIER; }
-{cstr}      SAVE_NL; SAVE_TOKEN; return TCSTR;
+{cstr}      SAVE_NL; yylval.string = utl_gen_escaped_string((char *)yytext, yylineno); return TCSTR;
 %%

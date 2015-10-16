@@ -141,6 +141,14 @@ AST *ast_make_identifier(char *ident)
     return (AST *)ast;
 }
 
+AST *ast_set_vararg(AST *ast)
+{
+    ASTFuncDecl *a = (ASTFuncDecl *)ast;
+    a->vararg = 1;
+
+    return ast;
+}
+
 AST *ast_make_func_decl(AST *type, char *ident, AST *body, AST *params)
 {
     ASTFuncDecl *ast = ast_malloc(sizeof(ASTFuncDecl));
@@ -149,6 +157,7 @@ AST *ast_make_func_decl(AST *type, char *ident, AST *body, AST *params)
     ast->body = body;
     ast->ident = ident ? ident : (char *)"close";
     ast->params = params;
+    ast->vararg = 0;
     
     return (AST *)ast;
 }

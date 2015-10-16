@@ -1,0 +1,14 @@
+extern func scanf(byte* ...) : int
+extern func printf(byte* ...) : int
+
+func main() : int
+{
+    byte[500] name
+
+    puts 'Enter your name below:'
+    scanf('%s', name)
+
+    printf('Hello, %s!\n', name)
+
+    return 0
+}

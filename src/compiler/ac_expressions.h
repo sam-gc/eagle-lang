@@ -15,6 +15,6 @@ LLVMValueRef ac_compile_binary(AST *ast, CompilerBundle *cb);
 LLVMValueRef ac_compile_get_address(AST *of, CompilerBundle *cb);
 LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb);
 LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb);
-LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb);
+LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update);
 
 #endif

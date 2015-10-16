@@ -11,9 +11,7 @@ void die(int lineno, const char *fmt, ...)
     char format[len + 9];
     sprintf(format, "Error: %s\n", fmt);
     va_list args;
-    va_start(args, fmt);
-    vfprintf(stderr, format, args);
-    fprintf(stderr, "\t-> Line %d\n", lineno);
+    va_start(args, fmt); vfprintf(stderr, format, args); fprintf(stderr, "\t-> Line %d\n", lineno);
     va_end(args);
 
     exit(0);
@@ -127,6 +125,7 @@ void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
         return;
 
     ASTFuncDecl *a = (ASTFuncDecl *)ast;
+
     int i, ct;
     AST *p;
     for(p = a->params, i = 0; p; p = p->next, i++);
@@ -146,7 +145,14 @@ void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
     }
 
     ASTTypeDecl *retType = (ASTTypeDecl *)a->retType;
-    LLVMTypeRef func_type = LLVMFunctionType(ett_llvm_type(retType->etype), param_types, ct, 0);
+    if(strcmp(a->ident, "printf") == 0)
+    {
+        LLVMValueRef func = LLVMGetNamedFunction(cb->module, "printf");
+        vs_put(cb->varScope, a->ident, func, ett_function_type(retType->etype, eparam_types, ct));
+        return;
+    }
+
+    LLVMTypeRef func_type = LLVMFunctionType(ett_llvm_type(retType->etype), param_types, ct, a->vararg);
     LLVMValueRef func = LLVMAddFunction(cb->module, a->ident, func_type);
 
     if(retType->etype->type == ETStruct)
