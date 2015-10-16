@@ -504,6 +504,71 @@ LLVMValueRef ac_compile_logical_and(AST *ast, CompilerBundle *cb)
     return phi;
 }
 
+LLVMValueRef ac_generic_binary(ASTBinary *a, LLVMValueRef l, LLVMValueRef r, char save_left, EagleTypeType *fromtype, EagleTypeType *totype, CompilerBundle *cb)
+{
+    if(
+    (!save_left && (fromtype->type == ETPointer || totype->type == ETPointer)) ||
+    (save_left && totype->type == ETPointer)
+    )
+    {
+        if(a->op == 'e')
+        {
+            l = LLVMBuildPtrToInt(cb->builder, l, LLVMInt64Type(), "");
+            r = LLVMBuildPtrToInt(cb->builder, r, LLVMInt64Type(), "");
+
+            a->resultantType = ett_base_type(ETInt1);
+            return LLVMBuildICmp(cb->builder, LLVMIntEQ, l, r, "");
+        }
+
+        EagleTypeType *lt = totype;
+        EagleTypeType *rt = fromtype;
+        if(a->op != '+' && a->op != '-' && a->op != 'e' && a->op !='P')
+            die(a->lineno, "Operation '%c' not valid for pointer types.", a->op);
+        if(lt->type == ETPointer && !ET_IS_INT(rt->type))
+            die(a->lineno, "Pointer arithmetic is only valid with integer and non-any pointer types.");
+        if(rt->type == ETPointer && !ET_IS_INT(lt->type))
+            die(a->lineno, "Pointer arithmetic is only valid with integer and non-any pointer types.");
+        
+        if(lt->type == ETPointer && ett_get_base_type(lt) == ETAny && ett_pointer_depth(lt) == 1)
+            die(a->lineno, "Pointer arithmetic results in dereferencing any pointer.");
+        if(rt->type == ETPointer && ett_get_base_type(rt) == ETAny && ett_pointer_depth(rt) == 1)
+            die(a->lineno, "Pointer arithmetic results in dereferencing any pointer.");
+
+        LLVMValueRef indexer = lt->type == ETPointer ? r : l;
+        LLVMValueRef ptr = lt->type == ETPointer ? l : r;
+
+        if(a->op == '-')
+            indexer = LLVMBuildNeg(cb->builder, indexer, "neg");
+
+        EaglePointerType *pt = lt->type == ETPointer ?
+            (EaglePointerType *)lt : (EaglePointerType *)rt;
+
+        a->resultantType = (EagleTypeType *)pt;
+
+        LLVMValueRef gep = LLVMBuildInBoundsGEP(cb->builder, ptr, &indexer, 1, "arith");
+        return LLVMBuildBitCast(cb->builder, gep, ett_llvm_type((EagleTypeType *)pt), "cast");
+    }
+
+    switch(a->op)
+    {
+        case '+':
+        case 'P':
+            return ac_make_add(l, r, cb->builder, totype->type);
+        case '-':
+        case 'M':
+            return ac_make_sub(l, r, cb->builder, totype->type);
+        case '*':
+        case 'T':
+            return ac_make_mul(l, r, cb->builder, totype->type);
+        case '/':
+        case 'D':
+            return ac_make_div(l, r, cb->builder, totype->type);
+        default:
+            die(a->lineno, "Invalid binary operation (%c).", a->op);
+            return NULL;
+    }
+}
+
 LLVMValueRef ac_compile_binary(AST *ast, CompilerBundle *cb)
 {
     ASTBinary *a = (ASTBinary *)ast;
@@ -515,51 +580,15 @@ LLVMValueRef ac_compile_binary(AST *ast, CompilerBundle *cb)
         return ac_compile_logical_and(ast, cb);
     else if(a->op == '|')
         return ac_compile_logical_or(ast, cb);
-    else if(a->op == 'P')
+    else if(a->op == 'P' || a->op == 'M' || a->op == 'T' || a->op == 'D')
         return ac_build_store(ast, cb, 1);
 
     LLVMValueRef l = ac_dispatch_expression(a->left, cb);
     LLVMValueRef r = ac_dispatch_expression(a->right, cb);
 
     if(a->left->resultantType->type == ETPointer || a->right->resultantType->type == ETPointer)
-    {
-        if(a->op == 'e')
-        {
-            l = LLVMBuildPtrToInt(cb->builder, l, LLVMInt64Type(), "");
-            r = LLVMBuildPtrToInt(cb->builder, r, LLVMInt64Type(), "");
+        return ac_generic_binary(a, l, r, 0, a->right->resultantType, a->left->resultantType, cb);
 
-            ast->resultantType = ett_base_type(ETInt1);
-            return LLVMBuildICmp(cb->builder, LLVMIntEQ, l, r, "");
-        }
-
-        EagleTypeType *lt = a->left->resultantType;
-        EagleTypeType *rt = a->right->resultantType;
-        if(a->op != '+' && a->op != '-' && a->op != 'e')
-            die(ALN, "Operation '%c' not valid for pointer types.", a->op);
-        if(lt->type == ETPointer && !ET_IS_INT(rt->type))
-            die(ALN, "Pointer arithmetic is only valid with integer and non-any pointer types.");
-        if(rt->type == ETPointer && !ET_IS_INT(lt->type))
-            die(ALN, "Pointer arithmetic is only valid with integer and non-any pointer types.");
-        
-        if(lt->type == ETPointer && ett_get_base_type(lt) == ETAny && ett_pointer_depth(lt) == 1)
-            die(ALN, "Pointer arithmetic results in dereferencing any pointer.");
-        if(rt->type == ETPointer && ett_get_base_type(rt) == ETAny && ett_pointer_depth(rt) == 1)
-            die(ALN, "Pointer arithmetic results in dereferencing any pointer.");
-
-        LLVMValueRef indexer = lt->type == ETPointer ? r : l;
-        LLVMValueRef ptr = lt->type == ETPointer ? l : r;
-
-        if(a->op == '-')
-            indexer = LLVMBuildNeg(cb->builder, indexer, "neg");
-
-        EaglePointerType *pt = lt->type == ETPointer ?
-            (EaglePointerType *)lt : (EaglePointerType *)rt;
-
-        ast->resultantType = (EagleTypeType *)pt;
-
-        LLVMValueRef gep = LLVMBuildInBoundsGEP(cb->builder, ptr, &indexer, 1, "arith");
-        return LLVMBuildBitCast(cb->builder, gep, ett_llvm_type((EagleTypeType *)pt), "cast");
-    }
 
     EagleType promo = et_promotion(a->left->resultantType->type, a->right->resultantType->type);
     a->resultantType = ett_base_type(promo);
@@ -575,25 +604,16 @@ LLVMValueRef ac_compile_binary(AST *ast, CompilerBundle *cb)
 
     switch(a->op)
     {
-        case '+':
-            return ac_make_add(l, r, cb->builder, promo);
-        case '-':
-            return ac_make_sub(l, r, cb->builder, promo);
-        case '*':
-            return ac_make_mul(l, r, cb->builder, promo);
-        case '/':
-            return ac_make_div(l, r, cb->builder, promo);
         case 'e':
         case 'n':
         case 'g':
         case 'l':
         case 'G':
         case 'L':
-            ast->resultantType = ett_base_type(ETInt1);
+            a->resultantType = ett_base_type(ETInt1);
             return ac_make_comp(l, r, cb->builder, promo, a->op);
         default:
-            die(ALN, "Invalid binary operation (%c).", a->op);
-            return NULL;
+            return ac_generic_binary(a, l, r, 0, a->resultantType, a->resultantType, cb);
     }
 }
 
@@ -944,7 +964,7 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update)
 
     a->resultantType = totype;
 
-    if(!ett_are_same(fromtype, totype))
+    if(!ett_are_same(fromtype, totype) && (!update || (update && totype->type != ETPointer)))
         r = ac_build_conversion(cb->builder, r, fromtype, totype);
 
     int transient = 0;
@@ -978,7 +998,8 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update)
     if(update)
     {
         LLVMValueRef cur = LLVMBuildLoad(cb->builder, pos, "");
-        r = ac_make_add(cur, r, cb->builder, totype->type);
+        r = ac_generic_binary(a, cur, r, 1, fromtype, totype, cb);
+        // r = ac_make_add(cur, r, cb->builder, totype->type);
     }
 
     LLVMBuildStore(cb->builder, r, pos);

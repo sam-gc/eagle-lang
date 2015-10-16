@@ -19,7 +19,7 @@
 
 %token <string> TIDENTIFIER TINT TDOUBLE TTYPE TCOUNTED TNEW TSTRUCT TCLASS TTOUCH TCSTR
 %token <token> TPLUS TMINUS TEQUALS TMUL TDIV TGT TLT TEQ TNE TGTE TLTE TNOT TPOW TLOGAND TLOGOR
-%token <token> TPLUSE
+%token <token> TPLUSE TMINUSE TMULE TDIVE
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TLBRACKET TRBRACKET
 %token <token> TFUNC TRETURN TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF TFOR TWEAK TUNWRAP
 %token <token> TBREAK TCONTINUE TVAR TGEN  TELLIPSES
@@ -32,12 +32,13 @@
 
 %nonassoc TNEW;
 %nonassoc TCOUNTED TWEAK TUNWRAP TTOUCH;
+%right TPLUSE TMINUSE;
+%right TMULE TDIVE;
 %right TEQUALS;
 %left TLOGOR;
 %left TLOGAND;
 %left TNOT;
 %left TEQ TNE TLT TGT TLTE TGTE
-%left TPLUSE;
 %left TPLUS TMINUS;
 %left TMUL TDIV;
 %left TAT TAMP;
@@ -190,8 +191,11 @@ binexpr             : expr TPLUS expr { $$ = ast_make_binary($1, $3, '+'); }
                     | expr TPLUSE expr { $$ = ast_make_binary($1, $3, 'P'); }
                     | expr TEQUALS expr { $$ = ast_make_binary($1, $3, '='); }
                     | expr TMINUS expr { $$ = ast_make_binary($1, $3, '-'); }
+                    | expr TMINUSE expr { $$ = ast_make_binary($1, $3, 'M'); }
                     | expr TMUL expr { $$ = ast_make_binary($1, $3, '*'); }
+                    | expr TMULE expr { $$ = ast_make_binary($1, $3, 'T'); }
                     | expr TDIV expr { $$ = ast_make_binary($1, $3, '/'); }
+                    | expr TDIVE expr { $$ = ast_make_binary($1, $3, 'D'); }
                     | expr TEQ expr { $$ = ast_make_binary($1, $3, 'e'); }
                     | expr TGT expr { $$ = ast_make_binary($1, $3, 'g'); }
                     | expr TGTE expr { $$ = ast_make_binary($1, $3, 'G'); }

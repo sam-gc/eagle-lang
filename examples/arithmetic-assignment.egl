@@ -1,0 +1,43 @@
+func retref(int* ref) : int*
+{
+    puts 'Heyo!'
+    return ref
+}
+
+func main()
+{
+    int i = 5
+    i += 10
+
+    byte* test = 'blah blah'
+    i += 1.5
+    test += 3
+
+    double j = 45
+    var k = &j
+
+    j /= 2
+    j -= 10
+    k^ *= 3.5
+
+    puts i
+    puts test
+    puts j
+
+    puts '========================='
+
+    int e = 42
+    retref(&e)^ = retref(&e)^ + 1
+
+    puts e
+
+    puts '=-======================='
+    retref(&e)^ += 1
+
+    puts e
+
+    for int i = 0; i < 20; i += 2
+    {
+        puts i
+    }
+}
