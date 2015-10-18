@@ -169,6 +169,7 @@ LLVMTypeRef ett_llvm_type(EagleTypeType *type)
             return LLVMInt32Type();
         case ETInt64:
             return LLVMInt64Type();
+        case ETGenerator:
         case ETCString:
             return LLVMPointerType(LLVMInt8Type(), 0);
         case ETClass:
@@ -310,6 +311,17 @@ EagleTypeType *ett_function_type(EagleTypeType *retVal, EagleTypeType **params, 
 
     pool_add(&type_mempool, ett);
     pool_add(&type_mempool, ett->params);
+
+    return (EagleTypeType *)ett;
+}
+
+EagleTypeType *ett_gen_type(EagleTypeType *ytype)
+{
+    EagleGenType *ett = malloc(sizeof(EagleGenType));
+    ett->type = ETGenerator;
+    ett->ytype = ytype;
+
+    pool_add(&type_mempool, ett);
 
     return (EagleTypeType *)ett;
 }

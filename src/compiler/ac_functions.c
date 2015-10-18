@@ -382,6 +382,8 @@ void ac_compile_function_ex(AST *ast, CompilerBundle *cb, LLVMValueRef func, Eag
     }
     vs_pop(cb->varScope);
 
+    // ac_dump_allocas(cb->currentFunctionEntry, cb);
+
     cb->currentFunctionEntry = NULL;
 }
 

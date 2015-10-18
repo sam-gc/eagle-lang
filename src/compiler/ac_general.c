@@ -125,6 +125,12 @@ void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
         return;
     }
 
+    if(ast->type == AGENDECL)
+    {
+        ac_add_gen_declaration(ast, cb);
+        return;
+    }
+
     if(ast->type != AFUNCDECL)
         return;
 
@@ -271,6 +277,9 @@ void ac_dispatch_declaration(AST *ast, CompilerBundle *cb)
         case ASTRUCTDECL:
             break;
         case ACLASSDECL:
+            break;
+        case AGENDECL:
+            ac_compile_generator_code(ast, cb);
             break;
         default:
             die(ALN, "Invalid declaration type.");

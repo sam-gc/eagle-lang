@@ -40,5 +40,6 @@ typedef struct {
 #include "ac_rc.h"
 #include "ac_struct.h"
 #include "ac_class.h"
+#include "ac_generator.h"
 
 #endif

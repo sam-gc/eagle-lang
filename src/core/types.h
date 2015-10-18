@@ -49,7 +49,7 @@ typedef enum {
     ETFunction,
     ETGenerator,
     ETStruct,
-    ETClass
+    ETClass,
 } EagleType;
 
 typedef struct {
@@ -77,7 +77,13 @@ typedef struct {
     int pct;
 
     int closure;
+    int gen;
 } EagleFunctionType;
+
+typedef struct {
+    EagleType type;
+    EagleTypeType *ytype;
+} EagleGenType;
 
 typedef struct {
     EagleType type;
@@ -94,6 +100,7 @@ EagleTypeType *ett_base_type(EagleType type);
 EagleTypeType *ett_pointer_type(EagleTypeType *to);
 EagleTypeType *ett_array_type(EagleTypeType *of, int ct);
 EagleTypeType *ett_function_type(EagleTypeType *retVal, EagleTypeType **params, int pct);
+EagleTypeType *ett_gen_type(EagleTypeType *ytype);
 EagleTypeType *ett_struct_type(char *name);
 EagleTypeType *ett_class_type(char *name);
 
