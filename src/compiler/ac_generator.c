@@ -23,7 +23,7 @@ char *ac_generator_code_name(char *gen)
 
     return name;
 }
-// LLVMValueRef ac_compile_malloc_counted_raw(LLVMTypeRef rt, LLVMTypeRef *out, CompilerBundle *cb)
+
 LLVMValueRef ac_compile_generator_init(AST *ast, CompilerBundle *cb, GeneratorBundle *gb)
 {
     ASTFuncDecl *a = (ASTFuncDecl *)ast;
@@ -65,7 +65,13 @@ LLVMValueRef ac_compile_generator_init(AST *ast, CompilerBundle *cb, GeneratorBu
     LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, ctx, 0, "");
     LLVMBuildStore(cb->builder, LLVMBuildBitCast(cb->builder, gb->func, LLVMPointerType(LLVMInt8Type(), 0), ""), pos);
 
-    LLVMValueRef ret = LLVMBuildBitCast(cb->builder, mmc, LLVMPointerType(LLVMInt8Type(), 0), "");
+    pos = LLVMBuildStructGEP(cb->builder, ctx, 1, "");
+    LLVMBuildStore(cb->builder, LLVMBlockAddress(gb->func, cb->yieldBlocks->items[0]), pos);
+
+    ac_incr_val_pointer(cb, &mmc, ((EagleFunctionType *)vb->type)->retType);
+
+    // LLVMDumpType(ett_llvm_type(vb->type));
+    LLVMValueRef ret = LLVMBuildBitCast(cb->builder, mmc, ett_llvm_type(((EagleFunctionType *)vb->type)->retType), "");
     LLVMBuildRet(cb->builder, ret);
 
     return NULL;
@@ -74,12 +80,17 @@ LLVMValueRef ac_compile_generator_init(AST *ast, CompilerBundle *cb, GeneratorBu
 void ac_compile_generator_code(AST *ast, CompilerBundle *cb)//, LLVMValueRef func, EagleFunctionType *ft)
 {
     ASTFuncDecl *a = (ASTFuncDecl *)ast;
+
     arraylist param_values = arr_create(10);
+    arraylist yield_blocks = arr_create(10);
+
+    ASTTypeDecl *genType = (ASTTypeDecl *)a->retType;
+    cb->currentGenType = (EagleGenType *)ett_gen_type(genType->etype);
 
     char *codename = ac_generator_code_name(a->ident);
 
-    LLVMTypeRef pt = LLVMPointerType(LLVMInt8Type(), 0);
-    LLVMTypeRef funcType = LLVMFunctionType(LLVMInt1Type(), &pt, 1, 0);
+    LLVMTypeRef pts[] = {LLVMPointerType(LLVMInt8Type(), 0), LLVMPointerType(ett_llvm_type(genType->etype), 0)};
+    LLVMTypeRef funcType = LLVMFunctionType(LLVMInt1Type(), pts, 2, 0);
     LLVMValueRef func = LLVMAddFunction(cb->module, codename, funcType);
     free(codename);
     
@@ -96,11 +107,6 @@ void ac_compile_generator_code(AST *ast, CompilerBundle *cb)//, LLVMValueRef fun
         eparam_types[i] = type->etype;
     }
 
-    // ASTTypeDecl *genType = (ASTTypeDecl *)a->retType;
-
-    
-    // cb->currentFunctionType = ft;
-
     LLVMBasicBlockRef entry = LLVMAppendBasicBlock(func, "entry");
     LLVMPositionBuilderAtEnd(cb->builder, entry);
     
@@ -109,6 +115,7 @@ void ac_compile_generator_code(AST *ast, CompilerBundle *cb)//, LLVMValueRef fun
     cb->currentFunctionEntry = entry;
     cb->currentFunction = func;
     cb->currentFunctionScope = cb->varScope->scope;
+    cb->yieldBlocks = &yield_blocks;
 
     hashtable param_mapping = hst_create();
 
@@ -132,8 +139,13 @@ void ac_compile_generator_code(AST *ast, CompilerBundle *cb)//, LLVMValueRef fun
         }
     }
 
-    ac_compile_block(a->body, entry, cb);
-    LLVMBuildRet(cb->builder, LLVMConstInt(LLVMInt1Type(), 1, 0));
+    LLVMBasicBlockRef fy = LLVMAppendBasicBlock(func, "yield");
+    LLVMPositionBuilderAtEnd(cb->builder, fy);
+    arr_append(cb->yieldBlocks, fy);
+
+    ac_compile_block(a->body, NULL, cb);
+    LLVMBuildRet(cb->builder, LLVMConstInt(LLVMInt1Type(), 0, 0));
+
     // if(!ac_compile_block(a->body, entry, cb) && retType->etype->type != ETVoid)
     //     die(ALN, "Function must return a value.");
 
@@ -163,14 +175,19 @@ void ac_compile_generator_code(AST *ast, CompilerBundle *cb)//, LLVMValueRef fun
     gb.epct = ct;
     ac_generator_replace_allocas(cb, &gb);
     ac_compile_generator_init(ast, cb, &gb);
+
     // ac_dump_allocas(cb->currentFunctionEntry, cb);
 
     // arr_free(&param_indices);
     arr_free(&param_values);
+    arr_free(&yield_blocks);
     hst_free(&param_mapping);
     hst_free(&prms);
 
     cb->currentFunctionEntry = NULL;
+
+    EagleTypeType *types[] = {ett_pointer_type(ett_base_type(ETInt8)), ett_pointer_type(ett_base_type(ETInt32))};
+    vs_put(cb->varScope, "__gen_test_code", func, ett_function_type(ett_base_type(ETInt1), types, 2));
 }
 
 void ac_generator_replace_allocas(CompilerBundle *cb, GeneratorBundle *gb)
@@ -182,59 +199,79 @@ void ac_generator_replace_allocas(CompilerBundle *cb, GeneratorBundle *gb)
     arr_append(&elems, LLVMPointerType(LLVMInt8Type(), 0));
 
     LLVMValueRef first = LLVMGetFirstInstruction(entry);
+    LLVMValueRef btb = NULL;
 
-    LLVMValueRef i;
-    for(i = first; i; i = LLVMGetNextInstruction(i))
+    if(first)
     {
-        if(LLVMGetInstructionOpcode(i) != LLVMAlloca)
-            continue;
-
-        LLVMTypeRef type = LLVMGetElementType(LLVMTypeOf(i));
-        arr_append(&elems, type);
-    }
-
-    LLVMTypeRef ctx = gb->contextType;
-    LLVMStructSetBody(ctx, (LLVMTypeRef *)elems.items, elems.count, 0);
-
-    LLVMPositionBuilderBefore(cb->builder, first);
-    LLVMValueRef par = LLVMGetParam(gb->func, 0);
-    LLVMValueRef btb = LLVMBuildBitCast(cb->builder, par, LLVMPointerType(ctx, 0), "");
-    // LLVMValueRef btb = LLVMBuildAlloca(cb->builder, ctx, "btb");
-
-    // LLVMDumpType(ctx);
-
-    hashtable *pm = gb->param_mapping;
-    hashtable *po = gb->params;
-
-    arr_free(&elems);
-    elems = arr_create(10);
-
-    int c;
-    for(i = first, c = 2; i; i = LLVMGetNextInstruction(i))
-    {
-        if(LLVMGetInstructionOpcode(i) != LLVMAlloca || i == btb)
-            continue;
-
-        LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, btb, c, "");
-        LLVMReplaceAllUsesWith(i, pos);
-
-        int old = 0;
-        if((old = (int)(uintptr_t)hst_get(pm, i, ahhd, ahed)))
+        LLVMValueRef i;
+        for(i = first; i; i = LLVMGetNextInstruction(i))
         {
-            printf("HERE!\n");
-            hst_put(po, (void *)(uintptr_t)old, (void *)(uintptr_t)c, ahhd, ahed);
+            if(LLVMGetInstructionOpcode(i) != LLVMAlloca)
+                continue;
+
+            LLVMTypeRef type = LLVMGetElementType(LLVMTypeOf(i));
+            arr_append(&elems, type);
         }
 
-        // LLVMTypeRef type = LLVMGetElementType(LLVMTypeOf(i));
-        arr_append(&elems, i);
+        LLVMTypeRef ctx = gb->contextType;
+        LLVMStructSetBody(ctx, (LLVMTypeRef *)elems.items, elems.count, 0);
 
-        c++;
+        LLVMPositionBuilderBefore(cb->builder, first);
+        LLVMValueRef par = LLVMGetParam(gb->func, 0);
+        btb = LLVMBuildBitCast(cb->builder, par, LLVMPointerType(ctx, 0), "");
+        // LLVMValueRef btb = LLVMBuildAlloca(cb->builder, ctx, "btb");
+
+        // LLVMDumpType(ctx);
+
+        hashtable *pm = gb->param_mapping;
+        hashtable *po = gb->params;
+
+        arr_free(&elems);
+        elems = arr_create(10);
+
+        int c;
+        for(i = first, c = 2; i; i = LLVMGetNextInstruction(i))
+        {
+            if(LLVMGetInstructionOpcode(i) != LLVMAlloca || i == btb)
+                continue;
+
+            LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, btb, c, "");
+            LLVMReplaceAllUsesWith(i, pos);
+
+            int old = 0;
+            if((old = (int)(uintptr_t)hst_get(pm, i, ahhd, ahed)))
+            {
+                hst_put(po, (void *)(uintptr_t)old, (void *)(uintptr_t)c, ahhd, ahed);
+            }
+
+            // LLVMTypeRef type = LLVMGetElementType(LLVMTypeOf(i));
+            arr_append(&elems, i);
+
+            c++;
+        }
+
+        for(c = 0; c < elems.count; c++)
+        {
+            LLVMInstructionEraseFromParent(elems.items[c]);
+        }
     }
-
-    for(c = 0; c < elems.count; c++)
+    else
     {
-        LLVMInstructionEraseFromParent(elems.items[c]);
+        LLVMTypeRef ctx = gb->contextType;
+        LLVMStructSetBody(ctx, (LLVMTypeRef *)elems.items, elems.count, 0);
+
+        LLVMPositionBuilderAtEnd(cb->builder, entry);
+        LLVMValueRef par = LLVMGetParam(gb->func, 0);
+        btb = LLVMBuildBitCast(cb->builder, par, LLVMPointerType(ctx, 0), "");
     }
+
+    LLVMPositionBuilderAtEnd(cb->builder, cb->currentFunctionEntry);
+    LLVMValueRef jumpps = LLVMBuildLoad(cb->builder, LLVMBuildStructGEP(cb->builder, btb, 1, ""), "");
+    LLVMValueRef jmp = LLVMBuildIndirectBr(cb->builder, jumpps, cb->yieldBlocks->count);
+
+    int c;
+    for(c = 0; c < cb->yieldBlocks->count; c++)
+        LLVMAddDestination(jmp, cb->yieldBlocks->items[c]);
 
     arr_free(&elems);
 }
@@ -263,10 +300,13 @@ void ac_add_gen_declaration(AST *ast, CompilerBundle *cb)
 
     ASTTypeDecl *genType = (ASTTypeDecl *)a->retType;
 
-    LLVMTypeRef func_type = LLVMFunctionType(LLVMPointerType(LLVMInt8Type(), 0), param_types, ct, a->vararg);
+    EagleTypeType *ty = ett_pointer_type(ett_gen_type(genType->etype));
+    ((EaglePointerType *)ty)->counted = 1;
+
+    LLVMTypeRef func_type = LLVMFunctionType(ett_llvm_type(ty), param_types, ct, a->vararg);
     LLVMValueRef func = LLVMAddFunction(cb->module, a->ident, func_type);
 
-    vs_put(cb->varScope, a->ident, func, ett_function_type(ett_gen_type(genType->etype), eparam_types, ct));
+    vs_put(cb->varScope, a->ident, func, ett_function_type(ty, eparam_types, ct));
 }
 
 // void ac_compile_generator(AST *ast, CompilerBundle *cb)

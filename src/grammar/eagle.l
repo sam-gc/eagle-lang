@@ -81,6 +81,7 @@ cstr '(\\.|[^'])*'
 "["         DISCARD_NL; return SET(TLBRACKET);
 "]"         SAVE_NL; return SET(TRBRACKET);
 "return"    SAVE_NL; return SET(TRETURN);
+"yield"     DISCARD_NL; return SET(TYIELD);
 "break"     SAVE_NL; return SET(TBREAK);
 "continue"  SAVE_NL; return SET(TCONTINUE);
 "struct"    DISCARD_NL; return SET(TSTRUCT);

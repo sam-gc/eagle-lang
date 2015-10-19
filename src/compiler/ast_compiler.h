@@ -21,6 +21,10 @@ typedef struct {
     LLVMTargetDataRef td;
 
     EagleFunctionType *currentFunctionType;
+    EagleGenType *currentGenType;
+
+    arraylist *yieldBlocks;
+    LLVMBasicBlockRef currentYield;
     LLVMBasicBlockRef currentFunctionEntry;
     LLVMBasicBlockRef currentLoopEntry;
     LLVMBasicBlockRef currentLoopExit;

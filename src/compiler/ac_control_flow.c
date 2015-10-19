@@ -6,39 +6,14 @@ int ac_compile_block(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
     {
         if(ast->type == AUNARY && ((ASTUnary *)ast)->op == 'r') // Handle the special return case
         {
-            ASTUnary *reta = (ASTUnary *)ast;
-
-            LLVMValueRef val = NULL;
-
-            if(reta->val)
-            {
-                val = ac_dispatch_expression(reta->val, cb);
-                EagleTypeType *t = reta->val->resultantType;
-                EagleTypeType *o = cb->currentFunctionType->retType;
-
-                if(!ett_are_same(t, o))
-                    val = ac_build_conversion(cb->builder, val, t, o);
-                if(t->type == ETStruct)
-                    val = LLVMBuildLoad(cb->builder, val, "");
-
-                if(ET_IS_COUNTED(o))
-                {
-                    ac_incr_val_pointer(cb, &val, o);
-
-                    // We want to make sure that transients don't leak into returns (this only
-                    // applies to closures since transients are implicitly destroyed on a normal
-                    // function)
-
-                    hst_remove_key(&cb->transients, ((ASTUnary *)ast)->val, ahhd, ahed);
-                }
-            }
-            
-            vs_run_callbacks_through(cb->varScope, cb->currentFunctionScope);
-
-            if(val) LLVMBuildRet(cb->builder, val);
-            else    LLVMBuildRetVoid(cb->builder);
-
+            ac_compile_return(ast, block, cb);
             return 1;
+        }
+
+        if(ast->type == AUNARY && ((ASTUnary *)ast)->op == 'y') // Handle the special yield case
+        {
+            ac_compile_yield(ast, block, cb);
+            continue;
         }
         
         if(ast->type == AUNARY && ((ASTUnary *)ast)->op == 'b') // Handle the special break case
@@ -57,6 +32,74 @@ int ac_compile_block(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
     }
 
     return 0;
+}
+
+void ac_compile_return(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
+{
+    ASTUnary *reta = (ASTUnary *)ast;
+
+    LLVMValueRef val = NULL;
+
+    if(reta->val)
+    {
+        val = ac_dispatch_expression(reta->val, cb);
+        EagleTypeType *t = reta->val->resultantType;
+        EagleTypeType *o = cb->currentFunctionType->retType;
+
+        if(!ett_are_same(t, o))
+            val = ac_build_conversion(cb->builder, val, t, o);
+        if(t->type == ETStruct)
+            val = LLVMBuildLoad(cb->builder, val, "");
+
+        if(ET_IS_COUNTED(o))
+        {
+            ac_incr_val_pointer(cb, &val, o);
+
+            // We want to make sure that transients don't leak into returns (this only
+            // applies to closures since transients are implicitly destroyed on a normal
+            // function)
+
+            hst_remove_key(&cb->transients, ((ASTUnary *)ast)->val, ahhd, ahed);
+        }
+    }
+    
+    vs_run_callbacks_through(cb->varScope, cb->currentFunctionScope);
+
+    if(val) LLVMBuildRet(cb->builder, val);
+    else    LLVMBuildRetVoid(cb->builder);
+}
+
+void ac_compile_yield(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
+{
+    ASTUnary *ya = (ASTUnary *)ast;
+
+    LLVMValueRef val = NULL;
+
+    if(!ya->val)
+        die(ALN, "Yield statement must have an associated expression.");
+
+    LLVMBasicBlockRef nblock = LLVMAppendBasicBlock(cb->currentFunction, "yield");
+    LLVMMoveBasicBlockAfter(nblock, cb->yieldBlocks->items[cb->yieldBlocks->count - 1]);
+    arr_append(cb->yieldBlocks, nblock);
+    
+    val = ac_dispatch_expression(ya->val, cb);
+    EagleTypeType *t = ya->val->resultantType;
+    EagleTypeType *o = cb->currentGenType->ytype;
+
+    if(!ett_are_same(t, o))
+        val = ac_build_conversion(cb->builder, val, t, o);
+
+    LLVMValueRef ctx = LLVMBuildBitCast(cb->builder, LLVMGetParam(cb->currentFunction, 0), 
+        LLVMPointerType(ett_llvm_type((EagleTypeType *)cb->currentGenType), 0), "");
+
+    LLVMBuildStore(cb->builder, val, LLVMGetParam(cb->currentFunction, 1));
+
+    LLVMValueRef blockPos = LLVMBuildStructGEP(cb->builder, ctx, 1, "");
+    LLVMBuildStore(cb->builder, LLVMBlockAddress(cb->currentFunction, nblock), blockPos);
+
+    LLVMBuildRet(cb->builder, LLVMConstInt(LLVMInt1Type(), 1, 0));
+
+    LLVMPositionBuilderAtEnd(cb->builder, nblock);
 }
 
 void ac_compile_loop(AST *ast, CompilerBundle *cb)

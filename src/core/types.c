@@ -150,6 +150,7 @@ LLVMTypeRef ett_closure_type(EagleTypeType *type)
     return out;
 }
 
+static LLVMTypeRef generator_type = NULL;
 LLVMTypeRef ett_llvm_type(EagleTypeType *type)
 {
     switch(type->type)
@@ -169,9 +170,21 @@ LLVMTypeRef ett_llvm_type(EagleTypeType *type)
             return LLVMInt32Type();
         case ETInt64:
             return LLVMInt64Type();
-        case ETGenerator:
         case ETCString:
             return LLVMPointerType(LLVMInt8Type(), 0);
+        case ETGenerator:
+        {
+            if(generator_type) 
+                return generator_type;
+
+            LLVMTypeRef ptmp[2];
+            ptmp[0] = LLVMPointerType(LLVMInt8Type(), 0);
+            ptmp[1] = LLVMPointerType(LLVMInt8Type(), 0);
+
+            generator_type = LLVMStructCreateNamed(LLVMGetGlobalContext(), "__egl_gen_strct");
+            LLVMStructSetBody(generator_type, ptmp, 2, 0);
+            return generator_type;
+        }
         case ETClass:
         case ETStruct:
         {
