@@ -16,4 +16,9 @@ func main()
     puts i
     __gen_test_code(byte*@(unwrap t), &i)
     puts i
+
+    for int i in test()
+    {
+    
+    }
 }

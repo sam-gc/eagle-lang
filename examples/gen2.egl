@@ -1,0 +1,77 @@
+gen test(int start) : int
+{
+    int i = start
+    yield i
+    yield i + 1
+    yield i + 2
+}
+
+gen range(int max) : int
+{
+    for int i = 0; i < max; i += 1 {
+        yield i
+    }
+}
+
+gen mem() : int
+{
+    var i = new int
+    i^ = 45
+    yield i^
+    i^ = 46
+    yield i^
+}
+
+gen memlots(int max) : int^
+{
+    for var i = new int(0); i^ < max; i = new int(i^ + 1) {
+        yield i
+    }
+}
+
+func main()
+{
+    var t = test(11)
+
+    int i
+    t(&i)
+    puts i
+    t(&i)
+    puts i
+    t(&i)
+    puts i
+
+    t = range(45)
+
+    t(&i)
+    puts i
+    t(&i)
+    puts i
+    t(&i)
+    puts i
+    t(&i)
+    puts i
+
+    t = mem()
+    t(&i)
+    puts i
+    t(&i)
+    puts i
+    t(&i)
+
+    puts '--------------------------------'
+    var u = memlots(100)
+
+    int^ j
+    u(&j)
+    puts j^
+    u(&j)
+    puts j^
+    u(&j)
+    puts j^
+    u(&j)
+    puts j^
+
+    u = memlots(5)
+}
+

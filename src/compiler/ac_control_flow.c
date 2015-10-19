@@ -89,6 +89,11 @@ void ac_compile_yield(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
     if(!ett_are_same(t, o))
         val = ac_build_conversion(cb->builder, val, t, o);
 
+    if(ET_IS_COUNTED(o))
+    {
+        ac_incr_val_pointer(cb, &val, o);
+    }
+
     LLVMValueRef ctx = LLVMBuildBitCast(cb->builder, LLVMGetParam(cb->currentFunction, 0), 
         LLVMPointerType(ett_llvm_type((EagleTypeType *)cb->currentGenType), 0), "");
 

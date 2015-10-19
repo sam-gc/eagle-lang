@@ -777,11 +777,54 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
     return NULL;
 }
 
+LLVMValueRef ac_compile_generator_call(AST *ast, LLVMValueRef gen, CompilerBundle *cb)
+{
+    ASTFuncCall *a = (ASTFuncCall *)ast;
+    gen = LLVMBuildStructGEP(cb->builder, gen, 5, ""); // Unwrap since it's counted
+    LLVMValueRef clo = LLVMBuildStructGEP(cb->builder, gen, 0, "");
+    LLVMValueRef func = LLVMBuildLoad(cb->builder, clo, "");
+
+    EagleGenType *ett = (EagleGenType *)((EaglePointerType *)a->callee->resultantType)->to;
+    EagleTypeType *ypt = ett_pointer_type(ett->ytype);
+
+    LLVMTypeRef callee_types[] = {LLVMPointerType(LLVMInt8Type(), 0), ett_llvm_type(ypt)};
+    func = LLVMBuildBitCast(cb->builder, func, LLVMPointerType(LLVMFunctionType(LLVMInt1Type(), callee_types, 2, 0), 0), "");
+
+    AST *p = a->params;
+
+    LLVMValueRef val = ac_dispatch_expression(p, cb);
+    EagleTypeType *rt = p->resultantType;
+
+    LLVMValueRef args[2];
+    if(!ett_are_same(rt, ett_pointer_type(ett->ytype)))
+        val = ac_build_conversion(cb->builder, val, rt, ett_pointer_type(ett->ytype));
+
+    EaglePointerType *pt = (EaglePointerType *)rt;
+    if(ET_IS_COUNTED(pt->to))
+    {
+        ac_decr_pointer(cb, &val, NULL);
+    }
+
+    args[0] = LLVMBuildBitCast(cb->builder, gen, LLVMPointerType(LLVMInt8Type(), 0), "");
+    args[1] = val;
+
+    LLVMValueRef out = LLVMBuildCall(cb->builder, func, args, 2, "callout");
+    a->resultantType = ett_base_type(ETInt1);
+
+    return out;
+}
+
 LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
 {
     ASTFuncCall *a = (ASTFuncCall *)ast;
 
     LLVMValueRef func = ac_dispatch_expression(a->callee, cb);
+
+    if(a->callee->resultantType->type == ETPointer)
+    {
+        if(((EaglePointerType *)a->callee->resultantType)->to->type == ETGenerator)
+            return ac_compile_generator_call(ast, func, cb);
+    }
 
     LLVMValueRef instanceOfClass = NULL;
     if(a->callee->type == ASTRUCTMEMBER)
