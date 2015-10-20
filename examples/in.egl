@@ -1,0 +1,42 @@
+gen range(int max, int step) : int
+{
+    for int i = 0; i < max; i += step
+    {
+        yield i
+    }
+}
+
+gen fibonacci(int n) : long
+{
+    long a = 1;
+    long b = 1;
+
+    for int i = 0; i < n; i += 1
+    {
+        long c = a;
+        long t = b;
+        b += a;
+        a = t
+
+        yield c
+    }
+}
+
+func main()
+{
+    for int i in range(10, 2)
+    {
+        puts i
+    }
+
+    puts '-----------------------------'
+
+    var fib = fibonacci(50)
+
+    for long i in fib
+    {
+        puts i
+    }
+
+}
+

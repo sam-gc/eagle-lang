@@ -58,9 +58,13 @@ void ac_unwrap_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty,
 void ac_incr_val_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty)
 {
     LLVMBuilderRef builder = cb->builder;
-    EaglePointerType *pt = (EaglePointerType *)ty;
-    if(!pt->counted)
-        return;
+
+    if(ty)
+    {
+        EaglePointerType *pt = (EaglePointerType *)ty;
+        if(!pt->counted)
+            return;
+    }
 
     LLVMValueRef tptr = *ptr;
     tptr = LLVMBuildBitCast(builder, tptr, LLVMPointerType(LLVMInt64Type(), 0), "cast");
@@ -72,9 +76,13 @@ void ac_incr_val_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *t
 void ac_incr_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty)
 {
     LLVMBuilderRef builder = cb->builder;
-    EaglePointerType *pt = (EaglePointerType *)ty;
-    if(!pt->counted)
-        return;
+
+    if(ty)
+    {
+        EaglePointerType *pt = (EaglePointerType *)ty;
+        if(!pt->counted)
+            return;
+    }
 
     LLVMValueRef tptr = LLVMBuildLoad(builder, *ptr, "tptr");
     tptr = LLVMBuildBitCast(builder, tptr, LLVMPointerType(LLVMInt64Type(), 0), "cast");

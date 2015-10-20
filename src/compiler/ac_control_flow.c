@@ -122,14 +122,64 @@ void ac_compile_loop(AST *ast, CompilerBundle *cb)
     cb->currentLoopEntry = incrBB;
     cb->currentLoopExit = cleanupBB;
 
+    // Stuff for iteration
+    int rangeBased = a->setup && a->test && !a->update;
+    LLVMValueRef gen, rawGen;
+    gen = rawGen = NULL;
+    LLVMValueRef iterator = NULL;
+    EagleTypeType *ypt = NULL;
+
     vs_push(cb->varScope);
     if(a->setup)
-        ac_dispatch_expression(a->setup, cb);
+    {
+        iterator = ac_dispatch_expression(a->setup, cb);
+        if(rangeBased)
+        {
+            gen = rawGen = ac_dispatch_expression(a->test, cb);
+            if(!hst_remove_key(&cb->loadedTransients, a->test, ahhd, ahed))
+                rawGen = NULL;
+
+            if(a->test->resultantType->type != ETPointer ||
+                ((EaglePointerType *)a->test->resultantType)->to->type != ETGenerator)
+                die(ALN, "Range-based for-loops only work with generators.");
+            EagleGenType *gt = (EagleGenType *)((EaglePointerType *)a->test->resultantType)->to;
+            if(!ett_are_same(gt->ytype, a->setup->resultantType))
+                die(ALN, "Generator type and iterator do not match.");
+            ypt = ett_pointer_type(gt->ytype);
+        }
+    }
+
     vs_push(cb->varScope);
     LLVMBuildBr(cb->builder, testBB);
     LLVMPositionBuilderAtEnd(cb->builder, testBB);
-    LLVMValueRef val = ac_dispatch_expression(a->test, cb);
-    LLVMValueRef cmp = ac_compile_test(a->test, val, cb);
+
+    AST *tmpr;
+
+    LLVMValueRef val = NULL;
+    if(rangeBased)
+    {
+        gen = LLVMBuildStructGEP(cb->builder, gen, 5, ""); // Unwrap since it's counted
+        LLVMValueRef clo = LLVMBuildStructGEP(cb->builder, gen, 0, "");
+        LLVMValueRef func = LLVMBuildLoad(cb->builder, clo, "");
+
+        LLVMTypeRef callee_types[] = {LLVMPointerType(LLVMInt8Type(), 0), ett_llvm_type(ypt)};
+        func = LLVMBuildBitCast(cb->builder, func, LLVMPointerType(LLVMFunctionType(LLVMInt1Type(), callee_types, 2, 0), 0), "");
+
+        LLVMValueRef args[2];
+        args[0] = LLVMBuildBitCast(cb->builder, gen, LLVMPointerType(LLVMInt8Type(), 0), "");
+        args[1] = iterator;
+
+        val = LLVMBuildCall(cb->builder, func, args, 2, "iterout");
+
+        tmpr = ast_make();
+        tmpr->resultantType = ett_base_type(ETInt1);
+    }
+    else
+    {
+        val = ac_dispatch_expression(a->test, cb);
+        tmpr = a->test;
+    }
+    LLVMValueRef cmp = ac_compile_test(tmpr, val, cb);
 
     LLVMBuildCondBr(cb->builder, cmp, loopBB, mergeBB);
     LLVMPositionBuilderAtEnd(cb->builder, loopBB);
@@ -158,6 +208,8 @@ void ac_compile_loop(AST *ast, CompilerBundle *cb)
 
     LLVMPositionBuilderAtEnd(cb->builder, mergeBB);
     vs_run_callbacks_through(cb->varScope, cb->varScope->scope);
+    if(rangeBased && rawGen)
+        ac_decr_val_pointer(cb, &rawGen, a->test->resultantType);
     vs_pop(cb->varScope);
 
     cb->currentLoopEntry = oldStart;

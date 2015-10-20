@@ -21,7 +21,7 @@
 %token <token> TPLUS TMINUS TEQUALS TMUL TDIV TGT TLT TEQ TNE TGTE TLTE TNOT TPOW TLOGAND TLOGOR
 %token <token> TPLUSE TMINUSE TMULE TDIVE
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TLBRACKET TRBRACKET
-%token <token> TFUNC TRETURN TYIELD TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF TFOR TWEAK TUNWRAP
+%token <token> TFUNC TRETURN TYIELD TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF TFOR TIN TWEAK TUNWRAP
 %token <token> TBREAK TCONTINUE TVAR TGEN  TELLIPSES
 %token <token> TCOLON TSEMI TNEWLINE TCOMMA TDOT TAMP TAT TARROW
 %token <token> TYES TNO TNIL
@@ -150,6 +150,7 @@ statement           : expr TSEMI { $$ = $1; }
 
 forstatement        : TFOR expr block { $$ = ast_make_loop(NULL, $2, NULL, $3); }
                     | TFOR expr TSEMI expr TSEMI expr block { $$ = ast_make_loop($2, $4, $6, $7); }
+                    | TFOR expr TIN expr block { $$ = ast_make_loop($2, $4, NULL, $5); }
                     ;
 
 singif              : TIF expr TSEMI statement { $$ = ast_make_if($2, $4); }

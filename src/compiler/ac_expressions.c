@@ -795,10 +795,10 @@ LLVMValueRef ac_compile_generator_call(AST *ast, LLVMValueRef gen, CompilerBundl
     LLVMValueRef val = ac_dispatch_expression(p, cb);
     EagleTypeType *rt = p->resultantType;
 
-    LLVMValueRef args[2];
     if(!ett_are_same(rt, ett_pointer_type(ett->ytype)))
         val = ac_build_conversion(cb->builder, val, rt, ett_pointer_type(ett->ytype));
 
+    LLVMValueRef args[2];
     EaglePointerType *pt = (EaglePointerType *)rt;
     if(ET_IS_COUNTED(pt->to))
     {
@@ -810,6 +810,8 @@ LLVMValueRef ac_compile_generator_call(AST *ast, LLVMValueRef gen, CompilerBundl
 
     LLVMValueRef out = LLVMBuildCall(cb->builder, func, args, 2, "callout");
     a->resultantType = ett_base_type(ETInt1);
+
+    // hst_put(&cb->loadedTransients, ast, out, ahhd, ahed);
 
     return out;
 }
