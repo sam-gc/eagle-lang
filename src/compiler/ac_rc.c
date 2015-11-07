@@ -148,6 +148,23 @@ void ac_decr_val_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *t
     LLVMBuildCall(builder, func, &tptr, 1, ""); 
 }
 
+void ac_decr_val_pointer_no_free(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty)
+{
+    LLVMBuilderRef builder = cb->builder;
+    EaglePointerType *pt = (EaglePointerType *)ty;
+    if(pt)
+    {
+        if(!pt->counted)
+            return;
+    }
+
+    LLVMValueRef tptr = *ptr;
+    tptr = LLVMBuildBitCast(builder, tptr, LLVMPointerType(LLVMInt64Type(), 0), "cast");
+    
+    LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_decr_no_free");
+    LLVMBuildCall(builder, func, &tptr, 1, ""); 
+}
+
 void ac_nil_fill_array(CompilerBundle *cb, LLVMValueRef arr, int ct)
 {
     LLVMBuilderRef builder = cb->builder;

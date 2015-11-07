@@ -186,6 +186,21 @@ AST *ast_set_vararg(AST *ast)
     return ast;
 }
 
+AST *ast_make_init_decl(char *ident, AST *body, AST *params)
+{
+    if(strcmp(ident, "init"))
+        die(yylineno, "Unexpected identifier: %s", ident);
+    ASTFuncDecl *ast = ast_malloc(sizeof(ASTFuncDecl));
+    ast->type = AFUNCDECL;
+    ast->retType = ast_make_type((char *)"void");
+    ast->body = body;
+    ast->ident = ident;
+    ast->params = params;
+    ast->vararg = 0;
+
+    return (AST *)ast;
+}
+
 AST *ast_make_func_decl(AST *type, char *ident, AST *body, AST *params)
 {
     ASTFuncDecl *ast = ast_malloc(sizeof(ASTFuncDecl));
@@ -281,12 +296,41 @@ AST *ast_make_class_decl()
     ast->names = arr_create(10);
     ast->types = arr_create(10);
     ast->methods = hst_create();
+    ast->initdecl = NULL;
 
     pool_add(&ast_lst_mempool, &ast->names);
     pool_add(&ast_lst_mempool, &ast->types);
     pool_add(&ast_hst_mempool, &ast->methods);
 
     return (AST *)ast;
+}
+
+AST *ast_class_set_init(AST *ast, AST *init)
+{
+    ASTClassDecl *cls = (ASTClassDecl *)ast;
+    cls->initdecl = init;
+
+    ASTFuncDecl *f = (ASTFuncDecl *)init;
+
+    AST *impl = ast_make_var_decl(ast_make_pointer(ast_make_type((char *)"any")), (char *)"self");
+    impl->next = f->params;
+    f->params = impl;
+
+    arraylist list = arr_create(10);
+    ASTVarDecl *vd = (ASTVarDecl *)f->params;
+    for(; vd; vd = (ASTVarDecl *)vd->next)
+    {
+        ASTTypeDecl *t = (ASTTypeDecl *)vd->atype;
+        arr_append(&list, t->etype);
+    }
+
+    EagleTypeType *ttype = ett_function_type(((ASTTypeDecl *)f->retType)->etype, (EagleTypeType **)list.items, list.count);
+    ((EagleFunctionType *)ttype)->closure = 0;
+    arr_free(&list);
+
+    cls->inittype = ttype;
+
+    return ast;
 }
 
 AST *ast_class_var_add(AST *ast, AST *var)

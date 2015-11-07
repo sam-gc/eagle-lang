@@ -123,6 +123,8 @@ int ty_is_class(char *name);
 void ty_teardown();
 
 void ty_register_class(char *name);
+void ty_add_init(char *name, EagleTypeType *ty);
+EagleTypeType *ty_get_init(char *name);
 void ty_add_method(char *name, char *method, EagleTypeType *ty);
 EagleTypeType *ty_method_lookup(char *name, char *method);
 void ty_add_struct_def(char *name, arraylist *names, arraylist *types);

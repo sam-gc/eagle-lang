@@ -14,6 +14,9 @@ void die(int lineno, const char *fmt, ...)
     va_start(args, fmt); vfprintf(stderr, format, args); fprintf(stderr, "\t-> Line %d\n", lineno);
     va_end(args);
 
+    int *i = NULL;
+    *i = 5;
+
     exit(0);
 }
 
@@ -81,6 +84,7 @@ void ac_prepare_module(LLVMModuleRef module)
     LLVMTypeRef func_type_rc = LLVMFunctionType(LLVMVoidType(), param_types_rc, 1, 0);
     LLVMAddFunction(module, "__egl_incr_ptr", func_type_rc);
     LLVMAddFunction(module, "__egl_decr_ptr", func_type_rc);
+    LLVMAddFunction(module, "__egl_decr_no_free", func_type_rc);
     LLVMAddFunction(module, "__egl_check_ptr", func_type_rc);
     LLVMAddFunction(module, "__egl_prepare", func_type_rc);
 

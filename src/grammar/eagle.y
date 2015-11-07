@@ -28,7 +28,7 @@
 %type <node> program declarations declaration statements statement block funcdecl ifstatement
 %type <node> variabledecl vardecllist funccall calllist funcident funcsident externdecl typelist type
 %type <node> elifstatement elifblock elsestatement singif structdecl structlist blockalt classlist classdecl
-%type <node> expr singexpr binexpr unexpr ounexpr forstatement clodecl genident gendecl
+%type <node> expr singexpr binexpr unexpr ounexpr forstatement clodecl genident gendecl initdecl
 
 %nonassoc TNEW;
 %nonassoc TCOUNTED TWEAK TUNWRAP TTOUCH;
@@ -91,8 +91,14 @@ classdecl           : TCLASS TTYPE TLBRACE classlist TRBRACE { $$ = $4; ast_clas
 
 classlist           : classlist variabledecl TSEMI { $$ = $1; ast_class_var_add($$, $2); }
                     | classlist funcdecl { $$ = $1; ast_class_method_add($$, $2); }
+                    | classlist initdecl { $$ = $1; ast_class_set_init($$, $2); }
                     | variabledecl TSEMI { $$ = ast_make_class_decl(); ast_class_var_add($$, $1); }
                     | funcdecl { $$ = ast_make_class_decl(); ast_class_method_add($$, $1); }
+                    | initdecl { $$ = ast_make_class_decl(); ast_class_set_init($$, $1); }
+                    ;
+
+initdecl            : TIDENTIFIER TLPAREN TRPAREN block { $$ = ast_make_init_decl($1, $4, NULL); }
+                    | TIDENTIFIER TLPAREN vardecllist TRPAREN block { $$ = ast_make_init_decl($1, $5, $3); }
                     ;
 
 funcdecl            : funcident block { ((ASTFuncDecl *)$1)->body = $2; $$ = $1; };
@@ -186,7 +192,7 @@ expr                : binexpr { $$ = $1; }
                     | TVAR TIDENTIFIER { $$ = ast_make_auto_decl($2); }
                     | type TAT ounexpr { $$ = ast_make_cast($1, $3); }
                     | TNEW type { $$ = ast_make_allocater('n', $2, NULL); }
-                    | TNEW type TLPAREN expr TRPAREN { $$ = ast_make_allocater('n', $2, $4); }
+                    | TNEW type TLPAREN calllist TRPAREN { $$ = ast_make_allocater('n', $2, $4); }
                     ;
 
 binexpr             : expr TPLUS expr { $$ = ast_make_binary($1, $3, '+'); }

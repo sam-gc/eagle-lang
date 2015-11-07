@@ -1,0 +1,25 @@
+extern func printf(byte*...) : int
+
+class Greeter
+{
+    byte* name
+    int num
+
+    init(byte* name, int num)
+    {
+        self->name = name
+        self->num = num
+    }
+
+    func greet()
+    {
+        printf('Hello, %s\nYour number is %d\n', self->name, self->num)
+    }
+}
+
+func main() : int
+{
+    var g = new Greeter('Sam', 20)
+    g->greet()
+    return 0
+}

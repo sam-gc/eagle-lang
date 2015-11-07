@@ -27,6 +27,11 @@ func __egl_prepare(__egl_ptr* ptr) : void
     ptr->teardown = nil
 }
 
+func __egl_decr_no_free(__egl_ptr* ptr) : void
+{
+    ptr->memcount -= 1;
+}
+
 func __egl_incr_ptr(__egl_ptr* ptr) : void
 {
     if ptr

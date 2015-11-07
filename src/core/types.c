@@ -33,6 +33,7 @@ static hashtable types_table;
 static hashtable counted_table;
 static hashtable method_table;
 static hashtable type_named_table;
+static hashtable init_table;
 
 void list_mempool_free(void *datum)
 {
@@ -57,6 +58,9 @@ void ty_prepare()
     method_table = hst_create();
     method_table.duplicate_keys = 1;
 
+    init_table = hst_create();
+    init_table.duplicate_keys = 1;
+
     type_named_table = hst_create();
     type_named_table.duplicate_keys = 1;
 
@@ -78,6 +82,7 @@ void ty_teardown()
 
     hst_for_each(&method_table, ty_method_free, NULL);
     hst_free(&method_table);
+    hst_free(&init_table);
 
     hst_free(&type_named_table);
 
@@ -132,11 +137,7 @@ LLVMTypeRef et_llvm_type(EagleType type)
 }
 */
 
-LLVMTypeRef ett_closure_type(EagleTypeType *type)
-{
-    if(!ET_IS_CLOSURE(type))
-        return NULL;
-
+LLVMTypeRef ett_closure_type(EagleTypeType *type) { if(!ET_IS_CLOSURE(type)) return NULL; 
     EagleFunctionType *ft = (EagleFunctionType *)type;
 
     LLVMTypeRef *tys = malloc(sizeof(LLVMTypeRef) * (ft->pct + 1));
@@ -564,6 +565,16 @@ void ty_register_class(char *name)
     *lst = hst_create();
     lst->duplicate_keys = 1;
     hst_put(&method_table, name, lst, NULL, NULL);
+}
+
+void ty_add_init(char *name, EagleTypeType *ty)
+{
+    hst_put(&init_table, name, ty, NULL, NULL);
+}
+
+EagleTypeType *ty_get_init(char *name)
+{
+    return hst_get(&init_table, name, NULL, NULL);
 }
 
 void ty_add_method(char *name, char *method, EagleTypeType *ty)

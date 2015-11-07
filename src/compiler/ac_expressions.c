@@ -256,13 +256,53 @@ LLVMValueRef ac_compile_new_decl(AST *ast, CompilerBundle *cb)
     LLVMValueRef val = ac_compile_malloc_counted(type->etype, &ast->resultantType, NULL, cb);
     hst_put(&cb->transients, ast, val, ahhd, ahed);
 
-    if(a->right)
+    EagleTypeType *to = ((EaglePointerType *)ast->resultantType)->to;
+    if(a->right && to->type != ETStruct && to->type != ETClass)
     {
         LLVMValueRef init = ac_dispatch_expression(a->right, cb);
         if(!ett_are_same(a->right->resultantType, type->etype))
             init = ac_build_conversion(cb->builder, init, a->right->resultantType, type->etype);
         LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, val, 5, "");
         LLVMBuildStore(cb->builder, init, pos);
+    }
+    else if(a->right && to->type == ETClass)
+    {
+        // We have an init function defined...
+
+        EagleStructType *st = (EagleStructType *)to;
+        char *method_name = ac_gen_method_name(st->name, (char *)"__init__");
+        LLVMValueRef func = LLVMGetNamedFunction(cb->module, method_name);
+        free(method_name);
+
+        EagleFunctionType *ett = (EagleFunctionType *)ty_get_init(st->name);
+
+        AST *p;
+        int i;
+        for(p = a->right, i = 1; p; p = p->next, i++);
+        int ct = i;
+
+        LLVMValueRef args[ct];
+        for(p = a->right, i = 1; p; p = p->next, i++)
+        {
+            LLVMValueRef val = ac_dispatch_expression(p, cb);
+            EagleTypeType *rt = p->resultantType;
+
+            if(i < ett->pct)
+            {
+                if(!ett_are_same(rt, ett->params[i]))
+                    val = ac_build_conversion(cb->builder, val, rt, ett->params[i]);
+            }
+
+            hst_remove_key(&cb->transients, p, ahhd, ahed);
+            // hst_remove_key(&cb->loadedTransients, p, ahhd, ahed);
+            args[i] = val;
+        }
+
+        args[0] = val;//LLVMBuildBitCast(cb->builder, , LLVMPointerType(LLVMInt8Type(), 0), "");
+
+        ac_incr_val_pointer(cb, &val, NULL);
+        LLVMBuildCall(cb->builder, func, args, ct, "");
+        ac_decr_val_pointer_no_free(cb, &val, NULL);
     }
 
     return val;
