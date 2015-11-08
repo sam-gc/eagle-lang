@@ -265,7 +265,7 @@ LLVMValueRef ac_compile_new_decl(AST *ast, CompilerBundle *cb)
         LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, val, 5, "");
         LLVMBuildStore(cb->builder, init, pos);
     }
-    else if(a->right && to->type == ETClass)
+    else if(to->type == ETClass && ty_get_init(((EagleStructType *)to)->name))
     {
         // We have an init function defined...
 

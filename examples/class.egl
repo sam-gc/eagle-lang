@@ -29,7 +29,7 @@ func main()
 {
     int j = 5
 
-    var i = new TestClass
+    var i = new TestClass()
     weak TestClass^ p = i
     i->setSecond(11)
     i->test(5)

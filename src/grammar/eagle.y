@@ -193,6 +193,7 @@ expr                : binexpr { $$ = $1; }
                     | type TAT ounexpr { $$ = ast_make_cast($1, $3); }
                     | TNEW type { $$ = ast_make_allocater('n', $2, NULL); }
                     | TNEW type TLPAREN calllist TRPAREN { $$ = ast_make_allocater('n', $2, $4); }
+                    | TNEW type TLPAREN TRPAREN { $$ = ast_make_allocater('n', $2, (void *)1); }
                     ;
 
 binexpr             : expr TPLUS expr { $$ = ast_make_binary($1, $3, '+'); }

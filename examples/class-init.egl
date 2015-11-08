@@ -17,9 +17,28 @@ class Greeter
     }
 }
 
+class BasicGreeter
+{
+    byte* name
+    
+    init()
+    {
+        self->name = 'World'
+    }
+
+    func greet()
+    {
+        printf('Hello, %s!\n', self->name)
+    }
+}
+
 func main() : int
 {
     var g = new Greeter('Sam', 20)
     g->greet()
+
+    var e = new BasicGreeter()
+    e->greet()
+
     return 0
 }

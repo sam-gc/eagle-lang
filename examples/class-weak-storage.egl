@@ -40,7 +40,7 @@ func main(int argc, byte** argv) : int
         return 0
     }
 
-    var t = new Test
+    var t = new Test()
 
     if strequ(argv[1], 'strong')
         t->init()

@@ -14,9 +14,6 @@ void die(int lineno, const char *fmt, ...)
     va_start(args, fmt); vfprintf(stderr, format, args); fprintf(stderr, "\t-> Line %d\n", lineno);
     va_end(args);
 
-    int *i = NULL;
-    *i = 5;
-
     exit(0);
 }
 

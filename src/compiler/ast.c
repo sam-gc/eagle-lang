@@ -110,6 +110,14 @@ AST *ast_make_unary(AST *val, char op)
 
 AST *ast_make_allocater(char op, AST *val, AST *init)
 {
+    ASTTypeDecl *at = (ASTTypeDecl *)val;
+    if(at->etype->type == ETClass)
+    {
+        if(!init)
+            die(yylineno, "Missing parentheses after new declaration.");
+        if((uintptr_t)init == 1)
+            init = NULL; // We just use 1 to indicate that there is indeed parentheses, for consistency.
+    }
     AST *ast = ast_make_binary(val, init, op);
     ast->type = AALLOC;
     return ast;

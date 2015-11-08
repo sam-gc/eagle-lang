@@ -86,7 +86,7 @@ class LinkedList
 
 func main()
 {
-    var ll = new LinkedList
+    var ll = new LinkedList()
     ll->append(11)
     ll->append(22)
     ll->append(33)
@@ -94,7 +94,7 @@ func main()
     ll->append(44)
     ll->append(55)
 
-    var mm = new LinkedList
+    var mm = new LinkedList()
     mm->append(32)
 
     var printer = func(int num) : void { puts num; }
