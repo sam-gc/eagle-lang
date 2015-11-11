@@ -10,17 +10,17 @@ struct Blah {
     int^ blob
 }
 
-func alskdfj(Test *t) : void {
+func alskdfj(Test *t) {
     t->i = new int
     t->i^ = 42
 }
 
-func mallocPassTest(Test^ i) : void {
+func mallocPassTest(Test^ i) {
     i->i = new int
     i->i^ = 45
 }
 
-func mallocTest() : void {
+func mallocTest() {
     Test^ t = new Test
     t->i = new int
     t->i^ = 66
@@ -35,7 +35,7 @@ func mallocTest() : void {
     puts w
 }
 
-func main() : void {
+func main() {
     Test t
 
     t.i = new int

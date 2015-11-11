@@ -1,4 +1,4 @@
-func test(weak int^ a, int^* b) : void
+func test(weak int^ a, int^* b)
 {
     puts a
     b^ = nil

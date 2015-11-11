@@ -45,7 +45,7 @@ class LinkedList
         }
     }
 
-    func forEach((int:void)^ callback)
+    func forEach((int:)^ callback)
     {
         if !callback
             return
@@ -97,11 +97,11 @@ func main()
     var mm = new LinkedList()
     mm->append(32)
 
-    var printer = func(int num) : void { puts num; }
+    var printer = func(int num) { puts num; }
 
     ll->forEach(printer)
 
-    mm->forEach(func(int num) : void {
+    mm->forEach(func(int num) {
         puts num * 2
     })
 

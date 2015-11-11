@@ -9,7 +9,7 @@ func main() : int
     return 0;
 }
 
-func printer(double e) : void
+func printer(double e)
 {
     puts e + 2;
 }

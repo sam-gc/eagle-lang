@@ -13,7 +13,7 @@ func makeNode(int payload) : Node^
     return n
 }
 
-func appendNode(Node^ head, int value) : void
+func appendNode(Node^ head, int value)
 {
     for head; head->next; head = head->next
     {
@@ -24,7 +24,7 @@ func appendNode(Node^ head, int value) : void
     head->next->prev = head
 }
 
-func removeNode(Node^ head, int idx) : void
+func removeNode(Node^ head, int idx)
 {
     for int i = 0; i < idx; i = i + 1 {
         head = head->next
@@ -36,7 +36,7 @@ func removeNode(Node^ head, int idx) : void
     prev->next = nx
 }
 
-func printList(Node^ head) : void
+func printList(Node^ head)
 {
     for head; head; head = head->next
     {
@@ -44,7 +44,7 @@ func printList(Node^ head) : void
     }
 }
 
-func listForEach(Node^ head, (int : void)^ callback) : void
+func listForEach(Node^ head, (int :)^ callback)
 {
     for head; head; head = head->next
     {
@@ -65,7 +65,7 @@ func main() : int
     printList(head)
 
     int scalar = 2
-    listForEach(head, func(int payload) : void {
+    listForEach(head, func(int payload) {
         puts payload * scalar
     })
 

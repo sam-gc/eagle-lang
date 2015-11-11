@@ -1,6 +1,6 @@
 extern func malloc(long) : any *
 
-func test(any *i) : void
+func test(any *i)
 {
     int *t = i
     puts t^

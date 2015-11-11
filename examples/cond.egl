@@ -1,4 +1,4 @@
-func foo() : void {
+func foo() {
     int i = 1
     int j = 0
     if i 

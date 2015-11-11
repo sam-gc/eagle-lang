@@ -72,9 +72,13 @@ type                : TTYPE { $$ = ast_make_type($1); }
                     | type TPOW { $$ = ast_make_counted(ast_make_pointer($1)); }
                     | TLPAREN typelist TCOLON type TRPAREN { $$ = ast_make_closure_type($2, $4); }
                     | TLPAREN TCOLON type TRPAREN { $$ = ast_make_closure_type(NULL, $3); }
+                    | TLPAREN TCOLON TRPAREN { $$ = ast_make_closure_type(NULL, ast_make_type((char *)"void")); }
+                    | TLPAREN typelist TCOLON TRPAREN { $$ = ast_make_closure_type($2, ast_make_type((char *)"void")); }
                     | TLPAREN TGEN TCOLON type TRPAREN { }
                     | TLBRACKET typelist TCOLON type TRBRACKET { $$ = ast_make_function_type($2, $4); }
                     | TLBRACKET TCOLON type TRBRACKET { $$ = ast_make_function_type(NULL, $3); }
+                    | TLBRACKET typelist TCOLON TRBRACKET { $$ = ast_make_function_type($2, ast_make_type((char *)"void")); }
+                    | TLBRACKET TCOLON TRBRACKET { $$ = ast_make_function_type(NULL, ast_make_type((char *)"void")); }
                     ;
 
 structdecl          : TSTRUCT TTYPE TLBRACE structlist TRBRACE { $$ = $4; ast_struct_name($$, $2); }
@@ -120,6 +124,8 @@ genident            : TGEN TIDENTIFIER TLPAREN TRPAREN TCOLON type { $$ = ast_ma
 
 clodecl             : TFUNC TLPAREN TRPAREN TCOLON type blockalt { $$ = ast_make_func_decl($5, NULL, $6, NULL); }
                     | TFUNC TLPAREN vardecllist TRPAREN TCOLON type blockalt { $$ = ast_make_func_decl($6, NULL, $7, $3); }
+                    | TFUNC TLPAREN TRPAREN blockalt { $$ = ast_make_func_decl(ast_make_type((char *)"void"), NULL, $4, NULL); }
+                    | TFUNC TLPAREN vardecllist TRPAREN blockalt { $$ = ast_make_func_decl(ast_make_type((char *)"void"), NULL, $5, $3); }
                     ;
 
 funcsident          : TFUNC TIDENTIFIER TLPAREN typelist TRPAREN TCOLON type { $$ = ast_make_func_decl($7, $2, NULL, $4); }

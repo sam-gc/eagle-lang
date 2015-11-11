@@ -1,10 +1,10 @@
-func test(int^ a) : void
+func test(int^ a)
 {
     a^ = 32
     puts a^
 }
 
-func creation(int ct) : void
+func creation(int ct)
 {
     if ct {
         int^ t = new int(ct)
@@ -25,7 +25,7 @@ func otest(int^ a) : int^
     return a
 }
 
-func ptest() : void
+func ptest()
 {
     int^ a = new int
     int^ b = otest(a)

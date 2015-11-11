@@ -1,4 +1,4 @@
-func sum(int a, int b) : void
+func sum(int a, int b)
 {
     puts a + b
 }
@@ -9,7 +9,7 @@ struct Test {
     int^ c
 }
 
-func strct() : void
+func strct()
 {
     Test t
     t.a = 50
@@ -20,7 +20,7 @@ func strct() : void
     puts t.a + t.b
 }
 
-func ptrtr() : void
+func ptrtr()
 {
     double^ d = new double
     d^ = 101

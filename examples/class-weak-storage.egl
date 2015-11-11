@@ -1,12 +1,13 @@
 extern func strcmp(byte*, byte*) : int
+extern func printf(byte* ...) : int
 
 class Test
 {
-    (:void)^ cap
+    (:)^ cap
 
     func init()
     {
-        self->cap = func() : void {
+        self->cap = func() {
             puts self
             puts self->cap
             puts self->init
@@ -16,7 +17,7 @@ class Test
     func safe_init()
     {
         weak Test^ safe_self = self
-        self->cap = func() : void {
+        self->cap = func() {
             puts safe_self
             puts safe_self->cap
             puts safe_self->init
@@ -35,8 +36,7 @@ func main(int argc, byte** argv) : int
 {
     if argc < 2
     {
-        puts 'Usage: ./program <strong/weak>'
-        puts '(best tested with Valgrind)'
+        printf('Usage: %s <strong/weak>\n(best tested with Valgrind)\n', argv[0])
         return 0
     }
 

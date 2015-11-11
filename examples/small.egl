@@ -1,4 +1,4 @@
-func test() : void {
+func test() {
     int^ i = new int
     weak int^ j = i
     weak int^ k = i
@@ -7,7 +7,7 @@ func test() : void {
     puts j^
 }
 
-func testtwo() : void {
+func testtwo() {
     weak int^ x
     puts x
     if yes {
@@ -21,12 +21,12 @@ func testtwo() : void {
     puts x
 }
 
-func testthree(int^* k) : void {
+func testthree(int^* k) {
     puts k^^
     k^ = nil
 }
 
-func main() : void {
+func main() {
     test()
     int^ i = new int
     weak int^ j = i

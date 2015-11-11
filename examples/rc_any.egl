@@ -5,7 +5,7 @@ func test() : any^
     return a
 }
 
-func main() : void
+func main()
 {
     int^ e = test()
 

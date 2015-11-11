@@ -1,4 +1,4 @@
-func callback((int : void)^ fct) : void
+func callback((int :)^ fct)
 {
     fct(11)
 }
@@ -17,17 +17,17 @@ func factory(int step) : (: int)^
 
 func main() : int
 {
-    func(int i) : void {
+    func(int i) {
         puts i + 1
     }(5)
 
     int j = 7
 
-    func() : void {
+    func() {
         puts j * 2
     }()
 
-    (int : void)^ test = func(int i) : void {
+    (int :)^ test = func(int i) {
         puts i + j
     }
 

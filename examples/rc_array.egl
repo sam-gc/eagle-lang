@@ -24,13 +24,13 @@ func main() : int {
     return 0
 }
 
-func ptr_test(int^* num) : void
+func ptr_test(int^* num)
 {
     num^ = new int
     num^^ = 101
 }
 
-func set_zeroes(int^* nums, int count) : void
+func set_zeroes(int^* nums, int count)
 {
     if count > 1 {
         nums[0] = new int
@@ -39,7 +39,7 @@ func set_zeroes(int^* nums, int count) : void
     }
 }
 
-func arr_test(int^[] nums) : void
+func arr_test(int^[] nums)
 {
     puts nums[0]^
     nums[1]  = new int

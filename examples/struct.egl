@@ -3,7 +3,8 @@ struct Test {
     int* y
 }
 
-func ptr() : void {
+func ptr()
+{
     Test t
     t.y = &t.x
     t.x = 93
@@ -11,7 +12,8 @@ func ptr() : void {
     puts t.y^
 }
 
-func init(Test *t) : void {
+func init(Test *t)
+{
     t->x = 44
     t^.y = &t->x
 }

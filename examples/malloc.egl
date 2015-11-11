@@ -1,5 +1,5 @@
 extern func malloc(long) : any *
-extern func free(any *) : void
+extern func free(any *)
 
 func main() : int
 {

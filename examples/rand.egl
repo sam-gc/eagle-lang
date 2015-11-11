@@ -1,5 +1,5 @@
 extern func rand() : int
-extern func srand(int) : void
+extern func srand(int)
 extern func time(any *) : int
 
 func main() : int
@@ -23,7 +23,7 @@ func main() : int
     return 0
 }
 
-func test() : void
+func test()
 {
     int i = 5
     int *k
