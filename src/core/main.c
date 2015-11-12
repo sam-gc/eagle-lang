@@ -3,6 +3,7 @@
 #include "compiler/ast.h"
 #include "grammar/eagle.tab.h"
 #include "utils.h"
+#include "shipping.h"
 
 extern char *yytext;
 
@@ -75,10 +76,10 @@ int main(int argc, const char *argv[])
 
     ty_teardown();
 
-    LLVMDumpModule(module);
-
-    LLVMInitializeNativeTarget();
-    LLVMInitializeNativeAsmPrinter();
+    shp_optimize(module);
+    // LLVMDumpModule(module);
+    shp_produce_assembly(module);
+    shp_produce_binary();
 
     LLVMDisposeModule(module);
 

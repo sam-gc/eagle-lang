@@ -5,5 +5,6 @@
 #include <llvm-c/Target.h>
 #include <llvm-c/Analysis.h>
 #include <llvm-c/BitWriter.h>
+#include <llvm-c/Transforms/PassManagerBuilder.h>
 
 #endif

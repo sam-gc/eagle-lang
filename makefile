@@ -12,7 +12,7 @@ CPP_OBJ_FILES=$(addprefix obj/cpp/,$(notdir $(CPP_SOURCES:.cpp=.o)))
 
 CFLAGS=-g -Isrc -std=c99 -O0 -Wall `llvm-config --cflags`
 CXXFLAGS=-g -Isrc -std=c++11 -O0 -Wall `llvm-config --cxxflags`
-LDFLAGS=`llvm-config --ldflags --system-libs --libs core support analysis native`
+LDFLAGS=`llvm-config --ldflags --system-libs --libs core support analysis native transformutils passes bitwriter asmprinter asmparser target all-targets`
 
 CC=gcc
 CXX=g++
@@ -61,26 +61,18 @@ obj/cpp/%.o: src/cpp/%.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 rc.o: rc.egl
-	./eagle rc.egl --compile-rc 2> out.ll
-	llc out.ll
-	$(CC) -c -g out.s -o rc.o
+	./eagle rc.egl --compile-rc
 #rc.o: rc.c
 #	$(CC) rc.c -c -o rc.o -g
 
-prog: out.ll rc.o
-	llc out.ll
-	$(CC) out.s rc.o -g
-
 %: examples/%.egl rc.o
-	./eagle $< 2>out.ll
-	llc out.ll
-	$(CC) out.s rc.o -g -o $@.e
+	./eagle $< 
+	mv a.out $@
 
 builtex/%.e: examples/%.egl
 	$(MKDIR) builtex/
-	./eagle $< 2> out.ll
-	llc out.ll
-	$(CC) out.s rc.o -g -o $@ -lm
+	./eagle $<
+	mv a.out $@
 
 all-examples: $(EXAMPLE_EXECUTABLES)
 
