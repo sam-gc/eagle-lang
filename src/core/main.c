@@ -55,8 +55,9 @@ int main(int argc, const char *argv[])
     if(argc > 2)
     {
         int i;
-        for(i = 2; i < argc; i++)
-            hst_put(&global_args, (char *)argv[i], (void *)1, NULL, NULL);
+        for(i = 2; i < argc - 1; i++)
+            hst_put(&global_args, (char *)argv[i], (void *)argv[i + 1], NULL, NULL);
+        hst_put(&global_args, (char *)argv[i], (void *)1, NULL, NULL);
     }
 
     yyin = fopen(argv[1], "r");
