@@ -27,11 +27,14 @@ At this point you will have a binary called `eagle` which will take as its sole 
 code file for which to generate LLVM IR.
 
 ### Running
-As of the current version, the compiler does not create machine code itself; it merely generates IR.
-To get a working program, you will need the linked functions in rc.egl/rc.c. To make a binary from
-the examples folder, simply type `make <name-of-file>`, omitting the `.egl` suffix. For example,
-you might run `make class-linked-list` which would generate a binary named `class-linked-list.e` in
-the current directory.
+The latest version of the compiler will create an executable file from one input file. When compiling,
+it implicitly links a file called `rc.o` that it expects in the running directory. To create `rc.o`,
+first run `./eagle rc.egl --compile-rc -o rc.o`. At this point you can compile any code files. Simply
+run `./eagle <name-of-file.egl> [-o <executable name>]`.
 
-Alternatively all the examples can be built using `make all-examples` and can be removed using
-`make clean-examples`.
+If you are using the makefile associated with the project, there is a shortcut. Any code file in the
+`examples` folder can be compiled using `make <name-of-file>` omitting the `.egl` suffix. This command
+will create `rc.o` if it doesn't already exist and will then procede to create an executable.
+Alternatively you can run `make all-examples` to compile every example in the examples folder. The
+resulting binaries will be put in a folder called `builtex`. All of the built examples can be removed
+using `make clean-examples`.
