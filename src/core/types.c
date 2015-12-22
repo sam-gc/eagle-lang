@@ -605,7 +605,18 @@ void ty_register_interface(char *name)
     hst_put(&interface_table, name, list, NULL, NULL);
 }
 
+int ty_interface_offset(char *name, char *method)
+{
+    arraylist *names = hst_get(&interface_table, name, NULL, NULL);
+    if(!names)
+        return -1;
 
+    int i;
+    for(i = 0; i < names->count; i++)
+        if(strcmp(names->items[i], method) == 0)
+            return i;
+    return -1;
+}
 
 void ty_add_init(char *name, EagleTypeType *ty)
 {
@@ -615,6 +626,13 @@ void ty_add_init(char *name, EagleTypeType *ty)
 EagleTypeType *ty_get_init(char *name)
 {
     return hst_get(&init_table, name, NULL, NULL);
+}
+
+void ty_add_interface_method(char *name, char *method, EagleTypeType *ty)
+{
+    arraylist *names = hst_get(&interface_table, name, NULL, NULL);
+    arr_append(names, method);
+    ty_add_method(name, method, ty);
 }
 
 void ty_add_method(char *name, char *method, EagleTypeType *ty)

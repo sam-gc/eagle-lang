@@ -1,0 +1,35 @@
+interface Animal
+{
+    func speak()
+}
+
+class Dog (Animal)
+{
+    func speak()
+    {
+        puts 'Bark!'
+    }
+}
+
+class Cat (Animal)
+{
+    func speak()
+    {
+        puts 'Meow...'
+    }
+}
+
+func poke(Animal^ a)
+{
+    a->speak()
+}
+
+func main()
+{
+    Animal^ dog = new Dog()
+    var cat = new Cat()
+
+    poke(dog)
+    poke(cat)
+}
+
