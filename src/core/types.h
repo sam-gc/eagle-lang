@@ -114,6 +114,8 @@ int ett_size_of_type(EagleTypeType *t);
 int ett_array_has_counted(EagleTypeType *t);
 int ett_array_count(EagleTypeType *t);
 
+LLVMTypeRef ty_class_indirect();
+
 void ett_debug_print(EagleTypeType *t);
 
 void ty_prepare();
@@ -122,6 +124,7 @@ int ty_is_name(char *name);
 int ty_is_class(char *name);
 void ty_teardown();
 
+void ty_register_interface(char *name);
 void ty_register_class(char *name);
 void ty_add_init(char *name, EagleTypeType *ty);
 EagleTypeType *ty_get_init(char *name);

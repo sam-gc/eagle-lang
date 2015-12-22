@@ -175,3 +175,4 @@ func __egl_lookup_method(__egl_class_indir* cls, byte* name, int index) : any*
 
     return cls->functions[index + offset]
 }
+

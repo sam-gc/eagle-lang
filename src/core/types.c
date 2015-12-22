@@ -34,6 +34,7 @@ static hashtable counted_table;
 static hashtable method_table;
 static hashtable type_named_table;
 static hashtable init_table;
+static hashtable interface_table;
 
 void list_mempool_free(void *datum)
 {
@@ -64,6 +65,9 @@ void ty_prepare()
     type_named_table = hst_create();
     type_named_table.duplicate_keys = 1;
 
+    interface_table = hst_create();
+    interface_table.duplicate_keys = 1;
+
     type_mempool = pool_create();
     list_mempool = pool_create();
     list_mempool.free_func = list_mempool_free;
@@ -83,6 +87,8 @@ void ty_teardown()
     hst_for_each(&method_table, ty_method_free, NULL);
     hst_free(&method_table);
     hst_free(&init_table);
+
+    hst_free(&interface_table);
 
     hst_free(&type_named_table);
 
@@ -457,6 +463,25 @@ int ett_size_of_type(EagleTypeType *t)
     return LLVMStoreSizeOfType(etTargetData, ett_llvm_type(t));
 }
 
+LLVMTypeRef ty_class_indirect()
+{
+    static LLVMTypeRef indirect_struct_type = NULL;
+    if(indirect_struct_type)
+        return indirect_struct_type;
+
+    indirect_struct_type = LLVMStructCreateNamed(LLVMGetGlobalContext(), "__egl_class_indirect");
+
+    LLVMTypeRef tys[] = {
+        LLVMInt32Type(),
+        LLVMPointerType(LLVMPointerType(LLVMInt8Type(), 0), 0),
+        LLVMPointerType(LLVMInt64Type(), 0),
+        LLVMPointerType(LLVMPointerType(LLVMInt8Type(), 0), 0)
+    };
+
+    LLVMStructSetBody(indirect_struct_type, tys, 4, 0);
+    return indirect_struct_type;
+}
+
 void ett_debug_print(EagleTypeType *t)
 {
     switch(t->type)
@@ -567,6 +592,21 @@ void ty_register_class(char *name)
     hst_put(&method_table, name, lst, NULL, NULL);
 }
 
+void ty_register_interface(char *name)
+{
+    if(hst_get(&interface_table, name, NULL, NULL))
+        die(-1, "Redeclaring interface with name: %s", name);
+    if(hst_get(&method_table, name, NULL, NULL))
+        die(-1, "Interface declaration %s clashes with previously named class.", name);
+
+    arraylist *list = malloc(sizeof(arraylist));
+    *list = arr_create(10);
+
+    hst_put(&interface_table, name, list, NULL, NULL);
+}
+
+
+
 void ty_add_init(char *name, EagleTypeType *ty)
 {
     hst_put(&init_table, name, ty, NULL, NULL);
@@ -599,8 +639,6 @@ EagleTypeType *ty_method_lookup(char *name, char *method)
 
     return hst_get(lst, method, NULL, NULL);
 }
-
-// void ty_add_method_def(char *name, arraylist *)
 
 void ty_struct_member_index(EagleTypeType *ett, char *member, int *index, EagleTypeType **type)
 {
@@ -671,3 +709,4 @@ LLVMTypeRef ty_get_counted(LLVMTypeRef in)
 
     return ref;
 }
+
