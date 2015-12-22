@@ -4,6 +4,7 @@
 #include "grammar/eagle.tab.h"
 #include "utils.h"
 #include "shipping.h"
+#include "versioning.h"
 
 extern char *yytext;
 
@@ -52,12 +53,15 @@ int main(int argc, const char *argv[])
         return 0;
     }
 
-    if(argc > 2)
+    int i;
+    for(i = 0; i < argc - 1; i++)
+        hst_put(&global_args, (char *)argv[i], (void *)argv[i + 1], NULL, NULL);
+    hst_put(&global_args, (char *)argv[i], (void *)1, NULL, NULL);
+
+    if(IN(global_args, "--version") || IN(global_args, "-v"))
     {
-        int i;
-        for(i = 2; i < argc - 1; i++)
-            hst_put(&global_args, (char *)argv[i], (void *)argv[i + 1], NULL, NULL);
-        hst_put(&global_args, (char *)argv[i], (void *)1, NULL, NULL);
+        print_version_info();
+        return 0;
     }
 
     yyin = fopen(argv[1], "r");

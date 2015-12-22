@@ -20,3 +20,9 @@ eagle
 Session.vim
 .netrwhist
 *~
+
+config.status
+config.log
+old.makefile
+autom4te.cache/
+Makefile

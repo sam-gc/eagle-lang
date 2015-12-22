@@ -5,8 +5,6 @@
 #include "shipping.h"
 #include "hashtable.h"
 
-#define IN(x, chr) (hst_get(&x, (char *)chr, NULL, NULL))
-
 extern hashtable global_args;
 typedef LLVMPassManagerBuilderRef LPMB;
 

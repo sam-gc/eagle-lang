@@ -9,6 +9,11 @@
 #include <llvm/Support/TargetRegistry.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Support/TargetSelect.h>
+
+#ifdef llvm_OLD
+#include <llvm/Support/FormattedStream.h>
+#endif
+
 #include <string>
 #include <iostream>
 #include "cpp.h"
@@ -44,17 +49,31 @@ void EGLGenerateAssembly(LLVMModuleRef module)
     llvm::legacy::PassManager pm;
 
     llvm::Triple trp;
+
+#ifdef llvm_OLD
+    trp.setTriple(LLVMGetDefaultTargetTriple());
+#else
     trp.setTriple(llvm::sys::getDefaultTargetTriple());
+#endif
 
     std::string error;
     const llvm::Target *targ = llvm::TargetRegistry::lookupTarget("x86-64", trp, error); 
 
-    auto tm = targ->createTargetMachine(trp.getTriple(), getCPUStr(), getFeaturesStr(), llvm::TargetOptions());
+    auto tm = targ->createTargetMachine(trp.getTriple(), "", "", llvm::TargetOptions());
 
+#ifdef llvm_OLD
+    auto stream = new llvm::formatted_raw_ostream(file.os());
+    tm->addPassesToEmitFile(pm, *stream, llvm::TargetMachine::CodeGenFileType::CGFT_AssemblyFile);
+#else
     tm->addPassesToEmitFile(pm, file.os(), llvm::TargetMachine::CodeGenFileType::CGFT_AssemblyFile);
+#endif
 
     pm.run(*m);
 
     file.keep();
+
+#ifdef llvm_OLD
+    delete stream;
+#endif
 }
 

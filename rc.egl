@@ -2,6 +2,7 @@ extern func memset(any*, int, long) : any*
 extern func free(any*)
 extern func realloc(any*, long) : any*
 extern func memmove(any*, any*, long) : any*
+extern func strcmp(byte*, byte*) : int
 
 struct __egl_ptr
 {
@@ -16,6 +17,14 @@ struct __egl_ptr_ptr
 {
     __egl_ptr main
     __egl_ptr* to
+}
+
+struct __egl_class_indir
+{
+    int count
+    byte** names
+    long* offsets
+    any** functions
 }
 
 func __egl_prepare(__egl_ptr* ptr)
@@ -149,3 +158,20 @@ func __egl_array_decr_ptrs(any** arr, long ct)
     }
 }
 
+func __egl_lookup_method(__egl_class_indir* cls, byte* name, int index) : any*
+{
+    long offset = 0-1
+    for long i = 0; i < cls->count; i += 1
+    {
+        if !strcmp(name, cls->names[i])
+        {
+            offset = i
+            break
+        }
+    }
+
+    if offset < 0
+        return nil
+
+    return cls->functions[index + offset]
+}
