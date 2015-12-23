@@ -103,6 +103,7 @@ interfacedecl       : TINTERFACE TTYPE TLBRACE interfacelist TRBRACE { $$ = $4; 
 classdecl           : TCLASS TTYPE TLBRACE classlist TRBRACE { $$ = $4; ast_class_name($$, $2); }
                     | TCLASS TTYPE TLBRACE TSEMI classlist TRBRACE { $$ = $5; ast_class_name($$, $2); }
                     | TCLASS TTYPE TLPAREN TTYPE TRPAREN TLBRACE classlist TRBRACE { $$ = $7; ast_class_name($$, $2); ast_class_add_interface($$, $4); }
+                    | TCLASS TTYPE TLPAREN TTYPE TRPAREN TLBRACE TSEMI classlist TRBRACE { $$ = $8; ast_class_name($$, $2); ast_class_add_interface($$, $4); }
                     ;
 
 classlist           : classlist variabledecl TSEMI { $$ = $1; ast_class_var_add($$, $2); }

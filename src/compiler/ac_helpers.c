@@ -36,12 +36,19 @@ LLVMValueRef ac_build_conversion(LLVMBuilderRef builder, LLVMValueRef val, Eagle
                 return LLVMBuildBitCast(builder, val, ett_llvm_type(to), "ptrtmp");
             if(ett_get_base_type(from) == ETAny && ett_pointer_depth(from) == 1)
                 return LLVMBuildBitCast(builder, val, ett_llvm_type(to), "ptrtmp");
+
             if(ET_IS_COUNTED(to) != ET_IS_COUNTED(from) || ET_IS_WEAK(to) != ET_IS_WEAK(from))
                 die(-1, "Counted pointer type may not be converted to counted pointer type. Use the \"unwrap\" keyword.");
 
             if(ett_pointer_depth(to) != ett_pointer_depth(from))
                 die(-1, "Implicit pointer conversion invalid. Cannot conver pointer of depth %d to depth %d.", ett_pointer_depth(to), ett_pointer_depth(from));
-            if(ett_get_base_type(to) != ett_get_base_type(from))
+
+            if(ett_get_base_type(to) == ETInterface)
+            {
+                if(!ty_class_implements_interface(from, to))
+                    die(-1, "Class does not implement the requested interface");
+            }
+            else if(ett_get_base_type(to) != ett_get_base_type(from))
                 die(-1, "Implicit pointer conversion invalid; pointer types are incompatible.");
 
             return LLVMBuildBitCast(builder, val, ett_llvm_type(to), "ptrtmp");

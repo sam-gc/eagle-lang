@@ -110,7 +110,12 @@ EagleTypeType *et_parse_string(char *text)
 
     if(ty_is_name(text))
     {
-        return ty_is_class(text) ? ett_class_type(text) : ett_struct_type(text);
+        if(ty_is_class(text))
+            return ett_class_type(text);
+        else if(ty_is_interface(text))
+            return ett_interface_type(text);
+        else
+            return ett_struct_type(text);
     }
     
     return NULL;
@@ -202,6 +207,10 @@ LLVMTypeRef ett_llvm_type(EagleTypeType *type)
 
             return NULL;
            // LLVMTypeRef ty = LLVMStructType(
+        }
+        case ETInterface:
+        {
+            return LLVMInt8Type();
         }
         case ETPointer:
         {
@@ -386,11 +395,32 @@ EagleTypeType *ett_class_type(char *name)
     return (EagleTypeType *)ett;
 }
 
+EagleTypeType *ett_interface_type(char *name)
+{
+    EagleTypeType *et = hst_get(&type_named_table, name, NULL, NULL);
+    if(et)
+        return et;
+
+    EagleInterfaceType *ett = malloc(sizeof(EagleInterfaceType));
+    ett->name = name;
+    ett->type = ETInterface;
+
+    pool_add(&type_mempool, ett);
+
+    return (EagleTypeType *)ett;
+}
+
 void ett_struct_add(EagleTypeType *ett, EagleTypeType *ty, char *name)
 {
     EagleStructType *e = (EagleStructType *)ett;
     arr_append(&e->types, ty);
     arr_append(&e->names, name);
+}
+
+void ett_class_set_interfaces(EagleTypeType *ett, arraylist *interfaces)
+{
+    EagleStructType *st = (EagleStructType *)ett;
+    memcpy(&st->interfaces, interfaces, sizeof(arraylist));
 }
 
 EagleType ett_get_base_type(EagleTypeType *type)
@@ -558,6 +588,11 @@ int ty_is_class(char *name)
     return (int)(uintptr_t)hst_get(&method_table, name, NULL, NULL);
 }
 
+int ty_is_interface(char *name)
+{
+    return (int)(uintptr_t)hst_get(&interface_table, name, NULL, NULL);
+}
+
 void ty_method_free(void *k, void *v, void *d)
 {
     hst_free(v);
@@ -644,6 +679,28 @@ void ty_add_interface_method(char *name, char *method, EagleTypeType *ty)
     ty_add_method(name, method, ty);
 }
 
+int ty_class_implements_interface(EagleTypeType *type, EagleTypeType *interface)
+{
+    while(type->type == ETPointer)
+        type = ET_POINTEE(type);
+
+    while(interface->type == ETPointer)
+        interface = ET_POINTEE(interface);
+
+    EagleStructType *st = (EagleStructType *)type;
+
+    arraylist *ifcs = &st->interfaces;
+    char *name = ((EagleInterfaceType *)interface)->name;
+    int i;
+    for(i = 0; i < ifcs->count; i++)
+    {
+        if(strcmp(ifcs->items[i], name) == 0)
+            return 1;
+    }
+
+    return 0;
+}
+
 void ty_add_method(char *name, char *method, EagleTypeType *ty)
 {
     hashtable *lst = hst_get(&method_table, name, NULL, NULL);
@@ -686,8 +743,10 @@ void ty_struct_member_index(EagleTypeType *ett, char *member, int *index, EagleT
         char *tmp = names->items[i];
         if(!strcmp(tmp, member))
         {
-            *index = i;
             *type = types->items[i];
+            if(ty_is_class(st->name))
+                i += 1;
+            *index = i;
             return;
         }
     }

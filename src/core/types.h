@@ -27,6 +27,7 @@
 #define ET_IS_CLOSURE(p) ((p)->type == ETFunction && ((EagleFunctionType *)(p))->closure)
 #define ET_HAS_CLOASED(p) ((p)->type == ETFunction && ((EagleFunctionType *)(p))->closure == CLOSURE_CLOSE)
 #define ET_IS_RECURSE(p) ((p)->type == ETFunction && ((EagleFunctionType *)(p))->closure == CLOSURE_RECURSE)
+#define ET_POINTEE(p) (((EaglePointerType *)(p))->to)
 
 extern LLVMTargetDataRef etTargetData;
 extern LLVMModuleRef the_module;
@@ -50,6 +51,7 @@ typedef enum {
     ETGenerator,
     ETStruct,
     ETClass,
+    ETInterface
 } EagleType;
 
 typedef struct {
@@ -89,8 +91,14 @@ typedef struct {
     EagleType type;
     arraylist types;
     arraylist names;
+    arraylist interfaces;
     char *name;
 } EagleStructType;
+
+typedef struct {
+    EagleType type;
+    char *name;
+} EagleInterfaceType;
 
 EagleTypeType *et_parse_string(char *text);
 EagleType et_promotion(EagleType left, EagleType right);
@@ -103,6 +111,7 @@ EagleTypeType *ett_function_type(EagleTypeType *retVal, EagleTypeType **params, 
 EagleTypeType *ett_gen_type(EagleTypeType *ytype);
 EagleTypeType *ett_struct_type(char *name);
 EagleTypeType *ett_class_type(char *name);
+EagleTypeType *ett_interface_type(char *name);
 
 LLVMTypeRef ett_closure_type(EagleTypeType *type);
 EagleType ett_get_base_type(EagleTypeType *type);
@@ -122,6 +131,7 @@ void ty_prepare();
 void ty_add_name(char *name);
 int ty_is_name(char *name);
 int ty_is_class(char *name);
+int ty_is_interface(char *name);
 void ty_teardown();
 
 void ty_register_interface(char *name);
@@ -138,5 +148,7 @@ LLVMTypeRef ty_get_counted(LLVMTypeRef in);
 void ty_add_interface_method(char *name, char *method, EagleTypeType *ty);
 int ty_interface_offset(char *name, char *method);
 int ty_interface_count(char *name);
+int ty_class_implements_interface(EagleTypeType *type, EagleTypeType *interface);
+void ett_class_set_interfaces(EagleTypeType *ett, arraylist *interfaces);
 
 #endif /* defined(__Eagle__types__) */

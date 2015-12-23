@@ -158,12 +158,14 @@ func __egl_array_decr_ptrs(any** arr, long ct)
     }
 }
 
-func __egl_lookup_method(__egl_class_indir* cls, byte* name, int index) : any*
+func __egl_lookup_method(__egl_class_indir** obj, byte* name, int index) : any*
 {
+    __egl_class_indir* cls = obj^
     long offset = 0-1
+
     for long i = 0; i < cls->count; i += 1
     {
-        if !strcmp(name, cls->names[i])
+        if strcmp(name, cls->names[i]) == 0
         {
             offset = i
             break

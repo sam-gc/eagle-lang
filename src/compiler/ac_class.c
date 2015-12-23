@@ -70,6 +70,22 @@ void ac_compile_class_init(ASTClassDecl *cd, CompilerBundle *cb)
     ety->params[0] = ett_pointer_type(ett_base_type(ETAny));
 }
 
+void ac_check_and_register_implementation(char *method, ac_class_helper *h, char *class, LLVMValueRef func, ASTClassDecl *cd)
+{
+    int i, sidx;
+    arraylist *ifcs = &cd->interfaces;
+    for(i = sidx = 0; i < ifcs->count; sidx += ty_interface_count(arr_get(ifcs, i)), i++)
+    {
+        char *name = arr_get(ifcs, i);
+        int offset = ty_interface_offset(name, method);
+        if(offset < 0)
+            continue;
+
+        h->interface_pointers[sidx + offset] = func;
+        return;
+    }
+}
+
 void ac_compile_class_methods_each(void *key, void *val, void *data)
 {
     ac_class_helper *h = (ac_class_helper *)data;
@@ -98,6 +114,8 @@ void ac_compile_class_methods_each(void *key, void *val, void *data)
     ety->params[0] = ett_pointer_type(ett_base_type(ETAny));
 
     hst_put(&cd->methods, (void *)(uintptr_t)idx, func, ahhd, ahed);
+
+    ac_check_and_register_implementation(fd->ident, h, cd->name, func, cd);
 }
 
 void ac_make_class_definitions(AST *ast, CompilerBundle *cb)
@@ -110,16 +128,19 @@ void ac_make_class_definitions(AST *ast, CompilerBundle *cb)
 
         ASTClassDecl *a = (ASTClassDecl *)ast;
 
-        LLVMTypeRef *tys = malloc(sizeof(LLVMTypeRef) * a->types.count);
+        LLVMTypeRef *tys = malloc(sizeof(LLVMTypeRef) * a->types.count + 1);
         int i;
         for(i = 0; i < a->types.count; i++)
-            tys[i] = ett_llvm_type(arr_get(&a->types, i));
+            tys[i + 1] = ett_llvm_type(arr_get(&a->types, i));
+
+        tys[0] = LLVMPointerType(ty_class_indirect(), 0);
 
         LLVMTypeRef loaded = LLVMGetTypeByName(cb->module, a->name);
-        LLVMStructSetBody(loaded, tys, a->types.count, 0);
+        LLVMStructSetBody(loaded, tys, a->types.count + 1, 0);
         free(tys);
 
         ty_add_struct_def(a->name, &a->names, &a->types);
+        ett_class_set_interfaces(ett_class_type(a->name), &a->interfaces);
     }
 
     ast = old;
@@ -133,6 +154,9 @@ void ac_make_class_definitions(AST *ast, CompilerBundle *cb)
         ac_class_helper h;
         h.ast = ast;
         h.cb = cb;
+
+        LLVMTypeRef indirtype = ty_class_indirect();
+        LLVMValueRef vtable = NULL;
 
         LLVMValueRef constnames = NULL;
         LLVMValueRef offsets = NULL;
@@ -161,29 +185,37 @@ void ac_make_class_definitions(AST *ast, CompilerBundle *cb)
 
             LLVMSetInitializer(constnames, initcn);
             LLVMSetInitializer(offsets, initof);
-            h.interface_pointers = malloc(sizeof(LLVMValueRef) * a->interfaces.count);
+            h.interface_pointers = malloc(sizeof(LLVMValueRef) * curoffset);
+            h.table_len = curoffset;
+
+            char *vtablename = ac_gen_vtable_name(a->name);
+            vtable = LLVMAddGlobal(cb->module, indirtype, vtablename);
+            free(vtablename);
         }
 
+        h.vtable = vtable;
+
         hst_for_each(&a->methods, ac_compile_class_methods_each, &h);
-        ac_make_class_constructor(ast, cb);
+        ac_make_class_constructor(ast, cb, &h);
         ac_make_class_destructor(ast, cb);
         ac_compile_class_init(a, cb);
 
         if(a->interfaces.count)
         {
+            LLVMValueRef initptrs = LLVMConstArray(LLVMPointerType(LLVMInt8Type(), 0), h.interface_pointers, h.table_len);
+            LLVMValueRef ptrs = LLVMAddGlobal(cb->module, LLVMArrayType(LLVMPointerType(LLVMInt8Type(), 0), h.table_len), "_ifp");
+            LLVMSetInitializer(ptrs, initptrs);
+            free(h.interface_pointers);
+
             LLVMValueRef z = LLVMConstInt(LLVMInt32Type(), 0, 0);
             LLVMValueRef indirvals[] = {
                 LLVMConstInt(LLVMInt32Type(), (int)a->interfaces.count, 0),
                 LLVMConstGEP(constnames, &z, 1),
                 LLVMConstGEP(offsets, &z, 1),
-                constnames
+                LLVMConstGEP(ptrs, &z, 1)
             };
 
-            char *vtablename = ac_gen_vtable_name(a->name);
-            LLVMTypeRef indirtype = ty_class_indirect();
             LLVMValueRef vtableinit = LLVMConstNamedStruct(indirtype, indirvals, 4);
-            LLVMValueRef vtable = LLVMAddGlobal(cb->module, indirtype, vtablename);
-            free(vtablename);
 
             LLVMSetInitializer(vtable, vtableinit);
         }
@@ -195,7 +227,7 @@ void ac_make_class_definitions(AST *ast, CompilerBundle *cb)
     }
 }
 
-void ac_make_class_constructor(AST *ast, CompilerBundle *cb)
+void ac_make_class_constructor(AST *ast, CompilerBundle *cb, ac_class_helper *h)
 {
     ASTClassDecl *a = (ASTClassDecl *)ast;
     LLVMValueRef func = ac_gen_struct_constructor_func(a->name, cb, 0); // This just generates a name
@@ -207,6 +239,9 @@ void ac_make_class_constructor(AST *ast, CompilerBundle *cb)
     LLVMValueRef in = LLVMGetParam(func, 0);
     LLVMValueRef strct = LLVMBuildBitCast(cb->builder, in, ett_llvm_type(ett), "");
 
+    LLVMValueRef gep = LLVMBuildStructGEP(cb->builder, strct, 0, "");
+    LLVMBuildStore(cb->builder, h->vtable ? h->vtable : LLVMConstPointerNull(ty_class_indirect()), gep);
+
     arraylist *types = &a->types;
     int i;
     for(i = 0; i < types->count; i++)
@@ -214,13 +249,13 @@ void ac_make_class_constructor(AST *ast, CompilerBundle *cb)
         EagleTypeType *t = arr_get(types, i);
         if(ET_IS_COUNTED(t) || ET_IS_WEAK(t))
         {
-            LLVMValueRef gep = LLVMBuildStructGEP(cb->builder, strct, i, "");
+            LLVMValueRef gep = LLVMBuildStructGEP(cb->builder, strct, i + 1, "");
             LLVMBuildStore(cb->builder, LLVMConstPointerNull(ett_llvm_type(t)), gep);
         }
         else if(t->type == ETStruct && ty_needs_destructor(t))
         {
             LLVMValueRef fc = ac_gen_struct_constructor_func(((EagleStructType *)t)->name, cb, 0);
-            LLVMValueRef param = LLVMBuildStructGEP(cb->builder, strct, i, "");
+            LLVMValueRef param = LLVMBuildStructGEP(cb->builder, strct, i + 1, "");
             param = LLVMBuildBitCast(cb->builder, param, LLVMPointerType(LLVMInt8Type(), 0), "");
             LLVMBuildCall(cb->builder, fc, &param, 1, "");
         }
@@ -229,7 +264,7 @@ void ac_make_class_constructor(AST *ast, CompilerBundle *cb)
         if(meth)
         {
             meth = LLVMBuildBitCast(cb->builder, meth, ett_llvm_type(t), "");
-            LLVMValueRef gep = LLVMBuildStructGEP(cb->builder, strct, i, "");
+            LLVMValueRef gep = LLVMBuildStructGEP(cb->builder, strct, i + 1, "");
             LLVMBuildStore(cb->builder, meth, gep);
         }
     }
@@ -275,19 +310,19 @@ void ac_make_class_destructor(AST *ast, CompilerBundle *cb)
         EagleTypeType *t = arr_get(types, i);
         if(ET_IS_COUNTED(t))
         {
-            LLVMValueRef gep = LLVMBuildStructGEP(cb->builder, pos, i, "");
+            LLVMValueRef gep = LLVMBuildStructGEP(cb->builder, pos, i + 1, "");
             ac_decr_pointer(cb, &gep, t);
         }
         else if(ET_IS_WEAK(t))
         {
-            LLVMValueRef gep = LLVMBuildStructGEP(cb->builder, pos, i, "");
+            LLVMValueRef gep = LLVMBuildStructGEP(cb->builder, pos, i + 1, "");
             ac_remove_weak_pointer(cb, gep, t);
         }
         else if(t->type == ETStruct && ty_needs_destructor(t))
         {
             LLVMValueRef fc = ac_gen_struct_destructor_func(((EagleStructType *)t)->name, cb);
             LLVMValueRef params[2];
-            params[0] = LLVMBuildBitCast(cb->builder, LLVMBuildStructGEP(cb->builder, pos, i, ""), 
+            params[0] = LLVMBuildBitCast(cb->builder, LLVMBuildStructGEP(cb->builder, pos, i + 1, ""), 
                     LLVMPointerType(LLVMInt8Type(), 0), "");
             params[1] = LLVMConstInt(LLVMInt1Type(), 0, 0);
             LLVMBuildCall(cb->builder, fc, params, 2, "");

@@ -47,7 +47,7 @@ LLVMValueRef ac_compile_identifier(AST *ast, CompilerBundle *cb)
         a->resultantType = ((EaglePointerType *)b->type)->to;
         LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, LLVMBuildLoad(cb->builder, b->value, ""), 5, "");
 
-        if(a->resultantType->type == ETArray || a->resultantType->type == ETStruct || a->resultantType->type == ETClass)
+        if(a->resultantType->type == ETArray || a->resultantType->type == ETStruct || a->resultantType->type == ETClass || a->resultantType->type == ETInterface)
             return pos;
 
         return LLVMBuildLoad(cb->builder, pos, "loadtmp");
@@ -58,7 +58,7 @@ LLVMValueRef ac_compile_identifier(AST *ast, CompilerBundle *cb)
     if(b->type->type == ETArray && !ET_IS_GEN_ARR(b->type))
         return b->value;
 
-    if(b->type->type == ETStruct || b->type->type == ETClass)
+    if(b->type->type == ETStruct || b->type->type == ETClass || b->type->type == ETInterface)
         return b->value;
     /*
     if((b->type->type == ETPointer && ((EaglePointerType *)b->type)->to->type == ETStruct) && (!ET_IS_COUNTED(b->type) && !ET_IS_WEAK(b->type)))
@@ -137,10 +137,29 @@ LLVMValueRef ac_compile_struct_member(AST *ast, CompilerBundle *cb, int keepPoin
 
     EagleTypeType *ty = a->left->resultantType;
 
-    if(ty->type != ETStruct && ty->type != ETClass)
+    if(ty->type != ETStruct && ty->type != ETClass && ty->type != ETInterface)
         die(ALN, "Attempting to access member of non-struct type (%s).", a->ident);
-    if(ty->type == ETPointer && ((EaglePointerType *)ty)->to->type != ETStruct && ((EaglePointerType *)ty)->to->type != ETClass)
+    if(ty->type == ETPointer && ((EaglePointerType *)ty)->to->type != ETStruct && ((EaglePointerType *)ty)->to->type != ETClass &&
+       ((EaglePointerType *)ty)->to->type != ETInterface)
         die(ALN, "Attempting to access member of non-struct pointer type (%s).", a->ident);
+
+    if(ty->type == ETInterface)
+    {
+        char *interface = ((EagleInterfaceType *)ty)->name;
+        a->leftCompiled = a->left->type == AUNARY ? ((ASTUnary *)a->left)->savedWrapped : left;
+        EagleTypeType *ut = ty_method_lookup(interface, a->ident);
+        LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_lookup_method");
+
+        LLVMValueRef params[] = {left, //LLVMBuildStructGEP(cb->builder, left, 0, "vtable"),
+                                 LLVMBuildGlobalStringPtr(cb->builder, interface, "ifc"),
+                                 LLVMConstInt(LLVMInt32Type(), ty_interface_offset(interface, a->ident), 0)
+        };
+        LLVMValueRef fptr = LLVMBuildCall(cb->builder, func, params, 3, a->ident);
+        fptr = LLVMBuildBitCast(cb->builder, fptr, LLVMPointerType(ett_llvm_type(ut), 0), "");
+
+        a->resultantType = ett_pointer_type(ut);
+        return fptr; //LLVMBuildLoad(cb->builder, fptr, "");
+    }
 
     // Only save the value of the instance if we have a class and a method.
     if((ty->type == ETClass || ty->type == ETStruct) && ty_method_lookup(((EagleStructType *)ty)->name, a->ident))
@@ -764,7 +783,7 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
                 a->resultantType = pt->to;
 
                 LLVMValueRef r = v;
-                if(a->resultantType->type != ETStruct && a->resultantType->type != ETClass)
+                if(a->resultantType->type != ETStruct && a->resultantType->type != ETClass && a->resultantType->type != ETInterface)
                     r = LLVMBuildLoad(cb->builder, v, "dereftmp");
                 return r;
             }

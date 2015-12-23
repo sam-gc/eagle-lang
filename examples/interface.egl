@@ -1,17 +1,62 @@
 interface Animal
 {
     func speak()
+    func tail()
 }
 
-class Dog (Animal) {
+class Dog (Animal)
+{
     func speak()
     {
         puts 'Bark!'
     }
+
+    func tail()
+    {
+        puts 'Short'
+    }
+}
+
+class Cat (Animal)
+{
+    func speak()
+    {
+        puts 'Meow...'
+    }
+
+    func tail()
+    {
+        puts 'Long'
+    }
+}
+
+func print_info(Animal^ a)
+{
+    puts 'Makes sound:'
+    a->speak()
+
+    puts '-----------------'
+    puts 'Tail length:'
+    a->tail()
+}
+
+func rets() : Animal^
+{
+    return new Dog()
 }
 
 func main() : int
 {
+    var d = new Dog()
+    var c = new Cat()
+
+    print_info(d)
+    puts '\n'
+    print_info(c)
+
+
+    rets()->speak()
+
     return 0
 }
 

@@ -36,6 +36,10 @@ LLVMModuleRef ac_compile(AST *ast)
 
     if(!hst_get(&global_args, ARGS_COMPILE_RC, NULL, NULL))
         ac_prepare_module(cb.module);
+    LLVMTypeRef param_types[] = {LLVMPointerType(LLVMInt8Type(), 0)};
+    LLVMTypeRef func_type = LLVMFunctionType(LLVMInt32Type(), param_types, 1, 1);
+    LLVMAddFunction(cb.module, "printf", func_type);
+
     the_module = cb.module;
     /*
     LLVMTypeRef st = LLVMStructCreateNamed(LLVMGetGlobalContext(), "teststruct");
@@ -74,10 +78,6 @@ LLVMModuleRef ac_compile(AST *ast)
 
 void ac_prepare_module(LLVMModuleRef module)
 {
-    LLVMTypeRef param_types[] = {LLVMPointerType(LLVMInt8Type(), 0)};
-    LLVMTypeRef func_type = LLVMFunctionType(LLVMInt32Type(), param_types, 1, 1);
-    LLVMAddFunction(module, "printf", func_type);
-
     LLVMTypeRef param_types_rc[] = {LLVMPointerType(LLVMInt64Type(), 0)};
     LLVMTypeRef func_type_rc = LLVMFunctionType(LLVMVoidType(), param_types_rc, 1, 0);
     LLVMAddFunction(module, "__egl_incr_ptr", func_type_rc);
@@ -112,6 +112,9 @@ void ac_prepare_module(LLVMModuleRef module)
     func_type_rc = LLVMFunctionType(LLVMVoidType(), param_types_destruct, 2, 0);
     LLVMAddFunction(module, "__egl_counted_destructor", func_type_rc);
 
+    LLVMTypeRef lookup_types[] = {LLVMPointerType(LLVMInt8Type(), 0), LLVMPointerType(LLVMInt8Type(), 0), LLVMInt32Type()};
+    func_type_rc = LLVMFunctionType(LLVMPointerType(LLVMInt8Type(), 0), lookup_types, 3, 0);
+    LLVMAddFunction(module, "__egl_lookup_method", func_type_rc);
 }
 
 void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
