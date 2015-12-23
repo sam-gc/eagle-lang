@@ -7,6 +7,16 @@ AC_CHECK_PROG(llvmconf, llvm-config, yes)
 AC_PROG_LEX
 AC_PROG_YACC
 
+AC_ARG_ENABLE(debug, [--enable-debug        enable debug mode])
+
+if test "$enable_debug" == "yes"
+then
+    AC_MSG_NOTICE([Debug mode is enabled])
+    AC_SUBST(targ, "-O0 -g")
+else
+    AC_SUBST(targ, -O3)
+fi
+
 if test $llvmconf == "no"
 then
     AC_MSG_ERROR([llvm-config missing])

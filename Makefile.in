@@ -10,8 +10,8 @@ GRAMMAR_OBJ_FILES=$(addprefix obj/grammar/,$(notdir $(GRAMMAR_SOURCES:.c=.o)))
 EXAMPLE_EXECUTABLES=$(addprefix builtex/,$(notdir $(EXAMPLE_SOURCES:.egl=.e)))
 CPP_OBJ_FILES=$(addprefix obj/cpp/,$(notdir $(CPP_SOURCES:.cpp=.o)))
 
-CFLAGS=-g -Isrc -std=c99 -O0 -Wall `llvm-config --cflags`
-CXXFLAGS=-g -Isrc -std=c++11 -O0 -fno-rtti -Wall `llvm-config --cxxflags`
+CFLAGS=-Isrc -std=c99 -Wall `llvm-config --cflags` @targ@
+CXXFLAGS=-Isrc -std=c++11 -fno-rtti -Wall `llvm-config --cxxflags` @targ@
 LDFLAGS=`llvm-config --ldflags --system-libs --libs core support analysis native transformutils bitwriter asmprinter asmparser target all-targets`
 
 CC=@CC@
