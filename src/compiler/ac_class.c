@@ -13,6 +13,13 @@ char *ac_gen_method_name(char *class_name, char *method)
     return name;
 }
 
+char *ac_gen_vtable_name(char *class_name)
+{
+    char *name = malloc(strlen(class_name) + 12);
+    sprintf(name, "__%s_vtable", class_name);
+    return name;
+}
+
 void ac_generate_interface_methods_each(void *key, void *val, void *data)
 {
     ASTClassDecl *cd = (ASTClassDecl *)data;
@@ -131,13 +138,13 @@ void ac_make_class_definitions(AST *ast, CompilerBundle *cb)
         LLVMValueRef offsets = NULL;
         if(a->interfaces.count)
         {
+            int count = (int)a->interfaces.count;
             LLVMValueRef constnamesarr[a->interfaces.count];
             LLVMValueRef offsetsarr[a->interfaces.count];
             int curoffset = 0;
             int i;
             for(i = 0; i < (int)a->interfaces.count; i++)
             {
-                LLVMValueRef z = LLVMConstInt(LLVMInt32Type(), 0, 0);
                 char *interface = a->interfaces.items[i];
                 constnamesarr[i] = ac_make_floating_string(cb, interface, "_ifc");
 
@@ -146,8 +153,14 @@ void ac_make_class_definitions(AST *ast, CompilerBundle *cb)
                 curoffset += ty_interface_count(interface);
             }
 
-            constnames = LLVMConstArray(LLVMPointerType(LLVMInt8Type(), 0), constnamesarr, (int)a->interfaces.count);
-            offsets = LLVMConstArray(LLVMInt64Type(), offsetsarr, (int)a->interfaces.count);
+            LLVMValueRef initcn = LLVMConstArray(LLVMPointerType(LLVMInt8Type(), 0), constnamesarr, (int)a->interfaces.count);
+            LLVMValueRef initof = LLVMConstArray(LLVMInt64Type(), offsetsarr, (int)a->interfaces.count);
+
+            constnames = LLVMAddGlobal(cb->module, LLVMArrayType(LLVMPointerType(LLVMInt8Type(), 0), count), "_ifn");
+            offsets = LLVMAddGlobal(cb->module, LLVMArrayType(LLVMInt64Type(), count), "_ifo");
+
+            LLVMSetInitializer(constnames, initcn);
+            LLVMSetInitializer(offsets, initof);
             h.interface_pointers = malloc(sizeof(LLVMValueRef) * a->interfaces.count);
         }
 
@@ -156,19 +169,24 @@ void ac_make_class_definitions(AST *ast, CompilerBundle *cb)
         ac_make_class_destructor(ast, cb);
         ac_compile_class_init(a, cb);
 
-        LLVMDumpValue(constnames);
+        if(a->interfaces.count)
+        {
+            LLVMValueRef z = LLVMConstInt(LLVMInt32Type(), 0, 0);
+            LLVMValueRef indirvals[] = {
+                LLVMConstInt(LLVMInt32Type(), (int)a->interfaces.count, 0),
+                LLVMConstGEP(constnames, &z, 1),
+                LLVMConstGEP(offsets, &z, 1),
+                constnames
+            };
 
-        // if(a->interfaces.count)
-        // {
-        //     LLVMValueRef indirvals[] = {
-        //         LLVMConstInt(LLVMInt32Type(), (int)a->interfaces.count, 0),
-        //         constnames,
-        //         offsets,
-        //         constnames
-        //     };
-        //     LLVMTypeRef indirtype = ty_class_indirect();
-        //     LLVMValueRef vtable = LLVMConstNamedStruct(indirtype, indirvals, 4);
-        // }
+            char *vtablename = ac_gen_vtable_name(a->name);
+            LLVMTypeRef indirtype = ty_class_indirect();
+            LLVMValueRef vtableinit = LLVMConstNamedStruct(indirtype, indirvals, 4);
+            LLVMValueRef vtable = LLVMAddGlobal(cb->module, indirtype, vtablename);
+            free(vtablename);
+
+            LLVMSetInitializer(vtable, vtableinit);
+        }
         // if(ty_needs_destructor(ett_struct_type(a->name))) // {
         //     ac_make_struct_destructor(ast, cb);
         //     ac_make_struct_constructor(ast, cb);
