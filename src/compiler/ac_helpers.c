@@ -1,4 +1,5 @@
 #include "ast_compiler.h"
+#include "cpp/cpp.h"
 
 long ahhd(void *k, void *d)
 {
@@ -10,6 +11,17 @@ int ahed(void *k, void *d)
     return k == d;
 }
 
+LLVMValueRef ac_make_floating_string(CompilerBundle *cb, const char *text, const char *name)
+{
+    LLVMTypeRef func_type = LLVMFunctionType(LLVMInt8Type(), NULL, 0, 0);
+    LLVMValueRef func = LLVMAddFunction(cb->module, "", func_type);
+    LLVMBasicBlockRef bb = LLVMAppendBasicBlock(func, "");
+    LLVMPositionBuilderAtEnd(cb->builder, bb);
+    LLVMValueRef str = LLVMBuildGlobalStringPtr(cb->builder, text, name);
+    EGLEraseFunction(func);
+
+    return str;
+}
 
 LLVMValueRef ac_build_conversion(LLVMBuilderRef builder, LLVMValueRef val, EagleTypeType *from, EagleTypeType *to)
 {

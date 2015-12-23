@@ -9,6 +9,7 @@
 #include <llvm/Support/TargetRegistry.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Support/TargetSelect.h>
+#include "core/config.h"
 
 #ifdef llvm_OLD
 #include <llvm/Support/FormattedStream.h>
@@ -30,6 +31,11 @@ LLVMValueRef EGLBuildMalloc(LLVMBuilderRef B, LLVMTypeRef Ty, LLVMValueRef Befor
                                                  nullptr, nullptr, "");
     //return wrap(unwrap(B)->Insert(Malloc, Twine(Name)));
     return wrap(Malloc);
+}
+
+void EGLEraseFunction(LLVMValueRef func)
+{
+    unwrap<llvm::Function>(func)->eraseFromParent();
 }
 
 // Code created by examining llc.cpp source

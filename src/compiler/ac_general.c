@@ -52,6 +52,7 @@ LLVMModuleRef ac_compile(AST *ast)
     ast = old;
 
     ac_make_struct_definitions(ast, &cb);
+    ac_generate_interface_definitions(ast, &cb);
     ac_make_class_definitions(ast, &cb);
 
     for(; ast; ast = ast->next)
@@ -110,6 +111,7 @@ void ac_prepare_module(LLVMModuleRef module)
     param_types_destruct[1] = LLVMInt1Type();
     func_type_rc = LLVMFunctionType(LLVMVoidType(), param_types_destruct, 2, 0);
     LLVMAddFunction(module, "__egl_counted_destructor", func_type_rc);
+
 }
 
 void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
@@ -276,8 +278,8 @@ void ac_dispatch_declaration(AST *ast, CompilerBundle *cb)
             ac_compile_function(ast, cb);
             break;
         case ASTRUCTDECL:
-            break;
         case ACLASSDECL:
+        case AIFCDECL:
             break;
         case AGENDECL:
             ac_compile_generator_code(ast, cb);

@@ -137,5 +137,6 @@ LLVMTypeRef ty_get_counted(LLVMTypeRef in);
 
 void ty_add_interface_method(char *name, char *method, EagleTypeType *ty);
 int ty_interface_offset(char *name, char *method);
+int ty_interface_count(char *name);
 
 #endif /* defined(__Eagle__types__) */

@@ -4,6 +4,7 @@
 #include "cpp/cpp.h"
 #include "shipping.h"
 #include "hashtable.h"
+#include "config.h"
 
 extern hashtable global_args;
 typedef LLVMPassManagerBuilderRef LPMB;
@@ -57,7 +58,7 @@ void shp_produce_binary()
         rcfile = "";
     }
 
-    sprintf(command, "cc %s /tmp/egl_out.s %s -o %s", objectfile, rcfile, outfile);
+    sprintf(command, CC " %s /tmp/egl_out.s %s -o %s", objectfile, rcfile, outfile);
     
     system(command);
 }

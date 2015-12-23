@@ -30,3 +30,4 @@ else
 fi
 
 AC_OUTPUT(Makefile)
+AC_OUTPUT(src/core/config.h)

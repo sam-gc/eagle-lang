@@ -1,4 +1,5 @@
 #include "versioning.h"
+#include "config.h"
 #include <stdio.h>
 
 void print_version_info()

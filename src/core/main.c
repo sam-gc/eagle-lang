@@ -22,6 +22,7 @@ void first_pass()
     int token;
     int saveNextStruct = 0;
     int saveNextClass = 0;
+    int saveNextInterface = 0;
     while((token = yylex()) != 0)
     {
         if(saveNextStruct)
@@ -34,8 +35,14 @@ void first_pass()
             ty_register_class(yytext);
             saveNextClass = 0;
         }
-        saveNextStruct = (token == TSTRUCT || token == TCLASS);
+        if(saveNextInterface)
+        {
+            ty_register_interface(yytext);
+            saveNextInterface = 0;
+        }
+        saveNextStruct = (token == TSTRUCT || token == TCLASS || token == TINTERFACE);
         saveNextClass = token == TCLASS;
+        saveNextInterface = token == TINTERFACE;
     }
 
     rewind(yyin);
@@ -82,9 +89,14 @@ int main(int argc, const char *argv[])
     ty_teardown();
 
     shp_optimize(module);
-    // LLVMDumpModule(module);
-    shp_produce_assembly(module);
-    shp_produce_binary();
+
+    if(IN(global_args, "--llvm"))
+        LLVMDumpModule(module);
+    else
+    {
+        shp_produce_assembly(module);
+        shp_produce_binary();
+    }
 
     LLVMDisposeModule(module);
 

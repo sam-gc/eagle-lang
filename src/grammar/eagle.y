@@ -17,7 +17,7 @@
     AST *node;
 }
 
-%token <string> TIDENTIFIER TINT TDOUBLE TTYPE TCOUNTED TNEW TSTRUCT TCLASS TTOUCH TCSTR
+%token <string> TIDENTIFIER TINT TDOUBLE TTYPE TCOUNTED TNEW TSTRUCT TCLASS TTOUCH TCSTR TINTERFACE
 %token <token> TPLUS TMINUS TEQUALS TMUL TDIV TGT TLT TEQ TNE TGTE TLTE TNOT TPOW TLOGAND TLOGOR
 %token <token> TPLUSE TMINUSE TMULE TDIVE
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TLBRACKET TRBRACKET
@@ -27,7 +27,7 @@
 %token <token> TYES TNO TNIL
 %type <node> program declarations declaration statements statement block funcdecl ifstatement
 %type <node> variabledecl vardecllist funccall calllist funcident funcsident externdecl typelist type
-%type <node> elifstatement elifblock elsestatement singif structdecl structlist blockalt classlist classdecl
+%type <node> elifstatement elifblock elsestatement singif structdecl structlist blockalt classlist classdecl interfacedecl interfacelist
 %type <node> expr singexpr binexpr unexpr ounexpr forstatement clodecl genident gendecl initdecl
 
 %nonassoc TNEW;
@@ -61,6 +61,7 @@ declaration         : externdecl TSEMI { $$ = $1; }
                     | structdecl TSEMI { $$ = $1; }
                     | gendecl { $$ = $1; }
                     | classdecl TSEMI { $$ = $1; }
+                    | interfacedecl TSEMI { $$ = $1; }
                     ;
 
 type                : TTYPE { $$ = ast_make_type($1); }
@@ -89,8 +90,19 @@ structlist          : structlist variabledecl TSEMI { $$ = $1; ast_struct_add($$
                     | variabledecl TSEMI { $$ = ast_make_struct_decl(); ast_struct_add($$, $1); }
                     ;
 
+interfacelist       : interfacelist funcsident TSEMI { $$ = $1; ast_class_method_add($$, $2); }
+                    | interfacelist funcident TSEMI { $$ = $1; ast_class_method_add($$, $2); }
+                    | funcsident TSEMI { $$ = ast_make_interface_decl(); ast_class_method_add($$, $1); }
+                    | funcident TSEMI { $$ = ast_make_interface_decl(); ast_class_method_add($$, $1); }
+                    ;
+
+interfacedecl       : TINTERFACE TTYPE TLBRACE interfacelist TRBRACE { $$ = $4; ast_class_name($$, $2); }
+                    | TINTERFACE TTYPE TLBRACE TSEMI interfacelist TRBRACE { $$ = $5; ast_class_name($$, $2); }
+                    ;
+
 classdecl           : TCLASS TTYPE TLBRACE classlist TRBRACE { $$ = $4; ast_class_name($$, $2); }
                     | TCLASS TTYPE TLBRACE TSEMI classlist TRBRACE { $$ = $5; ast_class_name($$, $2); }
+                    | TCLASS TTYPE TLPAREN TTYPE TRPAREN TLBRACE classlist TRBRACE { $$ = $7; ast_class_name($$, $2); ast_class_add_interface($$, $4); }
                     ;
 
 classlist           : classlist variabledecl TSEMI { $$ = $1; ast_class_var_add($$, $2); }

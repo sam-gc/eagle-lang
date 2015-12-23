@@ -28,6 +28,7 @@ typedef enum {
     ASTRUCTMEMBER,
     ACLASSDECL,
     ACLASSMEMBER,
+    AIFCDECL,
     AIDENT,
     AIF,
     ALOOP,
@@ -190,6 +191,8 @@ typedef struct {
     struct AST *initdecl;
     EagleTypeType *inittype;
 
+    arraylist interfaces;
+
     hashtable methods;
 } ASTClassDecl;
 
@@ -215,10 +218,12 @@ AST *ast_make_struct_decl();
 AST *ast_struct_add(AST *ast, AST *var);
 AST *ast_struct_name(AST *ast, char *name);
 AST *ast_make_class_decl();
+AST *ast_make_interface_decl();
 AST *ast_class_set_init(AST *cls, AST *init);
 AST *ast_class_var_add(AST *ast, AST *var);
 AST *ast_class_method_add(AST *ast, AST *func);
 AST *ast_class_name(AST *ast, char *name);
+void ast_class_add_interface(AST *ast, char *name);
 AST *ast_make_struct_get(AST *left, char *ident);
 void ast_set_counted(AST *ast);
 AST *ast_make_arr_decl(AST *type, char *ident, AST *expr);

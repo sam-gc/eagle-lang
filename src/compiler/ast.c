@@ -295,6 +295,14 @@ AST *ast_struct_name(AST *ast, char *name)
     return ast;
 }
 
+AST *ast_make_interface_decl()
+{
+    AST *ast = ast_make_class_decl();
+    ast->type = AIFCDECL;
+
+    return ast;
+}
+
 AST *ast_make_class_decl()
 {
     ASTClassDecl *ast = ast_malloc(sizeof(ASTClassDecl));
@@ -305,12 +313,20 @@ AST *ast_make_class_decl()
     ast->types = arr_create(10);
     ast->methods = hst_create();
     ast->initdecl = NULL;
+    ast->interfaces = arr_create(5);
 
     pool_add(&ast_lst_mempool, &ast->names);
     pool_add(&ast_lst_mempool, &ast->types);
+    pool_add(&ast_lst_mempool, &ast->interfaces);
     pool_add(&ast_hst_mempool, &ast->methods);
 
     return (AST *)ast;
+}
+
+void ast_class_add_interface(AST *ast, char *name)
+{
+    ASTClassDecl *cls = (ASTClassDecl *)ast;
+    arr_append(&cls->interfaces, name);
 }
 
 AST *ast_class_set_init(AST *ast, AST *init)

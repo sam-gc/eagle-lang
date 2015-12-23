@@ -8,6 +8,7 @@ extern "C" {
 #endif
 
 LLVMValueRef EGLBuildMalloc(LLVMBuilderRef B, LLVMTypeRef Ty, LLVMValueRef Before, const char *Name);
+void EGLEraseFunction(LLVMValueRef func);
 void EGLGenerateAssembly(LLVMModuleRef module);
 
 #ifdef __cplusplus

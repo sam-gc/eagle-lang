@@ -618,6 +618,15 @@ int ty_interface_offset(char *name, char *method)
     return -1;
 }
 
+int ty_interface_count(char *name)
+{
+    arraylist *names = hst_get(&interface_table, name, NULL, NULL);
+    if(!names)
+        return -1;
+
+    return (int)names->count;
+}
+
 void ty_add_init(char *name, EagleTypeType *ty)
 {
     hst_put(&init_table, name, ty, NULL, NULL);
