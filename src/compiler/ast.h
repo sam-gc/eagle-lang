@@ -193,7 +193,8 @@ typedef struct {
 
     arraylist interfaces;
 
-    hashtable methods;
+    // hashtable methods;
+    hashtable method_types;
 } ASTClassDecl;
 
 AST *ast_make();
@@ -223,7 +224,7 @@ AST *ast_class_set_init(AST *cls, AST *init);
 AST *ast_class_var_add(AST *ast, AST *var);
 AST *ast_class_method_add(AST *ast, AST *func);
 AST *ast_class_name(AST *ast, char *name);
-void ast_class_add_interface(AST *ast, char *name);
+void ast_class_add_interface(AST *ast, AST *interfaces);
 AST *ast_make_struct_get(AST *left, char *ident);
 void ast_set_counted(AST *ast);
 AST *ast_make_arr_decl(AST *type, char *ident, AST *expr);
@@ -233,6 +234,7 @@ AST *ast_make_function_type(AST *tysList, AST *resType);
 AST *ast_make_pointer(AST *ast);
 AST *ast_make_counted(AST *ast);
 AST *ast_make_weak(AST *ast);
+AST *ast_make_composite(AST *orig, char *nw);
 AST *ast_make_array(AST *ast, int ct);
 AST *ast_make_if(AST *test, AST *block);
 AST *ast_make_loop(AST *setup, AST *test, AST *update, AST *block);

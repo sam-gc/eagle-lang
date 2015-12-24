@@ -14,6 +14,7 @@
 
     int save_newline = 0;
     int override = 0;
+    int in_interface = 0;
 %}
 
 %option noyywrap
@@ -65,7 +66,8 @@ cstr '(\\.|[^'])*'
 "="         DISCARD_NL; return SET(TEQUALS);
 "&&"        DISCARD_NL; return SET(TLOGAND);
 "||"        DISCARD_NL; return SET(TLOGOR);
-"func"      DISCARD_NL; return SET(TFUNC);
+"|"         DISCARD_NL; return SET(TOR);
+"func"      DISCARD_NL; in_interface && OVERRIDE; return SET(TFUNC);
 "gen"       DISCARD_NL; return SET(TGEN);
 ":"         DISCARD_NL; return SET(TCOLON);
 ","         DISCARD_NL; return SET(TCOMMA);
@@ -77,7 +79,7 @@ cstr '(\\.|[^'])*'
 "("         DISCARD_NL; return SET(TLPAREN);
 ")"         SAVE_NL; return SET(TRPAREN);
 {lbrace}    OVEROVERIDE; return SET(TLBRACE);
-"}"         SAVE_NL; return SET(TRBRACE);
+"}"         SAVE_NL; in_interface = 0; return SET(TRBRACE);
 "["         DISCARD_NL; return SET(TLBRACKET);
 "]"         SAVE_NL; return SET(TRBRACKET);
 "return"    SAVE_NL; return SET(TRETURN);
@@ -86,7 +88,7 @@ cstr '(\\.|[^'])*'
 "continue"  SAVE_NL; return SET(TCONTINUE);
 "struct"    DISCARD_NL; return SET(TSTRUCT);
 "class"     DISCARD_NL; return SET(TCLASS);
-"interface" DISCARD_NL; return SET(TINTERFACE);
+"interface" DISCARD_NL; in_interface = 1; return SET(TINTERFACE);
 "puts"      DISCARD_NL; return SET(TPUTS);
 "extern"    DISCARD_NL; OVERRIDE; return SET(TEXTERN);
 "sizeof"    DISCARD_NL; return SET(TSIZEOF);

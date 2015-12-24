@@ -1,0 +1,50 @@
+extern func strcmp(byte*, byte*) : int
+extern func printf(byte* ...) : int
+extern func atoi(byte*) : int
+
+interface Printer
+{
+    func printNum(int)
+}
+
+class Test (Printer)
+{
+    func printNum(int i)
+    {
+        puts i
+    }
+}
+
+func runTestNormal(Test^ t, int count)
+{
+    for int i = 0; i < count; i += 1
+    {
+        t->printNum(i)
+    }
+}
+
+func runTestInterface(Printer^ p, int count)
+{
+    for int i = 0; i < count; i += 1
+    {
+        p->printNum(i)
+    }
+}
+
+func main(int argc, byte** argv)
+{
+    if argc < 3
+    {
+        printf('Usage: %s <interface|normal> <# iterations>\n', argv[0])
+        return
+    }
+
+    var t = new Test()
+
+    int count = atoi(argv[2])
+
+    if strcmp('normal', argv[1]) == 0
+        runTestNormal(t, count)
+    else
+        runTestInterface(t, count)
+}

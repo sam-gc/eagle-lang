@@ -402,12 +402,21 @@ EagleTypeType *ett_interface_type(char *name)
         return et;
 
     EagleInterfaceType *ett = malloc(sizeof(EagleInterfaceType));
-    ett->name = name;
+    ett->names = arr_create(3);
+    arr_append(&ett->names, name);
     ett->type = ETInterface;
 
+    pool_add(&list_mempool, &ett->names);
     pool_add(&type_mempool, ett);
 
     return (EagleTypeType *)ett;
+}
+
+void ett_composite_interface(EagleTypeType *ett, char *name)
+{
+    EagleInterfaceType *ei = (EagleInterfaceType *)ett;
+
+    arr_append(&ei->names, name);
 }
 
 void ett_struct_add(EagleTypeType *ett, EagleTypeType *ty, char *name)
@@ -458,6 +467,24 @@ int ett_are_same(EagleTypeType *left, EagleTypeType *right)
         EagleArrayType *ar = (EagleArrayType *)right;
 
         return ett_are_same(al->of, ar->of) && al->ct == ar->ct;
+    }
+
+    if(theType == ETFunction)
+    {
+        EagleFunctionType *fl = (EagleFunctionType *)left;
+        EagleFunctionType *fr = (EagleFunctionType *)right;
+
+        if(!ett_are_same(fl->retType, fr->retType))
+            return 0;
+        if(fl->pct != fr->pct)
+            return 0;
+        int i;
+        for(i = 0; i < fl->pct; i++)
+            if(!ett_are_same(fl->params[i], fr->params[i]))
+                return 0;
+        if(fl->closure != fr->closure)
+            return 0;
+        return fl->gen == fr->gen;
     }
 
     return 1;
@@ -679,6 +706,22 @@ void ty_add_interface_method(char *name, char *method, EagleTypeType *ty)
     ty_add_method(name, method, ty);
 }
 
+char *ty_interface_for_method(EagleTypeType *ett, char *method)
+{
+    EagleInterfaceType *it = (EagleInterfaceType *)ett;
+    arraylist *names = &it->names;
+
+    int i;
+    for(i = 0; i < names->count; i++)
+    {
+        char *name = arr_get(names, i);
+        if(ty_method_lookup(name, method))
+            return name;
+    }
+
+    return NULL;
+}
+
 int ty_class_implements_interface(EagleTypeType *type, EagleTypeType *interface)
 {
     while(type->type == ETPointer)
@@ -690,15 +733,25 @@ int ty_class_implements_interface(EagleTypeType *type, EagleTypeType *interface)
     EagleStructType *st = (EagleStructType *)type;
 
     arraylist *ifcs = &st->interfaces;
-    char *name = ((EagleInterfaceType *)interface)->name;
-    int i;
-    for(i = 0; i < ifcs->count; i++)
+    EagleInterfaceType *ie = (EagleInterfaceType *)interface;
+
+    int j;
+    for(j = 0; j < ie->names.count; j++)
     {
-        if(strcmp(ifcs->items[i], name) == 0)
-            return 1;
+        int good = 0;
+        char *name = arr_get(&ie->names, j);
+        int i;
+        for(i = 0; i < ifcs->count; i++)
+        {
+            if(strcmp(ifcs->items[i], name) == 0)
+                good = 1;
+        }
+
+        if(!good)
+            return 0;
     }
 
-    return 0;
+    return 1;
 }
 
 void ty_add_method(char *name, char *method, EagleTypeType *ty)

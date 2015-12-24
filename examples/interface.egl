@@ -4,7 +4,12 @@ interface Animal
     func tail()
 }
 
-class Dog (Animal)
+interface Pet
+{
+    func bounds() : byte*
+}
+
+class Dog (Animal, Pet)
 {
     func speak()
     {
@@ -14,6 +19,11 @@ class Dog (Animal)
     func tail()
     {
         puts 'Short'
+    }
+
+    func bounds() : byte*
+    {
+        return 'Outside (on leash)'
     }
 }
 
@@ -40,7 +50,13 @@ func print_info(Animal^ a)
     a->tail()
 }
 
-func rets() : Animal^
+func test_composite(Animal|Pet^ c)
+{
+    c->speak()
+    puts c->bounds()
+}
+
+func rets() : Pet^
 {
     return new Dog()
 }
@@ -55,7 +71,11 @@ func main() : int
     print_info(c)
 
 
-    rets()->speak()
+    puts rets()->bounds()
+
+    puts '-------------------------\n'
+
+    test_composite(d)
 
     return 0
 }

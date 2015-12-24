@@ -167,7 +167,7 @@ func __egl_lookup_method(__egl_class_indir** obj, byte* name, int index) : any*
     {
         if strcmp(name, cls->names[i]) == 0
         {
-            offset = i
+            offset = cls->offsets[i]
             break
         }
     }

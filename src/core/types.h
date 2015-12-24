@@ -97,7 +97,7 @@ typedef struct {
 
 typedef struct {
     EagleType type;
-    char *name;
+    arraylist names;
 } EagleInterfaceType;
 
 EagleTypeType *et_parse_string(char *text);
@@ -112,6 +112,7 @@ EagleTypeType *ett_gen_type(EagleTypeType *ytype);
 EagleTypeType *ett_struct_type(char *name);
 EagleTypeType *ett_class_type(char *name);
 EagleTypeType *ett_interface_type(char *name);
+void ett_composite_interface(EagleTypeType *ett, char *name);
 
 LLVMTypeRef ett_closure_type(EagleTypeType *type);
 EagleType ett_get_base_type(EagleTypeType *type);
@@ -148,6 +149,7 @@ LLVMTypeRef ty_get_counted(LLVMTypeRef in);
 void ty_add_interface_method(char *name, char *method, EagleTypeType *ty);
 int ty_interface_offset(char *name, char *method);
 int ty_interface_count(char *name);
+char *ty_interface_for_method(EagleTypeType *ett, char *method);
 int ty_class_implements_interface(EagleTypeType *type, EagleTypeType *interface);
 void ett_class_set_interfaces(EagleTypeType *ett, arraylist *interfaces);
 

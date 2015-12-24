@@ -311,22 +311,37 @@ AST *ast_make_class_decl()
     ast->name = NULL;
     ast->names = arr_create(10);
     ast->types = arr_create(10);
-    ast->methods = hst_create();
+    // ast->methods = hst_create();
+    ast->method_types = hst_create();
     ast->initdecl = NULL;
     ast->interfaces = arr_create(5);
 
     pool_add(&ast_lst_mempool, &ast->names);
     pool_add(&ast_lst_mempool, &ast->types);
     pool_add(&ast_lst_mempool, &ast->interfaces);
-    pool_add(&ast_hst_mempool, &ast->methods);
+    // pool_add(&ast_hst_mempool, &ast->methods);
+    pool_add(&ast_hst_mempool, &ast->method_types);
 
     return (AST *)ast;
 }
 
-void ast_class_add_interface(AST *ast, char *name)
+void ast_class_add_interface(AST *ast, AST *interfaces)
 {
     ASTClassDecl *cls = (ASTClassDecl *)ast;
-    arr_append(&cls->interfaces, name);
+    // arr_append(&cls->interfaces, name);
+
+    ASTTypeDecl *i = (ASTTypeDecl *)interfaces;
+    for(; i; i = (ASTTypeDecl *)i->next)
+    {
+        if(i->etype->type != ETInterface)
+            die(ALN, "Non-interface type declared in class signature (%s)", cls->name);
+        EagleInterfaceType *ei = (EagleInterfaceType *)i->etype;
+
+        if(ei->names.count != 1)
+            die(ALN, "Cannot implement composite interface; implement each interface separately (with a comma) (%s)", cls->name);
+
+        arr_append(&cls->interfaces, ei->names.items[0]);
+    }
 }
 
 AST *ast_class_set_init(AST *ast, AST *init)
@@ -390,9 +405,10 @@ AST *ast_class_method_add(AST *ast, AST *func)
     ((EagleFunctionType *)ttype)->closure = 0;
     arr_free(&list);
 
-    arr_append(&a->types, ett_pointer_type(ttype));
-    arr_append(&a->names, f->ident);
-    hst_put(&a->methods, (void *)a->types.count, f, ahhd, ahed);
+    // arr_append(&a->types, ett_pointer_type(ttype));
+    // arr_append(&a->names, f->ident);
+    // hst_put(&a->methods, (void *)a->types.count, f, ahhd, ahed);
+    hst_put(&a->method_types, f, ttype, ahhd, ahed);
 
     return ast;
 }
@@ -536,6 +552,18 @@ AST *ast_make_weak(AST *ast)
     ep->counted = 0;
 
     return ast;
+}
+
+AST *ast_make_composite(AST *orig, char *nw)
+{
+    ASTTypeDecl *a = (ASTTypeDecl *)orig;
+
+    if(a->etype->type != ETInterface || !ty_is_interface(nw))
+        die(a->lineno, "Attempting to make composite type from non-interface componenents");
+    
+    ett_composite_interface(a->etype, nw);
+
+    return orig;
 }
 
 AST *ast_make_array(AST *ast, int ct)

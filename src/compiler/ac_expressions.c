@@ -145,8 +145,10 @@ LLVMValueRef ac_compile_struct_member(AST *ast, CompilerBundle *cb, int keepPoin
 
     if(ty->type == ETInterface)
     {
-        char *interface = ((EagleInterfaceType *)ty)->name;
+        char *interface = ty_interface_for_method(ty, a->ident);
+
         a->leftCompiled = a->left->type == AUNARY ? ((ASTUnary *)a->left)->savedWrapped : left;
+        a->leftCompiled = LLVMBuildBitCast(cb->builder, a->leftCompiled, LLVMPointerType(LLVMInt8Type(), 0), "");
         EagleTypeType *ut = ty_method_lookup(interface, a->ident);
         LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_lookup_method");
 
@@ -162,8 +164,17 @@ LLVMValueRef ac_compile_struct_member(AST *ast, CompilerBundle *cb, int keepPoin
     }
 
     // Only save the value of the instance if we have a class and a method.
-    if((ty->type == ETClass || ty->type == ETStruct) && ty_method_lookup(((EagleStructType *)ty)->name, a->ident))
+    EagleTypeType *functionType = NULL;
+    if((ty->type == ETClass || ty->type == ETStruct) && (functionType = ty_method_lookup(((EagleStructType *)ty)->name, a->ident)))
+    {
         a->leftCompiled = a->left->type == AUNARY ? ((ASTUnary *)a->left)->savedWrapped : left;
+        char *name = ac_gen_method_name(((EagleStructType *)ty)->name, a->ident);
+        LLVMValueRef func = LLVMGetNamedFunction(cb->module, name);
+        if(!func) die(ALN, "Internal compiler error: unable to resolve method");
+        free(name);
+        ast->resultantType = functionType;
+        return func;
+    }
         //a->leftCompiled = a->left->type == AUNARY ? ((ASTUnary *)a->left)->savedWrapped : left;
 
     int index;
@@ -754,6 +765,7 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
                     case ETInt64:
                         fmt = LLVMBuildGlobalStringPtr(cb->builder, "%ld\n", "prfLI");
                         break;
+                    case ETFunction:
                     case ETArray:
                     case ETPointer:
                         fmt = LLVMBuildGlobalStringPtr(cb->builder, 
@@ -953,8 +965,9 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
     }
     else if(instanceOfClass)
     {
-        args[0] = LLVMBuildBitCast(cb->builder, instanceOfClass, LLVMPointerType(LLVMInt8Type(), 0), "");
+        // args[0] = LLVMBuildBitCast(cb->builder, instanceOfClass, LLVMPointerType(LLVMInt8Type(), 0), "");
 
+        args[0] = instanceOfClass;
         out = LLVMBuildCall(cb->builder, func, args, ct, ett->retType->type == ETVoid ? "" : "callout");
     }
     else
