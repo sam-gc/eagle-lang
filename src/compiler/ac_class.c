@@ -144,7 +144,7 @@ void ac_make_class_definitions(AST *ast, CompilerBundle *cb)
 
         ASTClassDecl *a = (ASTClassDecl *)ast;
 
-        LLVMTypeRef *tys = malloc(sizeof(LLVMTypeRef) * a->types.count + 1);
+        LLVMTypeRef *tys = malloc(sizeof(LLVMTypeRef) * (a->types.count + 1));
         int i;
         for(i = 0; i < a->types.count; i++)
             tys[i + 1] = ett_llvm_type(arr_get(&a->types, i));
@@ -268,11 +268,7 @@ void ac_make_class_constructor(AST *ast, CompilerBundle *cb, ac_class_helper *h)
 
     LLVMValueRef gep = LLVMBuildStructGEP(cb->builder, strct, 0, "");
 
-#ifdef llvm_OLD
     LLVMBuildStore(cb->builder, h->vtable ? h->vtable : LLVMConstPointerNull(LLVMPointerType(ty_class_indirect(), 0)), gep);
-#else
-    LLVMBuildStore(cb->builder, h->vtable ? h->vtable : LLVMConstPointerNull(ty_class_indirect()), gep);
-#endif
 
     arraylist *types = &a->types;
     int i;
