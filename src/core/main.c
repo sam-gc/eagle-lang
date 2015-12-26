@@ -5,6 +5,8 @@
 #include "utils.h"
 #include "shipping.h"
 #include "versioning.h"
+#include "environment/imports.h"
+#include "multibuffer.h"
 
 extern char *yytext;
 
@@ -16,6 +18,7 @@ extern int yylineno;
 extern AST *ast_root;
 
 hashtable global_args;
+multibuffer *ymultibuffer = NULL;
 
 void first_pass()
 {
@@ -45,7 +48,8 @@ void first_pass()
         saveNextInterface = token == TINTERFACE;
     }
 
-    rewind(yyin);
+    //rewind(yyin);
+    mb_rewind(ymultibuffer);
     yylineno = 0;
 }
 
@@ -71,18 +75,31 @@ int main(int argc, const char *argv[])
         return 0;
     }
 
+    /*
     yyin = fopen(argv[1], "r");
     if(!yyin)
     {
         printf("Error: could not find file.\n");
         return 0;
     }
+    */
+
+    ymultibuffer = mb_alloc();
+    mb_add_str(ymultibuffer, "func boogity(byte* boo) { puts 'Boogity '; puts boo; };");
+    mb_add_file(ymultibuffer, argv[1]);
 
     ty_prepare();
 
     first_pass();
 
+    if(IN(global_args, "-h"))
+    {
+        imp_scan_file(argv[1]);
+    }
+
     yyparse();
+
+    mb_free(ymultibuffer);
 
     LLVMModuleRef module = ac_compile(ast_root);
 

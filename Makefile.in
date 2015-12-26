@@ -1,12 +1,14 @@
 CORE_SOURCES=$(wildcard src/core/*.c)
 COMPILER_SOURCES=$(wildcard src/compiler/*.c)
 GRAMMAR_SOURCES=$(wildcard src/grammar/*.c)
+ENVIRONMENT_SOURCES=$(wildcard src/environment/*.c)
 EXAMPLE_SOURCES=$(wildcard examples/*.egl)
 CPP_SOURCES=$(wildcard src/cpp/*.cpp)
 
 CORE_OBJ_FILES=$(addprefix obj/core/,$(notdir $(CORE_SOURCES:.c=.o)))
 COMPILER_OBJ_FILES=$(addprefix obj/compiler/,$(notdir $(COMPILER_SOURCES:.c=.o)))
 GRAMMAR_OBJ_FILES=$(addprefix obj/grammar/,$(notdir $(GRAMMAR_SOURCES:.c=.o)))
+ENVIRONMENT_OBJ_FILES=$(addprefix obj/environment/,$(notdir $(ENVIRONMENT_SOURCES:.c=.o)))
 EXAMPLE_EXECUTABLES=$(addprefix builtex/,$(notdir $(EXAMPLE_SOURCES:.egl=.e)))
 CPP_OBJ_FILES=$(addprefix obj/cpp/,$(notdir $(CPP_SOURCES:.cpp=.o)))
 
@@ -29,7 +31,7 @@ guts: src/grammar/eagle.l src/grammar/eagle.y
 	$(YACC) -d -o src/grammar/eagle.tab.c src/grammar/eagle.y -v
 	$(LEX) -o src/grammar/tokens.c src/grammar/eagle.l
 
-glory: $(COMPILER_OBJ_FILES) $(CORE_OBJ_FILES) $(GRAMMAR_OBJ_FILES) $(CPP_OBJ_FILES)
+glory: $(COMPILER_OBJ_FILES) $(CORE_OBJ_FILES) $(GRAMMAR_OBJ_FILES) $(ENVIRONMENT_OBJ_FILES) $(CPP_OBJ_FILES)
 	$(LD) -o eagle $^ $(LDFLAGS)
 
 clean:
@@ -56,6 +58,10 @@ obj/core/%.o: src/core/%.c
 
 obj/grammar/%.o: src/grammar/%.c
 	$(MKDIR) obj/grammar/
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+obj/environment/%.o: src/environment/%.c
+	$(MKDIR) obj/environment/
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 obj/cpp/%.o: src/cpp/%.cpp

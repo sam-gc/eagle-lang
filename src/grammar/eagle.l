@@ -3,6 +3,7 @@
     #include <string.h>
     #include "compiler/ast.h"
     #include "core/utils.h"
+    #include "core/multibuffer.h"
     #include "eagle.tab.h"
     
     #define SET(t) (yylval.token = t)
@@ -15,6 +16,10 @@
     int save_newline = 0;
     int override = 0;
     int in_interface = 0;
+    int skip_type_check = 0;
+    extern multibuffer *ymultibuffer;
+
+    #define YY_INPUT(buf, result, max_size) result = mb_buffer(ymultibuffer, buf, max_size)
 %}
 
 %option noyywrap
@@ -115,6 +120,6 @@ cstr '(\\.|[^'])*'
 "long"      { SAVE_NL; SAVE_TOKEN; return TTYPE; }
 "double"    { SAVE_NL; SAVE_TOKEN; return TTYPE; }
 "any"       { SAVE_NL; SAVE_TOKEN; return TTYPE; }
-{alpha}       { SAVE_NL; SAVE_TOKEN; return ty_is_name(yytext) ? TTYPE : TIDENTIFIER; }
+{alpha}       { SAVE_NL; SAVE_TOKEN; if(skip_type_check) return TIDENTIFIER; else return ty_is_name(yytext) ? TTYPE : TIDENTIFIER; }
 {cstr}      SAVE_NL; yylval.string = utl_gen_escaped_string((char *)yytext, yylineno); return TCSTR;
 %%
