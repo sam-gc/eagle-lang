@@ -19,7 +19,7 @@
     int skip_type_check = 0;
     extern multibuffer *ymultibuffer;
 
-    #define YY_INPUT(buf, result, max_size) result = mb_buffer(ymultibuffer, buf, max_size)
+    #define YY_INPUT(buf, result, max_size) if(skip_type_check) result = fread( buf, 1, max_size, yyin ); else result = mb_buffer(ymultibuffer, buf, max_size)
 %}
 
 %option noyywrap
@@ -38,6 +38,7 @@ real {integer}("."{digit}*){exponent}?
 nvar {alpha}({alpha}|{digit})*
 strlit \"(\\.|[^"])*\"
 comment (\#|(\-\-)).*(\n)
+import "import ".*
 lbrace ("{"|"{"{whitechar}*"\n"|"\n"{whitechar}*"{")
 rbrace ("}"|"}"{whitechar}*"\n")
 func ("func"|"func"{whitechar}*"\n")
@@ -52,6 +53,7 @@ cstr '(\\.|[^'])*'
 
 {integer}     { SAVE_NL; SAVE_TOKEN; return TINT; }
 {real}      { SAVE_NL; SAVE_TOKEN; return TDOUBLE; }
+{import}    { SAVE_TOKEN; return TIMPORT; }
 "+"         DISCARD_NL; return SET(TPLUS);
 "+="        DISCARD_NL; return SET(TPLUSE);
 "-"         DISCARD_NL; return SET(TMINUS);

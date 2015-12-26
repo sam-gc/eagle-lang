@@ -52,7 +52,7 @@ void shp_produce_binary()
 
     const char *objectfile = "";
     const char *rcfile = "rc.o";
-    if(IN(global_args, "--compile-rc"))
+    if(IN(global_args, "-c"))
     {
         objectfile = "-c";
         rcfile = "";

@@ -22,5 +22,5 @@ void sb_append(Strbuilder *builder, const char *text)
 
     memcpy(builder->buffer + builder->len, text, tlen);
     builder->len += tlen;
-    builder->buffer[tlen] = 0;
+    builder->buffer[builder->len] = 0;
 }

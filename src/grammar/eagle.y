@@ -24,7 +24,7 @@
 %token <token> TFUNC TRETURN TYIELD TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF TFOR TIN TWEAK TUNWRAP
 %token <token> TBREAK TCONTINUE TVAR TGEN  TELLIPSES
 %token <token> TCOLON TSEMI TNEWLINE TCOMMA TDOT TAMP TAT TARROW
-%token <token> TYES TNO TNIL
+%token <token> TYES TNO TNIL TIMPORT
 %type <node> program declarations declaration statements statement block funcdecl ifstatement
 %type <node> variabledecl vardecllist funccall calllist funcident funcsident externdecl typelist type interfacetypelist
 %type <node> elifstatement elifblock elsestatement singif structdecl structlist blockalt classlist classdecl interfacedecl interfacelist compositetype
@@ -64,6 +64,7 @@ declaration         : externdecl TSEMI { $$ = $1; }
                     | gendecl { $$ = $1; }
                     | classdecl TSEMI { $$ = $1; }
                     | interfacedecl TSEMI { $$ = $1; }
+                    | TIMPORT { $$ = NULL; }
                     ;
 
 type                : TTYPE { $$ = ast_make_type($1); }

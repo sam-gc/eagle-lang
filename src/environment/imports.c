@@ -2,6 +2,7 @@
 #include "imports.h"
 #include "compiler/ast.h"
 #include "grammar/eagle.tab.h"
+#include "core/stringbuilder.h"
 #define YY_BUF_SIZE 32768
 
 
@@ -17,8 +18,10 @@ extern YY_BUFFER_STATE yy_create_buffer(FILE*, size_t);
 extern void yypush_buffer_state(YY_BUFFER_STATE);
 extern void yypop_buffer_state();
 
-void imp_scan_file(const char *filename)
+char *imp_scan_file(const char *filename)
 {
+    Strbuilder strb;
+    sb_init(&strb);
     FILE *f = fopen(filename, "r");
     skip_type_check = 1;
     YY_BUFFER_STATE buf = yy_create_buffer(f, YY_BUF_SIZE);
@@ -37,7 +40,7 @@ void imp_scan_file(const char *filename)
             if(bracket_depth == 0 && in_class)
             {
                 in_class = 0;
-                printf("} ");
+                sb_append(&strb, "} ");
             }
         }
 
@@ -46,13 +49,19 @@ void imp_scan_file(const char *filename)
             in_class = 1;
         }
 
-        if(bracket_depth > (in_class ? 1 : 0) || token == TRBRACE)
+        if(bracket_depth > (in_class ? 1 : 0) || token == TRBRACE || token == TEXTERN)
             continue;
 
-        printf("%s ", yytext);
+        if(token == TFUNC)
+            sb_append(&strb, "extern ");
+
+        sb_append(&strb, yytext);
+        sb_append(&strb, " ");
     }
 
     yypop_buffer_state();
     fclose(f);
     skip_type_check = 0;
+
+    return strb.buffer;
 }

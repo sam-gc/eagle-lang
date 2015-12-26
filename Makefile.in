@@ -69,7 +69,7 @@ obj/cpp/%.o: src/cpp/%.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 rc.o: rc.egl
-	./eagle rc.egl --compile-rc -o rc.o
+	./eagle rc.egl -c -o rc.o
 #rc.o: rc.c
 #   $(CC) rc.c -c -o rc.o -g
 

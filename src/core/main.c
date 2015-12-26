@@ -22,6 +22,8 @@ multibuffer *ymultibuffer = NULL;
 
 void first_pass()
 {
+    multibuffer *nbuffer = mb_alloc();
+
     int token;
     int saveNextStruct = 0;
     int saveNextClass = 0;
@@ -46,10 +48,19 @@ void first_pass()
         saveNextStruct = (token == TSTRUCT || token == TCLASS || token == TINTERFACE);
         saveNextClass = token == TCLASS;
         saveNextInterface = token == TINTERFACE;
+
+        if(token == TIMPORT)
+        {
+            char *include = imp_scan_file(yytext + 7);
+            mb_add_str(nbuffer, include);
+            free(include);
+        }
     }
 
     //rewind(yyin);
     mb_rewind(ymultibuffer);
+    mb_free(ymultibuffer);
+    ymultibuffer = nbuffer;
     yylineno = 0;
 }
 
@@ -85,12 +96,10 @@ int main(int argc, const char *argv[])
     */
 
     ymultibuffer = mb_alloc();
-    mb_add_str(ymultibuffer, "func boogity(byte* boo) { puts 'Boogity '; puts boo; };");
     mb_add_file(ymultibuffer, argv[1]);
-
     ty_prepare();
-
     first_pass();
+    mb_add_file(ymultibuffer, argv[1]);
 
     if(IN(global_args, "-h"))
     {
