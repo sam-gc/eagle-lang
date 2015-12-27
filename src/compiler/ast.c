@@ -322,7 +322,15 @@ AST *ast_make_class_decl()
     // pool_add(&ast_hst_mempool, &ast->methods);
     pool_add(&ast_hst_mempool, &ast->method_types);
 
+    ast->ext = 0;
+
     return (AST *)ast;
+}
+
+void ast_class_set_extern(AST *ast)
+{
+    ASTClassDecl *cls = (ASTClassDecl *)ast;
+    cls->ext = 1;
 }
 
 void ast_class_add_interface(AST *ast, AST *interfaces)

@@ -68,7 +68,8 @@ void ac_compile_class_init(ASTClassDecl *cd, CompilerBundle *cb)
 
     free(method_name);
 
-    ac_compile_function_ex((AST *)fd, cb, func, ety);
+    if(!cd->ext)
+        ac_compile_function_ex((AST *)fd, cb, func, ety);
 
     ety->params[0] = ett_pointer_type(ett_base_type(ETAny));
 }
@@ -125,7 +126,8 @@ void ac_compile_class_methods_each(void *key, void *val, void *data)
 
     free(method_name);
 
-    ac_compile_function_ex((AST *)fd, h->cb, func, ety);
+    if(!cd->ext)
+        ac_compile_function_ex((AST *)fd, h->cb, func, ety);
 
     ety->params[0] = ett_pointer_type(ett_base_type(ETAny));
 
@@ -176,7 +178,7 @@ void ac_make_class_definitions(AST *ast, CompilerBundle *cb)
 
         LLVMValueRef constnames = NULL;
         LLVMValueRef offsets = NULL;
-        if(a->interfaces.count)
+        if(a->interfaces.count && !a->ext)
         {
             int count = (int)a->interfaces.count;
             LLVMValueRef constnamesarr[a->interfaces.count];
@@ -217,7 +219,7 @@ void ac_make_class_definitions(AST *ast, CompilerBundle *cb)
         ac_make_class_destructor(ast, cb);
         ac_compile_class_init(a, cb);
 
-        if(a->interfaces.count)
+        if(a->interfaces.count && !a->ext)
         {
             int i;
             for(i = 0; i < h.table_len; i++) if(!h.interface_pointers[i])
@@ -258,6 +260,9 @@ void ac_make_class_constructor(AST *ast, CompilerBundle *cb, ac_class_helper *h)
 {
     ASTClassDecl *a = (ASTClassDecl *)ast;
     LLVMValueRef func = ac_gen_struct_constructor_func(a->name, cb, 0); // This just generates a name
+
+    if(a->ext)
+        return;
 
     EagleTypeType *ett = ett_pointer_type(ett_struct_type(a->name));
 
@@ -302,8 +307,11 @@ void ac_make_class_constructor(AST *ast, CompilerBundle *cb, ac_class_helper *h)
 
 void ac_make_class_destructor(AST *ast, CompilerBundle *cb)
 {
-    ASTStructDecl *a = (ASTStructDecl *)ast;
+    ASTClassDecl *a = (ASTClassDecl *)ast;
     LLVMValueRef func = ac_gen_struct_destructor_func(a->name, cb);
+
+    if(a->ext)
+        return;
 
     LLVMBasicBlockRef entry = LLVMAppendBasicBlock(func, "entry");
     LLVMPositionBuilderAtEnd(cb->builder, entry);

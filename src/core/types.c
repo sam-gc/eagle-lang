@@ -337,6 +337,7 @@ EagleTypeType *ett_function_type(EagleTypeType *retVal, EagleTypeType **params, 
     memcpy(ett->params, params, sizeof(EagleTypeType *) * pct);
     ett->pct = pct;
     ett->closure = NO_CLOSURE;
+    ett->gen = 0;
 
     pool_add(&type_mempool, ett);
     pool_add(&type_mempool, ett->params);
@@ -443,7 +444,10 @@ EagleType ett_get_base_type(EagleTypeType *type)
 int ett_are_same(EagleTypeType *left, EagleTypeType *right)
 {
     if(left->type != right->type)
+    {
         return 0;
+    }
+
 
     EagleType theType = left->type;
     if(theType == ETPointer)
@@ -484,6 +488,7 @@ int ett_are_same(EagleTypeType *left, EagleTypeType *right)
                 return 0;
         if(fl->closure != fr->closure)
             return 0;
+
         return fl->gen == fr->gen;
     }
 

@@ -1,0 +1,17 @@
+import lib-class.egl
+
+func runGreeting(Polite^ p)
+{
+    p->greet()
+}
+
+func main()
+{
+    var g = new Greeter('Sam')
+    g->greet()
+
+    g->setName('World')
+
+    runGreeting(g)
+}
+

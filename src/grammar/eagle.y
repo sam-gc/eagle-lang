@@ -121,13 +121,19 @@ classdecl           : TCLASS TTYPE TLBRACE classlist TRBRACE { $$ = $4; ast_clas
 classlist           : classlist variabledecl TSEMI { $$ = $1; ast_class_var_add($$, $2); }
                     | classlist funcdecl { $$ = $1; ast_class_method_add($$, $2); }
                     | classlist initdecl { $$ = $1; ast_class_set_init($$, $2); }
+                    | classlist funcident TSEMI { $$ = $1; ast_class_method_add($$, $2); }
+                    | classlist funcsident TSEMI { $$ = $1; ast_class_method_add($$, $2); }
                     | variabledecl TSEMI { $$ = ast_make_class_decl(); ast_class_var_add($$, $1); }
                     | funcdecl { $$ = ast_make_class_decl(); ast_class_method_add($$, $1); }
                     | initdecl { $$ = ast_make_class_decl(); ast_class_set_init($$, $1); }
+                    | funcident TSEMI { $$ = ast_make_class_decl(); ast_class_method_add($$, $1); }
+                    | funcsident TSEMI { $$ = ast_make_class_decl(); ast_class_method_add($$, $1); }
                     ;
 
 initdecl            : TIDENTIFIER TLPAREN TRPAREN block { $$ = ast_make_init_decl($1, $4, NULL); }
                     | TIDENTIFIER TLPAREN vardecllist TRPAREN block { $$ = ast_make_init_decl($1, $5, $3); }
+                    | TIDENTIFIER TLPAREN TRPAREN TSEMI { $$ = ast_make_init_decl($1, NULL, NULL); }
+                    | TIDENTIFIER TLPAREN vardecllist TRPAREN TSEMI { $$ = ast_make_init_decl($1, NULL, $3); }
                     ;
 
 funcdecl            : funcident block { ((ASTFuncDecl *)$1)->body = $2; $$ = $1; };
@@ -135,7 +141,9 @@ funcdecl            : funcident block { ((ASTFuncDecl *)$1)->body = $2; $$ = $1;
 gendecl             : genident block { ((ASTFuncDecl *)$1)->body = $2; $$ = $1; };
 
 externdecl          : TEXTERN funcident { $$ = $2; }
-                    | TEXTERN funcsident { $$ = $2; };
+                    | TEXTERN funcsident { $$ = $2; }
+                    | TEXTERN classdecl { $$ = $2; ast_class_set_extern($$); }
+                    ;
 
 funcident           : TFUNC TIDENTIFIER TLPAREN TRPAREN TCOLON type { $$ = ast_make_func_decl($6, $2, NULL, NULL); }
                     | TFUNC TIDENTIFIER TLPAREN TRPAREN { $$ = ast_make_func_decl(ast_make_type((char *)"void"), $2, NULL, NULL); }

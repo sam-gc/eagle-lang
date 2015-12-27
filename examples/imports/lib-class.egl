@@ -1,0 +1,27 @@
+extern func printf(byte*...) : int
+
+interface Polite
+{
+    func greet()
+}
+
+class Greeter(Polite)
+{
+    byte* name
+
+    init(byte* name)
+    {
+        self->name = name
+    }
+
+    func greet()
+    {
+        printf('Hello, %s\n', self->name)
+    }
+
+    func setName(byte* name)
+    {
+        self->name = name
+    }
+}
+
