@@ -1,0 +1,7 @@
+import lib-struct.egl
+
+func sum(TestStruct *s)
+{
+    s->result = s->a + s->b
+}
+

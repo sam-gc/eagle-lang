@@ -8,6 +8,8 @@
 #include "environment/imports.h"
 #include "multibuffer.h"
 
+#define YY_BUF_SIZE 32768
+
 extern char *yytext;
 
 extern FILE *yyin;
@@ -20,10 +22,13 @@ extern AST *ast_root;
 hashtable global_args;
 multibuffer *ymultibuffer = NULL;
 
+typedef void * YY_BUFFER_STATE;
+extern YY_BUFFER_STATE yy_create_buffer(FILE*, size_t);
+extern void yy_switch_to_buffer(YY_BUFFER_STATE buf);
+extern void yy_delete_buffer(YY_BUFFER_STATE buf);
+
 void first_pass()
 {
-    multibuffer *nbuffer = mb_alloc();
-
     int token;
     int saveNextStruct = 0;
     int saveNextClass = 0;
@@ -48,19 +53,12 @@ void first_pass()
         saveNextStruct = (token == TSTRUCT || token == TCLASS || token == TINTERFACE);
         saveNextClass = token == TCLASS;
         saveNextInterface = token == TINTERFACE;
-
-        if(token == TIMPORT)
-        {
-            char *include = imp_scan_file(yytext + 7);
-            mb_add_str(nbuffer, include);
-            free(include);
-        }
     }
 
     //rewind(yyin);
     mb_rewind(ymultibuffer);
-    mb_free(ymultibuffer);
-    ymultibuffer = nbuffer;
+    //mb_free(ymultibuffer);
+    //ymultibuffer = nbuffer;
     yylineno = 0;
 }
 
@@ -95,11 +93,16 @@ int main(int argc, const char *argv[])
     }
     */
 
-    ymultibuffer = mb_alloc();
+    ymultibuffer = imp_generate_imports(argv[1]);
     mb_add_file(ymultibuffer, argv[1]);
+
+    YY_BUFFER_STATE yybuf = yy_create_buffer(NULL, YY_BUF_SIZE);
+    yy_switch_to_buffer(yybuf);
+    
     ty_prepare();
     first_pass();
-    mb_add_file(ymultibuffer, argv[1]);
+
+    //mb_add_file(ymultibuffer, argv[1]);
 
     if(IN(global_args, "-h"))
     {
@@ -109,6 +112,7 @@ int main(int argc, const char *argv[])
     yyparse();
 
     mb_free(ymultibuffer);
+    yy_delete_buffer(yybuf);
 
     LLVMModuleRef module = ac_compile(ast_root);
 

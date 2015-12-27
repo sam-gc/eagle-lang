@@ -3,6 +3,7 @@
 #include <limits.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 #include "imports.h"
 #include "compiler/ast.h"
 #include "grammar/eagle.tab.h"
@@ -30,7 +31,6 @@ char *imp_scan_file(const char *filename)
     Strbuilder strb;
     sb_init(&strb);
     FILE *f = fopen(filename, "r");
-    skip_type_check = 1;
     YY_BUFFER_STATE buf = yy_create_buffer(f, YY_BUF_SIZE);
     yypush_buffer_state(buf);
     int token;
@@ -56,7 +56,7 @@ char *imp_scan_file(const char *filename)
             in_class = 1;
         }
 
-        if(bracket_depth > (in_class ? 1 : 0) || token == TRBRACE || token == TEXTERN)
+        if(bracket_depth > (in_class ? 1 : 0) || token == TRBRACE || token == TEXTERN || token == TIMPORT)
             continue;
 
         if(token == TFUNC)
@@ -68,13 +68,23 @@ char *imp_scan_file(const char *filename)
 
     yypop_buffer_state();
     fclose(f);
-    skip_type_check = 0;
 
     return strb.buffer;
 }
 
 static hashtable all_imports;
-multibuffer *imp_generate_imports(const char *filename, multibuffer *inb)
+
+void imp_build_buffer(void *k, void *v, void *data)
+{
+    multibuffer *mb = data;
+    char *filename = k;
+
+    char *text = imp_scan_file(filename);
+    mb_add_str(mb, text);
+    free(text);
+}
+
+multibuffer *imp_generate_imports(const char *filename)
 {
     all_imports = hst_create();
 
@@ -83,6 +93,8 @@ multibuffer *imp_generate_imports(const char *filename, multibuffer *inb)
     arraylist work = arr_create(10);
     int offset = 0;
     arr_append(&work, realpath(filename, NULL));
+
+    char *cwd = getcwd(NULL, 0);
 
     while(offset < work.count)
     {
@@ -111,12 +123,21 @@ multibuffer *imp_generate_imports(const char *filename, multibuffer *inb)
                 }
 
                 arr_append(&work, rp);
+                hst_put(&all_imports, rp, PYES, NULL, NULL);
             }
         }
 
         yypop_buffer_state();
-        fclose(f);
         free(dir);
     }
+
+    chdir(cwd);
+    free(cwd);
+
+    multibuffer *buf = mb_alloc();
+    hst_for_each(&all_imports, imp_build_buffer, buf);
+    skip_type_check = 0;
+
+    return buf;
 }
 

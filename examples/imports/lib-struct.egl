@@ -1,0 +1,6 @@
+struct TestStruct
+{
+    int a
+    int b
+    int result
+}

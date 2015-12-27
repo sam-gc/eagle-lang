@@ -1,0 +1,11 @@
+import lib.egl
+
+func main()
+{
+    TestStruct st
+    st.a = 11
+    st.b = 22
+
+    sum(&st)
+    puts st.result
+}

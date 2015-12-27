@@ -49,6 +49,9 @@ LLVMModuleRef ac_compile(AST *ast)
 
     AST *old = ast;
     for(; ast; ast = ast->next)
+        ac_add_early_name_declaration(ast, &cb);
+    ast = old;
+    for(; ast; ast = ast->next)
         ac_add_early_declarations(ast, &cb);
 
     vs_put(cb.varScope, (char *)"__egl_millis", LLVMGetNamedFunction(cb.module, "__egl_millis"), ett_function_type(ett_base_type(ETInt64), NULL, 0));
@@ -117,7 +120,7 @@ void ac_prepare_module(LLVMModuleRef module)
     LLVMAddFunction(module, "__egl_lookup_method", func_type_rc);
 }
 
-void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
+void ac_add_early_name_declaration(AST *ast, CompilerBundle *cb)
 {
     if(ast->type == ASTRUCTDECL)
     {
@@ -130,7 +133,10 @@ void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
         ac_add_class_declaration(ast, cb);
         return;
     }
+}
 
+void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
+{
     if(ast->type == AGENDECL)
     {
         ac_add_gen_declaration(ast, cb);
