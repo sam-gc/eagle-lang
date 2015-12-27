@@ -1,10 +1,17 @@
 #include <stdio.h>
+#include <libgen.h>
+#include <limits.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include "imports.h"
 #include "compiler/ast.h"
 #include "grammar/eagle.tab.h"
 #include "core/stringbuilder.h"
-#define YY_BUF_SIZE 32768
+#include "core/hashtable.h"
+#include "core/shipping.h"
 
+#define YY_BUF_SIZE 32768
+#define PYES ((void *)(uintptr_t)1)
 
 typedef void* YY_BUFFER_STATE;
 
@@ -65,3 +72,51 @@ char *imp_scan_file(const char *filename)
 
     return strb.buffer;
 }
+
+static hashtable all_imports;
+multibuffer *imp_generate_imports(const char *filename, multibuffer *inb)
+{
+    all_imports = hst_create();
+
+    skip_type_check = 1;
+
+    arraylist work = arr_create(10);
+    int offset = 0;
+    arr_append(&work, realpath(filename, NULL));
+
+    while(offset < work.count)
+    {
+        filename = arr_get(&work, offset++);
+
+        FILE *f = fopen(filename, "r");
+        YY_BUFFER_STATE buf = yy_create_buffer(f, YY_BUF_SIZE);
+        yypush_buffer_state(buf);
+
+        char *dup = strdup(filename);
+        char *dir = dirname(dup);
+        chdir(dir);
+
+        int token;
+        while((token = yylex()) != 0)
+        {
+            if(token == TIMPORT)
+            {
+                char *nw = yytext + 7;
+                char *rp = realpath(nw, NULL);
+
+                if(IN(all_imports, rp))
+                {
+                    free(rp);
+                    continue;
+                }
+
+                arr_append(&work, rp);
+            }
+        }
+
+        yypop_buffer_state();
+        fclose(f);
+        free(dir);
+    }
+}
+
