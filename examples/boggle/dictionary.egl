@@ -1,0 +1,53 @@
+import trie.egl
+
+extern func fopen(byte*, byte*) : any*
+extern func fgets(byte*, int, any*) : int
+extern func fclose(any*) : int
+extern func strlen(byte*) : int
+extern func exit(int)
+extern func printf(byte*...) : int
+
+class Dictionary
+{
+    Trie^ core
+
+    init(byte* filename)
+    {
+        self->core = new Trie()
+        self->core->default = 50
+
+        var f = fopen(filename, 'r')
+
+        if !f
+        {
+            printf('Dictionary file "%s" not found. Please supply it in the working directory.\n', filename)
+            exit(0)
+        }
+
+        byte[100] buf
+
+        for fgets(buf, 100, f)
+        {
+            buf[strlen(buf) - 1] = 0
+
+            self->addWord(buf)
+        }
+        fclose(f)
+    }
+
+    func addWord(byte* word)
+    {
+        self->core->put(word, 100)
+    }
+
+    func isWord(byte* word) : bool
+    {
+        return self->core->get(word) == 100
+    }
+
+    func isPrefix(byte* prfx) : bool
+    {
+        return self->core->get(prfx) > 0
+    }
+}
+

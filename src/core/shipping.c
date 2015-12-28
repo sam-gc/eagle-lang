@@ -99,7 +99,7 @@ void shp_produce_binary(ShippingCrate *crate)
         */
     }
 
-    sprintf(command, CC " -c /tmp/egl_out.s -o %s", outfile); //objectfile, rcfile, outfile);
+    sprintf(command, CC " -c /tmp/egl_out.s -o %s -g", outfile); //objectfile, rcfile, outfile);
     
     system(command);
 
@@ -125,7 +125,7 @@ void shp_produce_executable(ShippingCrate *crate)
     char command[500 + strlen(outfile) + strlen(sbd.buffer)];
 
     const char *rcfile = IN(global_args, "--no-rc") ? "" : "rc.o";
-    sprintf(command, CC " %s %s -o %s", sbd.buffer, rcfile, outfile);
+    sprintf(command, CC " %s %s -o %s -lm", rcfile, sbd.buffer, outfile);
     free(sbd.buffer); 
 
     system(command);

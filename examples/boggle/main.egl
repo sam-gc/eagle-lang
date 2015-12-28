@@ -1,0 +1,22 @@
+import solver.egl
+
+extern func free(any*)
+extern func printf(byte*...) : int
+
+func main() : int
+{
+    var solver = new Solver('serspatglinesers')
+
+    var found = solver->solve()
+
+    for var n = found->head; n; n = n->next
+    {
+        puts byte*@n->val
+        free(n->val)
+    }
+
+    printf('Found %d words from board serspatglinesers\n', found->length)
+
+    solver->cleanup()
+    return 0
+}

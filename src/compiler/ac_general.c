@@ -173,6 +173,15 @@ void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
         vs_put(cb->varScope, a->ident, func, ett_function_type(retType->etype, eparam_types, ct));
         return;
     }
+    if(strcmp(a->ident, "free") == 0)
+    {
+        LLVMValueRef func = LLVMGetNamedFunction(cb->module, "free");
+        if(func)
+        {
+            vs_put(cb->varScope, a->ident, func, ett_function_type(retType->etype, eparam_types, ct));
+            return;
+        }
+    }
 
     LLVMTypeRef func_type = LLVMFunctionType(ett_llvm_type(retType->etype), param_types, ct, a->vararg);
     LLVMValueRef func = LLVMAddFunction(cb->module, a->ident, func_type);

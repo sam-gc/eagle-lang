@@ -47,7 +47,7 @@ void ac_generate_interface_definitions(AST *ast, CompilerBundle *cb)
     }
 }
 
-void ac_compile_class_init(ASTClassDecl *cd, CompilerBundle *cb)
+void ac_class_add_early_definitions(ASTClassDecl *cd, CompilerBundle *cb)
 {
     ASTFuncDecl *fd = (ASTFuncDecl *)cd->initdecl;
     if(!fd)
@@ -61,12 +61,26 @@ void ac_compile_class_init(ASTClassDecl *cd, CompilerBundle *cb)
     ety->params[0] = ett_pointer_type(ett_struct_type(cd->name));
     ((EaglePointerType *)ety->params[0])->counted = 1;
     LLVMTypeRef ft = ett_llvm_type((EagleTypeType *)ety);
-    LLVMValueRef func = LLVMAddFunction(cb->module, method_name, ft);
+    LLVMAddFunction(cb->module, method_name, ft);
 
     //ty_add_method(cd->name, fd->ident, (EagleTypeType *)ety);
     ty_add_init(cd->name, (EagleTypeType *)ety);
 
     free(method_name);
+}
+
+void ac_compile_class_init(ASTClassDecl *cd, CompilerBundle *cb)
+{
+    ASTFuncDecl *fd = (ASTFuncDecl *)cd->initdecl;
+    if(!fd)
+        return;
+
+    char *method_name = ac_gen_method_name(cd->name, (char *)"__init__");
+    
+    LLVMValueRef func = LLVMGetNamedFunction(cb->module, method_name);
+
+    free(method_name);
+    EagleFunctionType *ety = (EagleFunctionType *)cd->inittype;
 
     if(!cd->ext)
         ac_compile_function_ex((AST *)fd, cb, func, ety);
@@ -214,6 +228,7 @@ void ac_make_class_definitions(AST *ast, CompilerBundle *cb)
 
         h.vtable = vtable;
 
+        ac_class_add_early_definitions(a, cb);
         hst_for_each(&a->method_types, ac_compile_class_methods_each, &h);
         ac_make_class_constructor(ast, cb, &h);
         ac_make_class_destructor(ast, cb);

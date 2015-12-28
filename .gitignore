@@ -27,3 +27,4 @@ old.makefile
 autom4te.cache/
 Makefile
 src/core/config.h
+examples/boggle/dict.txt

@@ -189,7 +189,7 @@ LLVMValueRef ac_compile_struct_member(AST *ast, CompilerBundle *cb, int keepPoin
     ast->resultantType = type;
 
     LLVMValueRef gep = LLVMBuildStructGEP(cb->builder, left, index, a->ident);
-    if(keepPointer || type->type == ETStruct || type->type == ETClass)
+    if(keepPointer || type->type == ETStruct || type->type == ETClass || type->type == ETArray)
         return gep;
     return LLVMBuildLoad(cb->builder, gep, "");
 }

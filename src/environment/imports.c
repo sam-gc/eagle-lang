@@ -59,7 +59,7 @@ char *imp_scan_file(const char *filename)
         if(bracket_depth > (in_class ? 1 : 0) || token == TRBRACE || token == TEXTERN || token == TIMPORT)
             continue;
 
-        if((token == TFUNC && !in_class) || token == TCLASS)
+        if((token == TFUNC && !in_class) || token == TCLASS || token == TSTRUCT)
             sb_append(&strb, "extern ");
 
         sb_append(&strb, yytext);
@@ -80,7 +80,7 @@ void imp_build_buffer(void *k, void *v, void *data)
     char *filename = k;
 
     char *text = imp_scan_file(filename);
-    //printf("%s\n", text);
+//    printf("%s\n", text);
     mb_add_str(mb, text);
     free(text);
 }

@@ -52,6 +52,9 @@ void ac_make_struct_copy_constructor(AST *ast, CompilerBundle *cb)
     ASTStructDecl *a = (ASTStructDecl *)ast;
     LLVMValueRef func = ac_gen_struct_constructor_func(a->name, cb, 1);
 
+    if(a->ext)
+        return;
+
     EagleTypeType *ett = ett_pointer_type(ett_struct_type(a->name));
 
     LLVMBasicBlockRef entry = LLVMAppendBasicBlock(func, "entry");
@@ -92,6 +95,9 @@ void ac_make_struct_constructor(AST *ast, CompilerBundle *cb)
     ASTStructDecl *a = (ASTStructDecl *)ast;
     LLVMValueRef func = ac_gen_struct_constructor_func(a->name, cb, 0);
 
+    if(a->ext)
+        return;
+
     EagleTypeType *ett = ett_pointer_type(ett_struct_type(a->name));
 
     LLVMBasicBlockRef entry = LLVMAppendBasicBlock(func, "entry");
@@ -117,6 +123,11 @@ void ac_make_struct_constructor(AST *ast, CompilerBundle *cb)
             param = LLVMBuildBitCast(cb->builder, param, LLVMPointerType(LLVMInt8Type(), 0), "");
             LLVMBuildCall(cb->builder, fc, &param, 1, "");
         }
+        else if(t->type == ETArray && ett_array_has_counted(t))
+        {
+            LLVMValueRef gep = LLVMBuildStructGEP(cb->builder, strct, i, "");
+            ac_nil_fill_array(cb, gep, ett_array_count(t));
+        }
     }
 
     LLVMBuildRetVoid(cb->builder);
@@ -126,6 +137,9 @@ void ac_make_struct_destructor(AST *ast, CompilerBundle *cb)
 {
     ASTStructDecl *a = (ASTStructDecl *)ast;
     LLVMValueRef func = ac_gen_struct_destructor_func(a->name, cb);
+
+    if(a->ext)
+        return;
 
     LLVMBasicBlockRef entry = LLVMAppendBasicBlock(func, "entry");
     LLVMPositionBuilderAtEnd(cb->builder, entry);
@@ -176,6 +190,11 @@ void ac_make_struct_destructor(AST *ast, CompilerBundle *cb)
                     LLVMPointerType(LLVMInt8Type(), 0), "");
             params[1] = LLVMConstInt(LLVMInt1Type(), 0, 0);
             LLVMBuildCall(cb->builder, fc, params, 2, "");
+        }
+        else if(t->type == ETArray && ett_array_has_counted(t))
+        {
+            LLVMValueRef gep = LLVMBuildStructGEP(cb->builder, pos, i, "");
+            ac_decr_in_array(cb, gep, ett_array_count(t));
         }
     }
 

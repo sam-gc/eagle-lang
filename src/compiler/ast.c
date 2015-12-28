@@ -269,6 +269,7 @@ AST *ast_make_struct_decl()
     ast->name = NULL;
     ast->names = arr_create(10);
     ast->types = arr_create(10);
+    ast->ext = 0;
 
     pool_add(&ast_lst_mempool, &ast->names);
     pool_add(&ast_lst_mempool, &ast->types);
@@ -293,6 +294,12 @@ AST *ast_struct_name(AST *ast, char *name)
     ASTStructDecl *a = (ASTStructDecl *)ast;
     a->name = name;
     return ast;
+}
+
+void ast_struct_set_extern(AST *ast)
+{
+    ASTStructDecl *a = (ASTStructDecl *)ast;
+    a->ext = 1;
 }
 
 AST *ast_make_interface_decl()

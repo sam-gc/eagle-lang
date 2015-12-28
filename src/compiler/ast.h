@@ -161,6 +161,8 @@ typedef struct {
     struct AST *next;
     long lineno;
 
+    int ext;
+
     char *name;
     arraylist types;
     arraylist names;
@@ -220,6 +222,7 @@ AST *ast_make_auto_decl(char *ident);
 AST *ast_make_struct_decl();
 AST *ast_struct_add(AST *ast, AST *var);
 AST *ast_struct_name(AST *ast, char *name);
+void ast_struct_set_extern(AST *ast);
 AST *ast_make_class_decl();
 AST *ast_make_interface_decl();
 AST *ast_class_set_init(AST *cls, AST *init);

@@ -25,3 +25,12 @@ class Greeter(Polite)
     }
 }
 
+class Test
+{
+    byte* name
+    func test(): int*
+    {
+    return nil
+    }
+}
+

@@ -27,6 +27,11 @@ struct __egl_class_indir
     any** functions
 }
 
+func __egl_print_count(__egl_ptr* ptr)
+{
+    puts ptr->memcount
+}
+
 func __egl_prepare(__egl_ptr* ptr)
 {
     ptr->memcount = 0

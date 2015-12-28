@@ -1,0 +1,143 @@
+interface Queue
+{
+    func add(any^ e)
+    func remove() : any^
+    func count() : int
+}
+
+class LinkedList(Queue)
+{
+    int length
+    LLNode^ tail
+    LLNode^ head
+
+    init()
+    {
+        self->length = 0
+    }
+
+    func add(any^ e)
+    {
+        self->length += 1
+        var n = new LLNode
+        n->val = e
+
+        if !self->head
+        {
+            self->head = n
+            self->tail = n
+            return
+        }
+
+        self->tail->next = n
+        self->tail = n
+    }
+
+    func remove() : any^
+    {
+        if !self->head
+            return nil
+
+        var n = self->head
+        self->head = self->head->next
+        if !self->head
+            self->tail = nil
+
+        self->length -= 1
+        return n->val
+    }
+
+    func count() : int
+    {
+        return self->length
+    }
+}
+
+class LinkedListRaw
+{
+    int length
+    LLNodeRaw^ tail
+    LLNodeRaw^ head
+
+    init()
+    {
+        self->length = 0
+    }
+
+    func add(any* e)
+    {
+        self->length += 1
+        var n = new LLNodeRaw
+        n->val = e
+
+        if !self->head
+        {
+            self->head = n
+            self->tail = n
+            return
+        }
+
+        self->tail->next = n
+        self->tail = n
+    }
+
+    func remove() : any*
+    {
+        if !self->head
+            return nil
+
+        var n = self->head
+        self->head = self->head->next
+        if !self->head
+            self->tail = nil
+
+        self->length -= 1
+        return n->val
+    }
+
+    func get(int i) : any*
+    {
+        var n = self->head
+        for int ct = 0; ct < i; ct += 1
+        {
+            n = n->next
+        }
+
+        return n->val
+    }
+
+    func last() : any*
+    {
+        return self->tail->val
+    }
+
+    func count() : int
+    {
+        return self->length
+    }
+
+    func dup() : LinkedListRaw^
+    {
+        var out = new LinkedListRaw()
+        var n = self->head
+        for n; n; n = n->next
+        {
+            out->add(n->val)
+        }
+
+        return out
+    }
+}
+
+struct LLNode
+{
+    LLNode^ next
+    any^ val
+}
+
+struct LLNodeRaw
+{
+    LLNode^ next
+    any* val
+}
+

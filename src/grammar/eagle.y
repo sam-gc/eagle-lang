@@ -143,6 +143,7 @@ gendecl             : genident block { ((ASTFuncDecl *)$1)->body = $2; $$ = $1; 
 externdecl          : TEXTERN funcident { $$ = $2; }
                     | TEXTERN funcsident { $$ = $2; }
                     | TEXTERN classdecl { $$ = $2; ast_class_set_extern($$); }
+                    | TEXTERN structdecl { $$ = $2; ast_struct_set_extern($$); }
                     ;
 
 funcident           : TFUNC TIDENTIFIER TLPAREN TRPAREN TCOLON type { $$ = ast_make_func_decl($6, $2, NULL, NULL); }

@@ -829,6 +829,8 @@ int ty_needs_destructor(EagleTypeType *ett)
             return 1;
         if(ty->type == ETStruct)
             return ty_needs_destructor(ty);
+        if(ty->type == ETArray && ett_array_has_counted(ty))
+            return 1;
     }
 
     return 0;

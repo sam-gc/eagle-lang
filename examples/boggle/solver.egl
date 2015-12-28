@@ -1,0 +1,169 @@
+import dictionary.egl
+import linkedlist.egl
+
+extern func fmod(double, double) : double
+extern func strdup(byte*) : byte*
+extern func malloc(long) : any*
+extern func free(any*)
+extern func __egl_print_count(any^)
+
+func mod(int a, int b) : int
+{
+    return int@fmod(a, b)
+}
+
+func resolve(int x, int y) : int
+{
+    return y * 4 + x
+}
+
+class Solver
+{
+    Dictionary^ dict
+    Tile* tiles
+    LinkedListRaw^ found
+
+    init(byte* str)
+    {
+        self->dict = new Dictionary('dict.txt')
+        int len = strlen(str)
+
+        self->tiles = malloc(500)
+
+        for int i = 0; i < len; i += 1
+        {
+            int x = mod(i, 4)
+            int y = i / 4
+
+            var t = &self->tiles[i]
+            t->x = x
+            t->y = y
+            t->val = str[i]
+        }
+
+    }
+
+    func listContains(LinkedListRaw^ ll, Tile* t) : bool
+    {
+        var n = ll->head
+        for n; n; n = n->next
+        {
+            if n->val == t
+                return yes
+        }
+
+        return no
+    }
+
+    func cleanup()
+    {
+        free(self->tiles)
+    }
+
+    func listToString(LinkedListRaw^ ll, byte* buf)
+    {
+        var n = ll->head
+        int i
+        for i = 0; i < ll->length; i += 1
+        {
+            Tile* t = n->val
+            buf[i] = t->val
+
+            n = n->next
+        }
+        buf[i] = 0
+    }
+
+    func solveFrom(Tile* t)
+    {
+        LinkedList^ work = new LinkedList()
+
+        var start = new LinkedListRaw()
+        start->add(t)
+        work->add(start)
+
+        int[8][2] neighbors
+        setNeighbors(neighbors)
+
+        for work->count()
+        {
+            LinkedListRaw^ current = work->remove()
+            Tile* last = current->last()
+            for int i = 0; i < 8; i += 1
+            {
+                int nX = last->x + neighbors[i][0]
+                int nY = last->y + neighbors[i][1]
+
+                if nX >= 0 && nX <= 3 && nY >= 0 && nY <= 3
+                {
+
+                    Tile* next = &self->tiles[resolve(nX, nY)]
+
+                    if self->listContains(current, next)
+                        continue
+
+                    var nxtWork = current->dup()
+                    nxtWork->add(next)
+
+                    byte[20] buf
+                    self->listToString(nxtWork, buf)
+                    if self->dict->isWord(buf) && strlen(buf) > 3
+                        self->found->add(strdup(buf))
+
+                    if self->dict->isPrefix(buf)
+                        work->add(nxtWork)
+                }
+            }
+        }
+    }
+
+    func solve() : LinkedList^
+    {
+        self->found = new LinkedListRaw()
+        for int i = 0; i < 16; i += 1
+        {
+            int x = mod(i, 4)
+            int y = i / 4
+
+            self->solveFrom(&self->tiles[resolve(x, y)])
+        }
+
+        return self->found
+    }
+}
+
+func setNeighbors(int* ns)
+{
+    int non = 0-1
+    ns[0] = non
+    ns[1] = non
+
+    ns[2] = 0
+    ns[3] = non
+
+    ns[4] = 1
+    ns[5] = non
+
+    ns[6] = 1
+    ns[7] = 0
+
+    ns[8] = 1
+    ns[9] = 1
+
+    ns[10] = 0
+    ns[11] = 1
+
+    ns[12] = non
+    ns[13] = 1
+
+    ns[14] = non
+    ns[15] = 0
+}
+
+struct Tile
+{
+    int x
+    int y
+    byte val
+}
+
