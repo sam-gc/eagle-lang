@@ -43,6 +43,11 @@ class Solver
 
     }
 
+    destruct()
+    {
+        free(self->tiles)
+    }
+
     func listContains(LinkedListRaw^ ll, Tile* t) : bool
     {
         var n = ll->head
@@ -53,11 +58,6 @@ class Solver
         }
 
         return no
-    }
-
-    func cleanup()
-    {
-        free(self->tiles)
     }
 
     func listToString(LinkedListRaw^ ll, byte* buf)

@@ -48,7 +48,7 @@ func __egl_decr_no_free(__egl_ptr* ptr)
 
 func __egl_incr_ptr(__egl_ptr* ptr)
 {
-    if ptr
+    if ptr && ptr->memcount > 0-5
         ptr->memcount = ptr->memcount + 1
 }
 
@@ -75,7 +75,10 @@ func __egl_decr_ptr(__egl_ptr* ptr)
         }
 
         if ptr->teardown
+        {
+            ptr->memcount = 0-20
             ptr->teardown(ptr, 1)
+        }
         free(ptr)
     }
 }

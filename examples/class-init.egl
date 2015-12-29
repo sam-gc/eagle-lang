@@ -1,4 +1,6 @@
 extern func printf(byte*...) : int
+extern func strdup(byte*) : byte*
+extern func free(any*)
 
 class Greeter
 {
@@ -23,7 +25,12 @@ class BasicGreeter
     
     init()
     {
-        self->name = 'World'
+        self->name = strdup('World')
+    }
+
+    destruct()
+    {
+        free(self->name)
     }
 
     func greet()

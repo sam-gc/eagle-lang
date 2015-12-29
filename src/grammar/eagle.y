@@ -130,10 +130,10 @@ classlist           : classlist variabledecl TSEMI { $$ = $1; ast_class_var_add(
                     | funcsident TSEMI { $$ = ast_make_class_decl(); ast_class_method_add($$, $1); }
                     ;
 
-initdecl            : TIDENTIFIER TLPAREN TRPAREN block { $$ = ast_make_init_decl($1, $4, NULL); }
-                    | TIDENTIFIER TLPAREN vardecllist TRPAREN block { $$ = ast_make_init_decl($1, $5, $3); }
-                    | TIDENTIFIER TLPAREN TRPAREN TSEMI { $$ = ast_make_init_decl($1, NULL, NULL); }
-                    | TIDENTIFIER TLPAREN vardecllist TRPAREN TSEMI { $$ = ast_make_init_decl($1, NULL, $3); }
+initdecl            : TIDENTIFIER TLPAREN TRPAREN block { $$ = ast_make_class_special_decl($1, $4, NULL); }
+                    | TIDENTIFIER TLPAREN vardecllist TRPAREN block { $$ = ast_make_class_special_decl($1, $5, $3); }
+                    | TIDENTIFIER TLPAREN TRPAREN TSEMI { $$ = ast_make_class_special_decl($1, NULL, NULL); }
+                    | TIDENTIFIER TLPAREN vardecllist TRPAREN TSEMI { $$ = ast_make_class_special_decl($1, NULL, $3); }
                     ;
 
 funcdecl            : funcident block { ((ASTFuncDecl *)$1)->body = $2; $$ = $1; };

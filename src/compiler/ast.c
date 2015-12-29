@@ -194,10 +194,11 @@ AST *ast_set_vararg(AST *ast)
     return ast;
 }
 
-AST *ast_make_init_decl(char *ident, AST *body, AST *params)
+AST *ast_make_class_special_decl(char *ident, AST *body, AST *params)
 {
-    if(strcmp(ident, "init"))
+    if(strcmp(ident, "init") && strcmp(ident, "destruct"))
         die(yylineno, "Unexpected identifier: %s", ident);
+
     ASTFuncDecl *ast = ast_malloc(sizeof(ASTFuncDecl));
     ast->type = AFUNCDECL;
     ast->retType = ast_make_type((char *)"void");
@@ -322,6 +323,7 @@ AST *ast_make_class_decl()
     ast->method_types = hst_create();
     ast->initdecl = NULL;
     ast->interfaces = arr_create(5);
+    ast->destructdecl = NULL;
 
     pool_add(&ast_lst_mempool, &ast->names);
     pool_add(&ast_lst_mempool, &ast->types);
@@ -362,8 +364,6 @@ void ast_class_add_interface(AST *ast, AST *interfaces)
 AST *ast_class_set_init(AST *ast, AST *init)
 {
     ASTClassDecl *cls = (ASTClassDecl *)ast;
-    cls->initdecl = init;
-
     ASTFuncDecl *f = (ASTFuncDecl *)init;
 
     AST *impl = ast_make_var_decl(ast_make_pointer(ast_make_type((char *)"any")), (char *)"self");
@@ -380,9 +380,20 @@ AST *ast_class_set_init(AST *ast, AST *init)
 
     EagleTypeType *ttype = ett_function_type(((ASTTypeDecl *)f->retType)->etype, (EagleTypeType **)list.items, list.count);
     ((EagleFunctionType *)ttype)->closure = 0;
-    arr_free(&list);
 
-    cls->inittype = ttype;
+    arr_free(&list);
+    if(strcmp(f->ident, "init") == 0)
+    {
+        cls->inittype = ttype;
+        cls->initdecl = init;
+    }
+    else
+    {
+        if(((EagleFunctionType *)ttype)->pct > 1)
+            die(yylineno, "Custom destructors can't accept parameters");
+        cls->destructtype = ttype;
+        cls->destructdecl = init;
+    }
 
     return ast;
 }

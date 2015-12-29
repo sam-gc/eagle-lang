@@ -191,7 +191,9 @@ typedef struct {
     arraylist names;
 
     struct AST *initdecl;
+    struct AST *destructdecl;
     EagleTypeType *inittype;
+    EagleTypeType *destructtype;
 
     arraylist interfaces;
 
@@ -214,7 +216,7 @@ AST *ast_make_cstr(char *text);
 AST *ast_make_identifier(char *ident);
 AST *ast_set_vararg(AST *ast);
 AST *ast_make_func_decl(AST *type, char *ident, AST *body, AST *params);
-AST *ast_make_init_decl(char *ident, AST *body, AST *params);
+AST *ast_make_class_special_decl(char *ident, AST *body, AST *params);
 AST *ast_make_gen_decl(AST *type, char *ident, AST *body, AST *params);
 AST *ast_make_func_call(AST *callee, AST *params);
 AST *ast_make_var_decl(AST *type, char *ident);

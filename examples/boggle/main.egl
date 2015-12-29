@@ -17,6 +17,5 @@ func main() : int
 
     printf('Found %d words from board serspatglinesers\n', found->length)
 
-    solver->cleanup()
     return 0
 }
