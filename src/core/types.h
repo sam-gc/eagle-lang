@@ -28,6 +28,7 @@
 #define ET_HAS_CLOASED(p) ((p)->type == ETFunction && ((EagleFunctionType *)(p))->closure == CLOSURE_CLOSE)
 #define ET_IS_RECURSE(p) ((p)->type == ETFunction && ((EagleFunctionType *)(p))->closure == CLOSURE_RECURSE)
 #define ET_POINTEE(p) (((EaglePointerType *)(p))->to)
+#define ET_IS_RAW_FUNCTION(p) ((p)->type == ETFunction && !((EagleFunctionType *)(p))->closure)
 
 extern LLVMTargetDataRef etTargetData;
 extern LLVMModuleRef the_module;

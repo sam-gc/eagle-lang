@@ -2,20 +2,45 @@ import solver.egl
 
 extern func free(any*)
 extern func printf(byte*...) : int
+extern func strcmp(byte*, byte*) : int
 
-func main() : int
+func main(int argc, byte** argv) : int
 {
-    var solver = new Solver('serspatglinesers')
+    byte* text = nil
+
+    if argc > 1
+        text = argv[1]
+    else
+        text = 'serspatglinesers'
+
+    if strlen(text) != 16
+    {
+        puts 'Board must be 16 characters long.'
+        return 0
+    }
+
+    var solver = new Solver(text)
 
     var found = solver->solve()
+
+    found->sort(func(any* a, any* b) : int {
+        int la = strlen(a)
+        int lb = strlen(b)
+
+        if la > lb
+            return 0-1
+        elif lb > la
+            return 1
+
+        return strcmp(a, b)
+    })
 
     for var n = found->head; n; n = n->next
     {
         puts byte*@n->val
-        free(n->val)
     }
 
-    printf('Found %d words from board serspatglinesers\n', found->length)
+    printf('Found %d words from board "%s"\n', found->length, text)
 
     return 0
 }

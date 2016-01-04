@@ -124,6 +124,8 @@ LLVMValueRef ac_finish_closure(CompilerBundle *cb, ClosureBundle *bun, LLVMTypeR
         LLVMValueRef func_des = LLVMAddFunction(cb->module, desname, des_func);
         free(desname);
 
+        LLVMSetLinkage(func_des, LLVMPrivateLinkage);
+
         LLVMBasicBlockRef dentry = LLVMAppendBasicBlock(func_des, "entry");
 
         LLVMPositionBuilderAtEnd(cb->builder, dentry);
@@ -164,6 +166,12 @@ void ac_closure_callback(VarBundle *vb, char *ident, void *data)
 {
     ClosureBundle *bun = data;
     CompilerBundle *cb = bun->cb;
+
+    if(ET_IS_RAW_FUNCTION(vb->type))
+    {
+        vs_put(cb->varScope, ident, vb->value, vb->type);
+        return;
+    }
 
     if(!ET_IS_CLOSED(vb->type))
         ac_replace_with_counted(cb, vb);
@@ -229,6 +237,7 @@ LLVMValueRef ac_compile_closure(AST *ast, CompilerBundle *cb)
 
     LLVMValueRef func = LLVMAddFunction(cb->module, ccode, funcType);
     cloclo.funcType = funcType;
+    LLVMSetLinkage(func, LLVMPrivateLinkage);
     
     cloclo.function = func;
 

@@ -1,0 +1,13 @@
+func output()
+{
+    puts 'Hello, world!'
+}
+
+func main()
+{
+    var clo = func() {
+        output()
+    }
+
+    clo()
+}

@@ -58,10 +58,23 @@ class LinkedListRaw
     int length
     LLNodeRaw^ tail
     LLNodeRaw^ head
+    (any*:)^ onFree
 
     init()
     {
         self->length = 0
+    }
+
+    destruct()
+    {
+        if !self->onFree
+            return
+
+        var n = self->head
+        for n; n; n = n->next
+        {
+            self->onFree(n->val)
+        }
     }
 
     func add(any* e)
@@ -126,6 +139,108 @@ class LinkedListRaw
         }
 
         return out
+    }
+
+    func split(LLNodeRaw^ head, LLNodeRaw^* front, LLNodeRaw^* back)
+    {
+        LLNodeRaw^ slow
+        LLNodeRaw^ fast
+
+        if !head || !head->next
+        {
+            front^ = head
+            back^ = nil
+            return
+        }
+
+        slow = head
+        fast = head->next
+
+        for fast
+        {
+            fast = fast->next
+
+            if fast
+            {
+                slow = slow->next
+                fast = fast->next
+            }
+        }
+
+        front^ = head
+        back^ = slow->next
+
+        slow->next = nil
+    }
+
+
+    func merge((any*, any* : int)^ test, LLNodeRaw^ left, LLNodeRaw^ right) : LLNodeRaw^
+    {
+        if !left
+            return right
+        if !right
+            return left
+
+        LLNodeRaw^ head = nil
+        LLNodeRaw^ tail = nil
+
+        for left && right
+        {
+            int t = test(left->val, right->val)
+            LLNodeRaw^ node
+            if t <= 0
+            {
+                node = left
+                left = left->next
+            }
+            else
+            {
+                node = right
+                right = right->next
+            }
+
+            if !tail
+            {
+                head = node
+                tail = node
+            }
+            else
+            {
+                tail->next = node
+                tail = node
+            }
+        }
+
+        if left
+            tail->next = left
+        elif right
+            tail->next = right
+
+        return head
+    }
+
+    func mergeSort((any*, any* : int)^ test, LLNodeRaw^ head) : LLNodeRaw^
+    {
+        LLNodeRaw^ a
+        LLNodeRaw^ b
+
+        if !head || !head->next
+        {
+            return head
+        }
+
+        self->split(head, &a, &b)
+
+        a = self->mergeSort(test, a)
+        b = self->mergeSort(test, b)
+
+        var m = self->merge(test, a, b)
+        return m
+    }
+
+    func sort((any*, any* : int)^ test)
+    {
+        self->head = self->mergeSort(test, self->head)
     }
 }
 
