@@ -35,10 +35,9 @@ func main(int argc, byte** argv) : int
         return strcmp(a, b)
     })
 
-    for var n = found->head; n; n = n->next
-    {
-        puts byte*@n->val
-    }
+    found->each(func(any* val) {
+        puts byte*@val
+    })
 
     printf('Found %d words from board "%s"\n', found->length, text)
 
