@@ -4,5 +4,6 @@
 #define CC "@CC@"
 #define @llvmvsn@
 #define EGL_VERSION "@PACKAGE_VERSION@"
+extern const char *rc_code;
 
 #endif

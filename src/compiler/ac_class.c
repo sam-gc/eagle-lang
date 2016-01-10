@@ -181,7 +181,8 @@ void ac_compile_class_methods_each(void *key, void *val, void *data)
 
     ety->params[0] = ett_pointer_type(ett_base_type(ETAny));
 
-    ac_check_and_register_implementation(fd->ident, h, cd->name, func, cd);
+    if(cd->interfaces.count && !cd->ext)
+        ac_check_and_register_implementation(fd->ident, h, cd->name, func, cd);
 }
 
 void ac_make_class_definitions(AST *ast, CompilerBundle *cb)

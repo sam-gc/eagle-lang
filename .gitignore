@@ -25,6 +25,7 @@ config.status
 config.log
 old.makefile
 autom4te.cache/
-Makefile
+/Makefile
 src/core/config.h
+src/core/config.c
 examples/boggle/dict.txt

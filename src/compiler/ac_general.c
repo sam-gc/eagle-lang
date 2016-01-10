@@ -17,7 +17,7 @@ void die(int lineno, const char *fmt, ...)
     exit(0);
 }
 
-LLVMModuleRef ac_compile(AST *ast)
+LLVMModuleRef ac_compile(AST *ast, int include_rc)
 {
     CompilerBundle cb;
     cb.module = LLVMModuleCreateWithNameInContext("main-module", LLVMGetGlobalContext());
@@ -34,7 +34,7 @@ LLVMModuleRef ac_compile(AST *ast)
 
     vs_push(cb.varScope);
 
-    if(!hst_get(&global_args, ARGS_COMPILE_RC, NULL, NULL))
+    if(include_rc)
         ac_prepare_module(cb.module);
     LLVMTypeRef param_types[] = {LLVMPointerType(LLVMInt8Type(), 0)};
     LLVMTypeRef func_type = LLVMFunctionType(LLVMInt32Type(), param_types, 1, 1);

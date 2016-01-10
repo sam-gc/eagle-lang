@@ -124,8 +124,8 @@ void shp_produce_executable(ShippingCrate *crate)
 
     char command[500 + strlen(outfile) + strlen(sbd.buffer)];
 
-    const char *rcfile = IN(global_args, "--no-rc") ? "" : "rc.o";
-    sprintf(command, CC " %s %s -o %s -lm", rcfile, sbd.buffer, outfile);
+    //const char *rcfile = IN(global_args, "--no-rc") ? "" : "rc.o";
+    sprintf(command, CC " %s -o %s -lm", sbd.buffer, outfile);
     free(sbd.buffer); 
 
     system(command);

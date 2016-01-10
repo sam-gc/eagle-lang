@@ -39,5 +39,9 @@ else
     AC_SUBST(llvmvsn, [llvm_OLD])
 fi
 
+awk -vRS="\n" -vORS="\\\n" '1' rc.egl > rc.egl.out
+AC_SUBST(configcode, `cat rc.egl.out`)
+
 AC_OUTPUT(Makefile)
 AC_OUTPUT(src/core/config.h)
+AC_OUTPUT(src/core/config.c)

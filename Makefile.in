@@ -73,7 +73,7 @@ rc.o: rc.egl
 #rc.o: rc.c
 #   $(CC) rc.c -c -o rc.o -g
 
-%: examples/%.egl rc.o
+%: examples/%.egl
 	./eagle $< -o $@
 
 builtex/%.e: examples/%.egl

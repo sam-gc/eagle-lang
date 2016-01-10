@@ -7,6 +7,7 @@
 #include "versioning.h"
 #include "environment/imports.h"
 #include "multibuffer.h"
+#include "config.h"
 
 #define YY_BUF_SIZE 32768
 #define SEQU(a, b) strcmp((a), (b)) == 0
@@ -111,13 +112,8 @@ void fill_crate(ShippingCrate *crate, int argc, const char *argv[])
     }
 }
 
-void compile_file(char *file, ShippingCrate *crate)
+void compile_generic(ShippingCrate *crate, int include_rc)
 {
-    ymultibuffer = imp_generate_imports(file);
-    mb_add_file(ymultibuffer, file);
-
-    crate->current_file = file;
-
     YY_BUFFER_STATE yybuf = yy_create_buffer(NULL, YY_BUF_SIZE);
     yy_switch_to_buffer(yybuf);
     
@@ -127,17 +123,12 @@ void compile_file(char *file, ShippingCrate *crate)
 
     //mb_add_file(ymultibuffer, argv[1]);
 
-    if(IN(global_args, "-h"))
-    {
-        imp_scan_file(file);
-    }
-
     yyparse();
 
     mb_free(ymultibuffer);
     yy_delete_buffer(yybuf);
 
-    LLVMModuleRef module = ac_compile(ast_root);
+    LLVMModuleRef module = ac_compile(ast_root, include_rc);
 
     ty_teardown();
 
@@ -156,6 +147,26 @@ void compile_file(char *file, ShippingCrate *crate)
     utl_free_registered();
     ast_free_nodes();
 }
+
+void compile_rc(ShippingCrate *crate)
+{
+    ymultibuffer = mb_alloc();
+    mb_add_str(ymultibuffer, rc_code);
+
+    crate->current_file = (char *)"__egl_rc_str.egl";
+
+    compile_generic(crate, 0);
+}
+
+void compile_file(char *file, ShippingCrate *crate)
+{
+    ymultibuffer = imp_generate_imports(file);
+    mb_add_file(ymultibuffer, file);
+    crate->current_file = file;
+
+    compile_generic(crate, !IN(global_args, "--no-rc"));
+}
+
 
 int main(int argc, const char *argv[])
 {
@@ -198,8 +209,12 @@ int main(int argc, const char *argv[])
     for(i = 0; i < crate.source_files.count; i++)
         compile_file(crate.source_files.items[i], &crate);
 
-    if(!IN(global_args, "-c"))
+    if(!IN(global_args, "-c") && !IN(global_args, "--llvm"))
+    {
+        if(!IN(global_args, "--no-rc"))
+            compile_rc(&crate);
         shp_produce_executable(&crate);
+    }
     
     return 0;
 }
