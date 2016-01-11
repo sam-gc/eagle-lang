@@ -164,7 +164,14 @@ void compile_file(char *file, ShippingCrate *crate)
     mb_add_file(ymultibuffer, file);
     crate->current_file = file;
 
-    compile_generic(crate, !IN(global_args, "--no-rc"));
+    if(IN(global_args, "-h"))
+    {
+        char *text = mb_get_first_str(ymultibuffer);
+        if(text)
+            printf("%s\n", mb_get_first_str(ymultibuffer));
+    }
+    else
+        compile_generic(crate, !IN(global_args, "--no-rc"));
 }
 
 
@@ -209,7 +216,7 @@ int main(int argc, const char *argv[])
     for(i = 0; i < crate.source_files.count; i++)
         compile_file(crate.source_files.items[i], &crate);
 
-    if(!IN(global_args, "-c") && !IN(global_args, "--llvm"))
+    if(!IN(global_args, "-c") && !IN(global_args, "--llvm") && !IN(global_args, "-h"))
     {
         if(!IN(global_args, "--no-rc"))
             compile_rc(&crate);

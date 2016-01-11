@@ -83,6 +83,16 @@ void mb_add_str(multibuffer *buf, const char *c)
     }
 }
 
+char *mb_get_first_str(multibuffer *buf)
+{
+    if(!buf->head)
+        return NULL;
+    if(buf->head->type == MBFILE)
+        return NULL;
+
+    return buf->head->src.s;
+}
+
 size_t min(size_t a, size_t b)
 {
     return a < b ? a : b;

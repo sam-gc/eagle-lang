@@ -1,3 +1,5 @@
+export .*
+
 struct TrieNode
 {
     TrieNode^[26] children

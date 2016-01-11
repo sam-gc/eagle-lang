@@ -5,11 +5,13 @@
 #include <unistd.h>
 #include <string.h>
 #include "imports.h"
+#include "exports.h"
 #include "compiler/ast.h"
 #include "grammar/eagle.tab.h"
 #include "core/stringbuilder.h"
 #include "core/hashtable.h"
 #include "core/shipping.h"
+#include "core/regex.h"
 
 #define YY_BUF_SIZE 32768
 #define PYES ((void *)(uintptr_t)1)
@@ -26,17 +28,27 @@ extern YY_BUFFER_STATE yy_create_buffer(FILE*, size_t);
 extern void yypush_buffer_state(YY_BUFFER_STATE);
 extern void yypop_buffer_state();
 
+static hashtable all_imports;
+static hashtable imports_exports;
+
 char *imp_scan_file(const char *filename)
 {
     Strbuilder strb;
+    Strbuilder stmp;
     sb_init(&strb);
+    sb_init(&stmp);
+
     FILE *f = fopen(filename, "r");
     YY_BUFFER_STATE buf = yy_create_buffer(f, YY_BUF_SIZE);
     yypush_buffer_state(buf);
     int token;
+
+    export_control *ec = hst_get(&imports_exports, (char *)filename, NULL, NULL);
     
     int bracket_depth = 0;
     int in_class = 0;
+    int save_next = 0;
+    char *identifier = NULL;
     while((token = yylex()) != 0)
     {
         if(token == TLBRACE)
@@ -47,7 +59,7 @@ char *imp_scan_file(const char *filename)
             if(bracket_depth == 0 && in_class)
             {
                 in_class = 0;
-                sb_append(&strb, "} ");
+                sb_append(&stmp, "} ");
             }
         }
 
@@ -56,23 +68,53 @@ char *imp_scan_file(const char *filename)
             in_class = 1;
         }
 
-        if(bracket_depth > (in_class ? 1 : 0) || token == TRBRACE || token == TEXTERN || token == TIMPORT)
+        if(bracket_depth > (in_class ? 1 : 0) || token == TRBRACE || token == TEXTERN || token == TIMPORT || token == TEXPORT)
             continue;
 
-        if((token == TFUNC && !in_class) || token == TCLASS || token == TSTRUCT)
-            sb_append(&strb, "extern ");
+        if(save_next)
+        {
+            save_next = 0;
+            identifier = strdup(yytext);
+        }
 
-        sb_append(&strb, yytext);
-        sb_append(&strb, " ");
+        if(token == TCLASS || token == TSTRUCT || token == TINTERFACE || token == TFUNC)
+            save_next = 1;
+
+        if((token == TFUNC && !in_class) || token == TCLASS || token == TSTRUCT)
+            sb_append(&stmp, "extern ");
+
+        sb_append(&stmp, yytext);
+        sb_append(&stmp, " ");
+
+        if(token == TFUNC || token == TCLASS || token == TSTRUCT || token == TEXTERN || token == TINTERFACE)
+        {
+            if(identifier)
+            {
+                if(ec_allow(ec, identifier))
+                    sb_append(&strb, stmp.buffer);
+
+                free(stmp.buffer);
+                free(identifier);
+            }
+            sb_init(&stmp);
+            identifier = NULL;
+        }
     }
+
+     if(identifier)
+     {
+         if(ec_allow(ec, identifier))
+             sb_append(&strb, stmp.buffer);
+
+         free(stmp.buffer);
+         free(identifier);
+     }
 
     yypop_buffer_state();
     fclose(f);
 
     return strb.buffer;
 }
-
-static hashtable all_imports;
 
 void imp_build_buffer(void *k, void *v, void *data)
 {
@@ -88,6 +130,8 @@ void imp_build_buffer(void *k, void *v, void *data)
 multibuffer *imp_generate_imports(const char *filename)
 {
     all_imports = hst_create();
+    imports_exports = hst_create();
+    imports_exports.duplicate_keys = 1;
 
     skip_type_check = 1;
 
@@ -100,6 +144,8 @@ multibuffer *imp_generate_imports(const char *filename)
     while(offset < work.count)
     {
         filename = arr_get(&work, offset++);
+
+        export_control *ec = ec_alloc();
 
         FILE *f = fopen(filename, "r");
         YY_BUFFER_STATE buf = yy_create_buffer(f, YY_BUF_SIZE);
@@ -126,10 +172,17 @@ multibuffer *imp_generate_imports(const char *filename)
                 arr_append(&work, rp);
                 hst_put(&all_imports, rp, PYES, NULL, NULL);
             }
+
+            if(token == TEXPORT)
+                ec_add_str(ec, yytext + 7);
         }
 
         yypop_buffer_state();
         free(dir);
+
+        char *rp = realpath(filename, NULL);
+        hst_put(&imports_exports, rp, ec, NULL, NULL);
+        free(rp);
     }
 
     chdir(cwd);
@@ -138,6 +191,8 @@ multibuffer *imp_generate_imports(const char *filename)
     multibuffer *buf = mb_alloc();
     hst_for_each(&all_imports, imp_build_buffer, buf);
     skip_type_check = 0;
+
+    hst_free(&imports_exports);
 
     return buf;
 }

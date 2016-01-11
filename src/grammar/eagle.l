@@ -39,6 +39,7 @@ nvar {alpha}({alpha}|{digit})*
 strlit \"(\\.|[^"])*\"
 comment (\#|(\-\-)).*(\n)
 import "import ".*
+export "export ".*
 lbrace ("{"|"{"{whitechar}*"\n"|"\n"{whitechar}*"{")
 rbrace ("}"|"}"{whitechar}*"\n")
 func ("func"|"func"{whitechar}*"\n")
@@ -54,6 +55,7 @@ cstr '(\\.|[^'])*'
 {integer}     { SAVE_NL; SAVE_TOKEN; return TINT; }
 {real}      { SAVE_NL; SAVE_TOKEN; return TDOUBLE; }
 {import}    { SAVE_TOKEN; return TIMPORT; }
+{export}    { SAVE_TOKEN; return TEXPORT; }
 "+"         DISCARD_NL; return SET(TPLUS);
 "+="        DISCARD_NL; return SET(TPLUSE);
 "-"         DISCARD_NL; return SET(TMINUS);

@@ -1,3 +1,5 @@
+export .*
+
 interface Queue
 {
     func add(any^ e)
