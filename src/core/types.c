@@ -11,6 +11,7 @@
 #include "hashtable.h"
 #include "types.h"
 #include "mempool.h"
+#include "utils.h"
 
 extern void die(int, const char *, ...);
 
@@ -193,7 +194,7 @@ LLVMTypeRef ett_llvm_type(EagleTypeType *type)
             ptmp[0] = LLVMPointerType(LLVMInt8Type(), 0);
             ptmp[1] = LLVMPointerType(LLVMInt8Type(), 0);
 
-            generator_type = LLVMStructCreateNamed(LLVMGetGlobalContext(), "__egl_gen_strct");
+            generator_type = LLVMStructCreateNamed(utl_get_current_context(), "__egl_gen_strct");
             LLVMStructSetBody(generator_type, ptmp, 2, 0);
             return generator_type;
         }
@@ -531,7 +532,7 @@ LLVMTypeRef ty_class_indirect()
     if(indirect_struct_type)
         return indirect_struct_type;
 
-    indirect_struct_type = LLVMStructCreateNamed(LLVMGetGlobalContext(), "__egl_class_indirect");
+    indirect_struct_type = LLVMStructCreateNamed(utl_get_current_context(), "__egl_class_indirect");
 
     LLVMTypeRef tys[] = {
         LLVMInt32Type(),
@@ -843,7 +844,7 @@ LLVMTypeRef ty_get_counted(LLVMTypeRef in)
 
     if(!ref)
     {
-        ref = LLVMStructCreateNamed(LLVMGetGlobalContext(), "");
+        ref = LLVMStructCreateNamed(utl_get_current_context(), "");
         LLVMTypeRef tys[6];
         LLVMGetStructElementTypes(in, tys);
 

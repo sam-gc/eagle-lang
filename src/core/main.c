@@ -191,7 +191,6 @@ void compile_file(char *file, ShippingCrate *crate)
     }
 }
 
-
 int main(int argc, const char *argv[])
 {
     global_args = hst_create();
@@ -231,13 +230,21 @@ int main(int argc, const char *argv[])
     fill_crate(&crate, argc, argv);
 
     for(i = 0; i < crate.source_files.count; i++)
+    {
+        utl_set_current_context(LLVMContextCreate());
         compile_file(crate.source_files.items[i], &crate);
+        LLVMContextDispose(utl_get_current_context());
+    }
 
     if(!IN(global_args, "-c") && !IN(global_args, "--llvm") && !IN(global_args, "-h") &&
        !IN(global_args, "--dump-code"))
     {
         if(!IN(global_args, "--no-rc"))
+        {
+            utl_set_current_context(LLVMContextCreate());
             compile_rc(&crate);
+            LLVMContextDispose(utl_get_current_context());
+        }
         shp_produce_executable(&crate);
     }
     

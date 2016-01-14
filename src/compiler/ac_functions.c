@@ -1,4 +1,5 @@
 #include "ast_compiler.h"
+#include "core/utils.h"
 
 char *ac_closure_context_name(char *name)
 {
@@ -41,14 +42,14 @@ void ac_pre_prepare_closure(CompilerBundle *cb, char *name, ClosureBundle *bun)
 LLVMValueRef ac_finish_closure(CompilerBundle *cb, ClosureBundle *bun, LLVMTypeRef *storageType)
 {
     char *cloname = ac_closure_closure_name(bun->name);
-    LLVMTypeRef cloType = LLVMStructCreateNamed(LLVMGetGlobalContext(), cloname);
+    LLVMTypeRef cloType = LLVMStructCreateNamed(utl_get_current_context(), cloname);
     free(cloname);
 
     bun->contextType = NULL;
     if(bun->contextTypes->count)
     {
         char *ctxname = ac_closure_context_name(bun->name);
-        bun->contextType = LLVMStructCreateNamed(LLVMGetGlobalContext(), ctxname);
+        bun->contextType = LLVMStructCreateNamed(utl_get_current_context(), ctxname);
         free(ctxname);
         LLVMStructSetBody(bun->contextType, (LLVMTypeRef *)bun->contextTypes->items, bun->contextTypes->count, 0);
     }

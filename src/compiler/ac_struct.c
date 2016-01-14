@@ -1,5 +1,5 @@
 #include "ast_compiler.h"
-
+#include "core/utils.h"
 
 void ac_scope_leave_struct_callback(LLVMValueRef pos, EagleTypeType *ty, void *data)
 {
@@ -204,7 +204,7 @@ void ac_make_struct_destructor(AST *ast, CompilerBundle *cb)
 void ac_add_struct_declaration(AST *ast, CompilerBundle *cb)
 {
     ASTStructDecl *a = (ASTStructDecl *)ast;
-    LLVMStructCreateNamed(LLVMGetGlobalContext(), a->name);
+    LLVMStructCreateNamed(utl_get_current_context(), a->name);
 }
 
 void ac_make_struct_definitions(AST *ast, CompilerBundle *cb)

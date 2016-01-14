@@ -1,4 +1,5 @@
 #include "ast_compiler.h"
+#include "core/utils.h"
 
 // char *ac_generator_init_name(char *gen)
 // {
@@ -220,7 +221,7 @@ void ac_compile_generator_code(AST *ast, CompilerBundle *cb)//, LLVMValueRef fun
     vs_pop(cb->varScope);
 
     char *ctxname = ac_generator_context_name(a->ident);
-    LLVMTypeRef ctx = LLVMStructCreateNamed(LLVMGetGlobalContext(), ctxname);
+    LLVMTypeRef ctx = LLVMStructCreateNamed(utl_get_current_context(), ctxname);
     free(ctxname);
 
     // arraylist param_indices = arr_create(10);

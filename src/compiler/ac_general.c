@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include "ast_compiler.h"
+#include "core/utils.h"
 
 extern hashtable global_args;
 
@@ -20,7 +21,7 @@ void die(int lineno, const char *fmt, ...)
 LLVMModuleRef ac_compile(AST *ast, int include_rc)
 {
     CompilerBundle cb;
-    cb.module = LLVMModuleCreateWithNameInContext("main-module", LLVMGetGlobalContext());
+    cb.module = LLVMModuleCreateWithNameInContext("main-module", utl_get_current_context());
     cb.builder = LLVMCreateBuilder();
     cb.transients = hst_create();
     cb.loadedTransients = hst_create();
