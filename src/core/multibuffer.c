@@ -5,6 +5,8 @@
 #define MBFILE 0
 #define MBSTR  1
 
+#define BUFLEN 500
+
 typedef struct mbnode {
     struct mbnode *next;
     char type;
@@ -156,6 +158,27 @@ void mb_rewind(multibuffer *buf)
                 break;
             case MBSTR:
                 n->bufpt = 0;
+                break;
+        }
+    }
+}
+
+void mb_print_all(multibuffer *buf)
+{
+    mbnode *n = buf->head;
+
+    char fbuf[BUFLEN];
+
+    for(; n; n = n->next)
+    {
+        switch(n->type)
+        {
+            case MBFILE:
+                while((fgets(fbuf, BUFLEN, n->src.f)) != NULL)
+                    printf("%s", fbuf);
+                break;
+            case MBSTR:
+                printf("%s", n->src.s);
                 break;
         }
     }

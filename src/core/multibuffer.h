@@ -12,5 +12,6 @@ int mb_buffer(multibuffer *buf, char *dest, size_t max_size);
 void mb_rewind(multibuffer *buf);
 void mb_free(multibuffer *buf);
 char *mb_get_first_str(multibuffer *buf);
+void mb_print_all(multibuffer *buf);
 
 #endif

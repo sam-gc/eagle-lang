@@ -79,3 +79,14 @@ void utl_free_registered()
 {
     pool_drain(&utl_mempool);
 }
+
+static LLVMContextRef the_context = NULL;
+void utl_set_current_context(LLVMContextRef ctx)
+{
+    the_context = ctx;
+}
+
+LLVMContextRef utl_get_current_context()
+{
+    return the_context;
+}

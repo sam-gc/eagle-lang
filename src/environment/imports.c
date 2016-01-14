@@ -49,6 +49,7 @@ char *imp_scan_file(const char *filename)
     int in_class = 0;
     int save_next = 0;
     char *identifier = NULL;
+    int first_time = 1;
     while((token = yylex()) != 0)
     {
         if(token == TLBRACE)
@@ -88,22 +89,23 @@ char *imp_scan_file(const char *filename)
 
         if(token == TFUNC || token == TCLASS || token == TSTRUCT || token == TEXTERN || token == TINTERFACE)
         {
-            if(identifier)
+            if(identifier || first_time)
             {
-                if(ec_allow(ec, identifier))
+                if(first_time || ec_allow(ec, identifier))
                     sb_append(&strb, stmp.buffer);
 
                 free(stmp.buffer);
                 free(identifier);
             }
+            first_time = 0;
             sb_init(&stmp);
             identifier = NULL;
         }
     }
 
-     if(identifier)
+     if(identifier || first_time)
      {
-         if(ec_allow(ec, identifier))
+         if(first_time || ec_allow(ec, identifier))
              sb_append(&strb, stmp.buffer);
 
          free(stmp.buffer);
@@ -178,7 +180,6 @@ multibuffer *imp_generate_imports(const char *filename)
         }
 
         yypop_buffer_state();
-        free(dir);
 
         char *rp = realpath(filename, NULL);
         hst_put(&imports_exports, rp, ec, NULL, NULL);

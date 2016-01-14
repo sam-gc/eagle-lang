@@ -102,7 +102,9 @@ void fill_crate(ShippingCrate *crate, int argc, const char *argv[])
             SEQU(arg, "-h") ||
             SEQU(arg, "-O0") || SEQU(arg, "-O1") || SEQU(arg, "-O2") || SEQU(arg, "-O3") ||
             SEQU(arg, "--llvm") ||
-            SEQU(arg, "--no-rc"))
+            SEQU(arg, "--no-rc") ||
+            SEQU(arg, "--verbose") ||
+            SEQU(arg, "--dump-code")) 
             continue;
         
         if(SEQU(get_file_ext(arg), ".o"))
@@ -120,6 +122,14 @@ void compile_generic(ShippingCrate *crate, int include_rc)
     ty_prepare();
     first_pass();
 
+    if(IN(global_args, "--dump-code"))
+    {
+        printf("Dump of:\n%s\n=================================================\n", crate->current_file);
+        mb_print_all(ymultibuffer);
+        printf("\n\n");
+
+        return;
+    }
 
     //mb_add_file(ymultibuffer, argv[1]);
 
@@ -155,6 +165,9 @@ void compile_rc(ShippingCrate *crate)
 
     crate->current_file = (char *)"__egl_rc_str.egl";
 
+    if(IN(global_args, "--verbose"))
+        printf("Compiling runtime...\n");
+
     compile_generic(crate, 0);
 }
 
@@ -171,7 +184,11 @@ void compile_file(char *file, ShippingCrate *crate)
             printf("%s\n", mb_get_first_str(ymultibuffer));
     }
     else
+    {
+        if(IN(global_args, "--verbose"))
+            printf("Compiling file (%s)...\n", file);
         compile_generic(crate, !IN(global_args, "--no-rc"));
+    }
 }
 
 
@@ -216,7 +233,8 @@ int main(int argc, const char *argv[])
     for(i = 0; i < crate.source_files.count; i++)
         compile_file(crate.source_files.items[i], &crate);
 
-    if(!IN(global_args, "-c") && !IN(global_args, "--llvm") && !IN(global_args, "-h"))
+    if(!IN(global_args, "-c") && !IN(global_args, "--llvm") && !IN(global_args, "-h") &&
+       !IN(global_args, "--dump-code"))
     {
         if(!IN(global_args, "--no-rc"))
             compile_rc(&crate);

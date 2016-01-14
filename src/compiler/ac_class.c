@@ -372,7 +372,9 @@ void ac_make_class_destructor(AST *ast, CompilerBundle *cb)
 
     if(a->destructdecl)
     {
+        ett->counted = 1;
         LLVMValueRef me = LLVMBuildBitCast(cb->builder, LLVMGetParam(func, 0), ett_llvm_type((EagleTypeType *)ett), "");
+        ett->counted = 0;
         char *destruct_name = ac_gen_method_name(a->name, (char *)"__destruct__");
         LLVMBuildCall(cb->builder, LLVMGetNamedFunction(cb->module, destruct_name), &me, 1, "");
         free(destruct_name);

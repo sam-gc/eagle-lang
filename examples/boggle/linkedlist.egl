@@ -262,7 +262,7 @@ struct LLNode
 
 struct LLNodeRaw
 {
-    LLNode^ next
+    LLNodeRaw^ next
     any* val
 }
 
