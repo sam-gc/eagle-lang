@@ -2,15 +2,29 @@
 #include <string.h>
 #include <stdio.h>
 #include <libgen.h>
+#include <unistd.h>
 #include "cpp/cpp.h"
 #include "shipping.h"
 #include "hashtable.h"
 #include "config.h"
 #include "stringbuilder.h"
 #include "threading.h"
+#include "mempool.h"
 
+static mempool unlink_pool;
 extern hashtable global_args;
 typedef LLVMPassManagerBuilderRef LPMB;
+
+void shp_setup()
+{
+    unlink_pool = pool_create();
+    unlink_pool.free_func = (void (*)(void *))unlink;
+}
+
+void shp_teardown()
+{
+    pool_drain(&unlink_pool);
+}
 
 void strip_ext(char *base)
 {
@@ -33,6 +47,8 @@ char *shp_temp_object_file(char *filename)
     char *name = malloc(100);
     sprintf(name, "/tmp/egl%d_%s.o", thr_request_number(), base);
     free(dup);
+
+    pool_add(&unlink_pool, name);
     return name;
 }
 
@@ -45,6 +61,8 @@ char *shp_temp_assembly_file(char *filename)
     char *name = malloc(100);
     sprintf(name, "/tmp/egl%d_%s.s", thr_request_number(), base);
     free(dup);
+
+    pool_add(&unlink_pool, name);
     return name;
 }
 

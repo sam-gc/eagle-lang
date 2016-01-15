@@ -135,25 +135,6 @@ EagleType et_promotion(EagleType left, EagleType right)
     return left > right ? left : right;
 }
 
-/*
-LLVMTypeRef et_llvm_type(EagleType type)
-{
-    switch(type)
-    {
-        case ETVoid:
-            return LLVMVoidTypeInContext(utl_get_current_context());
-        case ETDouble:
-            return LLVMDoubleTypeInContext(utl_get_current_context());
-        case ETInt32:
-            return LLVMInt32TypeInContext(utl_get_current_context());
-        case ETInt64:
-            return LLVMInt64TypeInContext(utl_get_current_context());
-        default:
-            return NULL;
-    }
-}
-*/
-
 LLVMTypeRef ett_closure_type(EagleTypeType *type) { if(!ET_IS_CLOSURE(type)) return NULL; 
     EagleFunctionType *ft = (EagleFunctionType *)type;
 

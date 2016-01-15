@@ -14,6 +14,8 @@ typedef struct {
     char *current_temp_assembly;
 } ShippingCrate;
 
+void shp_setup();
+void shp_teardown();
 void shp_optimize(LLVMModuleRef module);
 void shp_produce_assembly(LLVMModuleRef module, ShippingCrate *crate);
 void shp_produce_binary(ShippingCrate *crate);

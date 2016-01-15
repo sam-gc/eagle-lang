@@ -252,21 +252,8 @@ int main(int argc, const char *argv[])
     }
 
     thr_init();
+    shp_setup();
 
-    /*
-    yyin = fopen(argv[1], "r");
-    if(!yyin)
-    {
-        printf("Error: could not find file.\n");
-        return 0;
-    }
-    */
-
-//    int token;
-//    while ((token = yylex()) != 0)
-//        printf("Token: %d (%s)\n", token, yytext);
-//    return 0;
-    
     ShippingCrate crate;
     fill_crate(&crate, argc, argv);
 
@@ -295,6 +282,8 @@ int main(int argc, const char *argv[])
         }
         shp_produce_executable(&crate);
     }
+
+    shp_teardown();
     
     return 0;
 }
