@@ -13,28 +13,45 @@ will always compile.
 
 ### Compiling
 #### Prerequisites
-You will need a development version of LLVM (i.e. the LLVM headers and associated helper programs
+You will need a development version of LLVM with version number >= 3.5 (i.e. the LLVM headers
+and associated helper programs
 like `llvm-config`). The process of getting LLVM will depend on your particular system.
 
-You will also need a C compiler, a C++ compiler, make, and GNU Bison and Flex.
+You will also need a C compiler, a C++ compiler, make, and GNU Bison and Flex. LLVM also requires
+libzip, curses, and pthreads.
+
+The compiler should compile under Linux and OS X. OS X Mavericks, Arch Linux, and Ubuntu have
+all been tested. Please note that, under Ubuntu installations (and likely other Linux systems),
+there may be multiple versions of LLVM in the repositories. Make sure to choose the newest one
+possible; the default will likely be relatively old and therefore unusable.
 
 #### Build
+As of the current versions of the compiler, users should use the standard UNIX build incantation:
  * `cd` to build folder
- * Run `make guts` to generate C files and header files from the eagle.l and eagle.y grammar files
- * Run `make` to compile the source
+ * Run `./configure [--enable-debug]`
+ * Run `make`
+There is currently no `make install` ... the compiler is far too unstable to think about installing
+it in the standard system. I have merely added the repository directory to my `PATH`.
 
-At this point you will have a binary called `eagle` which will take as its sole input the name of a
-code file for which to generate LLVM IR.
+At this point you will have a binary called `eagle` which will take code files as input.
 
 ### Running
-The latest version of the compiler will create an executable file from one input file. When compiling,
-it implicitly links a file called `rc.o` that it expects in the running directory. To create `rc.o`,
-first run `./eagle rc.egl --compile-rc -o rc.o`. At this point you can compile any code files. Simply
-run `./eagle <name-of-file.egl> [-o <executable name>]`.
+The latest version of the compiler can accept multiple input files. There are a variety of command
+line switches, which generally mirror the standard GNU `gcc` switches. The compiler currently supports
+exporting executables, object files (through `-c`), and assembly files. All output has an optional
+optimization pass, defined through `-O0 ... -O3`. Only files ending in ".egl" will be
+compiled. 
 
-If you are using the makefile associated with the project, there is a shortcut. Any code file in the
-`examples` folder can be compiled using `make <name-of-file>` omitting the `.egl` suffix. This command
-will create `rc.o` if it doesn't already exist and will then procede to create an executable.
+The reference counting runtime support code is built in
+to the compiler (the code is copied from `rc.egl` at configure time). Thus there is no need to carry
+around that file or any object files (as in previous versions). To omit the resource counted module
+headers, use the command switch `--no-rc`. Output filename can be chosen with `-o [filename]`.
+See `src/core/main.c` to see a full listing of available commands.
+
+If you are using the makefile associated with the project, there is a shortcut for building examples.
+Any code file in the
+`examples` folder can be compiled using `make <name-of-file>` omitting the `.egl` suffix.
 Alternatively you can run `make all-examples` to compile every example in the examples folder. The
 resulting binaries will be put in a folder called `builtex`. All of the built examples can be removed
-using `make clean-examples`.
+using `make clean-examples`. The more complex "Boggle" example has its own makefile which will work if
+the `eagle` executable exists in the main project directory.
