@@ -78,7 +78,7 @@ void ac_compile_yield(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
     if(!ya->val)
         die(ALN, "Yield statement must have an associated expression.");
 
-    LLVMBasicBlockRef nblock = LLVMAppendBasicBlock(cb->currentFunction, "yield");
+    LLVMBasicBlockRef nblock = LLVMAppendBasicBlockInContext(utl_get_current_context(), cb->currentFunction, "yield");
     LLVMMoveBasicBlockAfter(nblock, cb->yieldBlocks->items[cb->yieldBlocks->count - 1]);
     arr_append(cb->yieldBlocks, nblock);
     
@@ -102,7 +102,7 @@ void ac_compile_yield(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
     LLVMValueRef blockPos = LLVMBuildStructGEP(cb->builder, ctx, 1, "");
     LLVMBuildStore(cb->builder, LLVMBlockAddress(cb->currentFunction, nblock), blockPos);
 
-    LLVMBuildRet(cb->builder, LLVMConstInt(LLVMInt1Type(), 1, 0));
+    LLVMBuildRet(cb->builder, LLVMConstInt(LLVMInt1TypeInContext(utl_get_current_context()), 1, 0));
 
     LLVMPositionBuilderAtEnd(cb->builder, nblock);
 }
@@ -110,11 +110,11 @@ void ac_compile_yield(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
 void ac_compile_loop(AST *ast, CompilerBundle *cb)
 {
     ASTLoopBlock *a = (ASTLoopBlock *)ast;
-    LLVMBasicBlockRef testBB = LLVMAppendBasicBlock(cb->currentFunction, "test");
-    LLVMBasicBlockRef loopBB = LLVMAppendBasicBlock(cb->currentFunction, "loop");
-    LLVMBasicBlockRef incrBB = LLVMAppendBasicBlock(cb->currentFunction, "incr");
-    LLVMBasicBlockRef cleanupBB = LLVMAppendBasicBlock(cb->currentFunction, "clean");
-    LLVMBasicBlockRef mergeBB = LLVMAppendBasicBlock(cb->currentFunction, "merge");
+    LLVMBasicBlockRef testBB = LLVMAppendBasicBlockInContext(utl_get_current_context(), cb->currentFunction, "test");
+    LLVMBasicBlockRef loopBB = LLVMAppendBasicBlockInContext(utl_get_current_context(), cb->currentFunction, "loop");
+    LLVMBasicBlockRef incrBB = LLVMAppendBasicBlockInContext(utl_get_current_context(), cb->currentFunction, "incr");
+    LLVMBasicBlockRef cleanupBB = LLVMAppendBasicBlockInContext(utl_get_current_context(), cb->currentFunction, "clean");
+    LLVMBasicBlockRef mergeBB = LLVMAppendBasicBlockInContext(utl_get_current_context(), cb->currentFunction, "merge");
 
     LLVMBasicBlockRef oldStart = cb->currentLoopEntry;
     LLVMBasicBlockRef oldExit = cb->currentLoopExit;
@@ -162,11 +162,11 @@ void ac_compile_loop(AST *ast, CompilerBundle *cb)
         LLVMValueRef clo = LLVMBuildStructGEP(cb->builder, gen, 0, "");
         LLVMValueRef func = LLVMBuildLoad(cb->builder, clo, "");
 
-        LLVMTypeRef callee_types[] = {LLVMPointerType(LLVMInt8Type(), 0), ett_llvm_type(ypt)};
-        func = LLVMBuildBitCast(cb->builder, func, LLVMPointerType(LLVMFunctionType(LLVMInt1Type(), callee_types, 2, 0), 0), "");
+        LLVMTypeRef callee_types[] = {LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), ett_llvm_type(ypt)};
+        func = LLVMBuildBitCast(cb->builder, func, LLVMPointerType(LLVMFunctionType(LLVMInt1TypeInContext(utl_get_current_context()), callee_types, 2, 0), 0), "");
 
         LLVMValueRef args[2];
-        args[0] = LLVMBuildBitCast(cb->builder, gen, LLVMPointerType(LLVMInt8Type(), 0), "");
+        args[0] = LLVMBuildBitCast(cb->builder, gen, LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), "");
         args[1] = iterator;
 
         val = LLVMBuildCall(cb->builder, func, args, 2, "iterout");
@@ -226,10 +226,10 @@ void ac_compile_if(AST *ast, CompilerBundle *cb, LLVMBasicBlockRef mergeBB)
     int multiBlock = a->ifNext && ((ASTIfBlock *)a->ifNext)->test;
     int threeBlock = !!a->ifNext && !multiBlock;
 
-    LLVMBasicBlockRef ifBB = LLVMAppendBasicBlock(cb->currentFunction, "if");
-    LLVMBasicBlockRef elseBB = threeBlock || multiBlock ? LLVMAppendBasicBlock(cb->currentFunction, "else") : NULL;
+    LLVMBasicBlockRef ifBB = LLVMAppendBasicBlockInContext(utl_get_current_context(), cb->currentFunction, "if");
+    LLVMBasicBlockRef elseBB = threeBlock || multiBlock ? LLVMAppendBasicBlockInContext(utl_get_current_context(), cb->currentFunction, "else") : NULL;
     if(!mergeBB)
-        mergeBB = LLVMAppendBasicBlock(cb->currentFunction, "merge");
+        mergeBB = LLVMAppendBasicBlockInContext(utl_get_current_context(), cb->currentFunction, "merge");
 
     LLVMBuildCondBr(cb->builder, cmp, ifBB, elseBB ? elseBB : mergeBB);
     LLVMPositionBuilderAtEnd(cb->builder, ifBB);
@@ -274,15 +274,15 @@ LLVMValueRef ac_compile_ntest(AST *res, LLVMValueRef val, CompilerBundle *cb)
 {
     LLVMValueRef cmp = NULL;
     if(res->resultantType->type == ETInt1)
-        cmp = LLVMBuildICmp(cb->builder, LLVMIntEQ, val, LLVMConstInt(LLVMInt1Type(), 0, 0), "cmp");
+        cmp = LLVMBuildICmp(cb->builder, LLVMIntEQ, val, LLVMConstInt(LLVMInt1TypeInContext(utl_get_current_context()), 0, 0), "cmp");
     else if(res->resultantType->type == ETInt8)
-        cmp = LLVMBuildICmp(cb->builder, LLVMIntEQ, val, LLVMConstInt(LLVMInt8Type(), 0, 0), "cmp");
+        cmp = LLVMBuildICmp(cb->builder, LLVMIntEQ, val, LLVMConstInt(LLVMInt8TypeInContext(utl_get_current_context()), 0, 0), "cmp");
     else if(res->resultantType->type == ETInt32)
-        cmp = LLVMBuildICmp(cb->builder, LLVMIntEQ, val, LLVMConstInt(LLVMInt32Type(), 0, 0), "cmp");
+        cmp = LLVMBuildICmp(cb->builder, LLVMIntEQ, val, LLVMConstInt(LLVMInt32TypeInContext(utl_get_current_context()), 0, 0), "cmp");
     else if(res->resultantType->type == ETInt64)
-        cmp = LLVMBuildICmp(cb->builder, LLVMIntEQ, val, LLVMConstInt(LLVMInt64Type(), 0, 0), "cmp");
+        cmp = LLVMBuildICmp(cb->builder, LLVMIntEQ, val, LLVMConstInt(LLVMInt64TypeInContext(utl_get_current_context()), 0, 0), "cmp");
     else if(res->resultantType->type == ETDouble)
-        cmp = LLVMBuildFCmp(cb->builder, LLVMRealOEQ, val, LLVMConstReal(LLVMDoubleType(), 0.0), "cmp");
+        cmp = LLVMBuildFCmp(cb->builder, LLVMRealOEQ, val, LLVMConstReal(LLVMDoubleTypeInContext(utl_get_current_context()), 0.0), "cmp");
     else if(res->resultantType->type == ETPointer)
         cmp = LLVMBuildICmp(cb->builder, LLVMIntEQ, val, LLVMConstPointerNull(ett_llvm_type(res->resultantType)), "cmp");
     else
@@ -294,15 +294,15 @@ LLVMValueRef ac_compile_test(AST *res, LLVMValueRef val, CompilerBundle *cb)
 {
     LLVMValueRef cmp = NULL;
     if(res->resultantType->type == ETInt1)
-        cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstInt(LLVMInt1Type(), 0, 0), "cmp");
+        cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstInt(LLVMInt1TypeInContext(utl_get_current_context()), 0, 0), "cmp");
     else if(res->resultantType->type == ETInt8)
-        cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstInt(LLVMInt8Type(), 0, 0), "cmp");
+        cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstInt(LLVMInt8TypeInContext(utl_get_current_context()), 0, 0), "cmp");
     else if(res->resultantType->type == ETInt32)
-        cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstInt(LLVMInt32Type(), 0, 0), "cmp");
+        cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstInt(LLVMInt32TypeInContext(utl_get_current_context()), 0, 0), "cmp");
     else if(res->resultantType->type == ETInt64)
-        cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstInt(LLVMInt64Type(), 0, 0), "cmp");
+        cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstInt(LLVMInt64TypeInContext(utl_get_current_context()), 0, 0), "cmp");
     else if(res->resultantType->type == ETDouble)
-        cmp = LLVMBuildFCmp(cb->builder, LLVMRealONE, val, LLVMConstReal(LLVMDoubleType(), 0.0), "cmp");
+        cmp = LLVMBuildFCmp(cb->builder, LLVMRealONE, val, LLVMConstReal(LLVMDoubleTypeInContext(utl_get_current_context()), 0.0), "cmp");
     else if(res->resultantType->type == ETPointer)
         cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstPointerNull(ett_llvm_type(res->resultantType)), "cmp");
     else

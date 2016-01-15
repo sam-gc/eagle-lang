@@ -13,9 +13,9 @@ int ahed(void *k, void *d)
 
 LLVMValueRef ac_make_floating_string(CompilerBundle *cb, const char *text, const char *name)
 {
-    LLVMTypeRef func_type = LLVMFunctionType(LLVMInt8Type(), NULL, 0, 0);
+    LLVMTypeRef func_type = LLVMFunctionType(LLVMInt8TypeInContext(utl_get_current_context()), NULL, 0, 0);
     LLVMValueRef func = LLVMAddFunction(cb->module, "", func_type);
-    LLVMBasicBlockRef bb = LLVMAppendBasicBlock(func, "");
+    LLVMBasicBlockRef bb = LLVMAppendBasicBlockInContext(utl_get_current_context(), func, "");
     LLVMPositionBuilderAtEnd(cb->builder, bb);
     LLVMValueRef str = LLVMBuildGlobalStringPtr(cb->builder, text, name);
     EGLEraseFunction(func);
@@ -58,7 +58,7 @@ LLVMValueRef ac_build_conversion(LLVMBuilderRef builder, LLVMValueRef val, Eagle
             if(to->type != ETPointer && to->type != ETArray)
                 die(-1, "Arrays may only be converted to equivalent pointers.");
 
-            //LLVMValueRef zero = LLVMConstInt(LLVMInt32Type(), 0, 0);
+            //LLVMValueRef zero = LLVMConstInt(LLVMInt32TypeInContext(utl_get_current_context()), 0, 0);
             return LLVMBuildBitCast(builder, val, ett_llvm_type(to), "ptrtmp");
         }
         case ETInt1:
@@ -76,7 +76,7 @@ LLVMValueRef ac_build_conversion(LLVMBuilderRef builder, LLVMValueRef val, Eagle
                 case ETInt64:
                     return LLVMBuildIntCast(builder, val, ett_llvm_type(to), "conv");
                 case ETDouble:
-                    return LLVMBuildSIToFP(builder, val, LLVMDoubleType(), "conv");
+                    return LLVMBuildSIToFP(builder, val, LLVMDoubleTypeInContext(utl_get_current_context()), "conv");
                 default:
                     die(-1, "Invalid implicit conversion.");
                     break;

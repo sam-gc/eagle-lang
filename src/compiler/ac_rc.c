@@ -67,7 +67,7 @@ void ac_incr_val_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *t
     }
 
     LLVMValueRef tptr = *ptr;
-    tptr = LLVMBuildBitCast(builder, tptr, LLVMPointerType(LLVMInt64Type(), 0), "cast");
+    tptr = LLVMBuildBitCast(builder, tptr, LLVMPointerType(LLVMInt64TypeInContext(utl_get_current_context()), 0), "cast");
     
     LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_incr_ptr");
     LLVMBuildCall(builder, func, &tptr, 1, ""); 
@@ -85,7 +85,7 @@ void ac_incr_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty)
     }
 
     LLVMValueRef tptr = LLVMBuildLoad(builder, *ptr, "tptr");
-    tptr = LLVMBuildBitCast(builder, tptr, LLVMPointerType(LLVMInt64Type(), 0), "cast");
+    tptr = LLVMBuildBitCast(builder, tptr, LLVMPointerType(LLVMInt64TypeInContext(utl_get_current_context()), 0), "cast");
     
     LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_incr_ptr");
     LLVMBuildCall(builder, func, &tptr, 1, ""); 
@@ -97,7 +97,7 @@ void ac_check_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty)
     if(!pt->counted)
         return;
 
-    LLVMValueRef tptr = LLVMBuildBitCast(cb->builder, *ptr, LLVMPointerType(LLVMInt64Type(), 0), "");
+    LLVMValueRef tptr = LLVMBuildBitCast(cb->builder, *ptr, LLVMPointerType(LLVMInt64TypeInContext(utl_get_current_context()), 0), "");
     LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_check_ptr");
     LLVMBuildCall(cb->builder, func, &tptr, 1, "");
 }
@@ -107,7 +107,7 @@ void ac_prepare_pointer(CompilerBundle *cb, LLVMValueRef ptr, EagleTypeType *ty)
     if(ty && !ET_IS_COUNTED(ty))
         return;
 
-    LLVMValueRef tptr = LLVMBuildBitCast(cb->builder, ptr, LLVMPointerType(LLVMInt64Type(), 0), "");
+    LLVMValueRef tptr = LLVMBuildBitCast(cb->builder, ptr, LLVMPointerType(LLVMInt64TypeInContext(utl_get_current_context()), 0), "");
     LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_prepare");
     LLVMBuildCall(cb->builder, func, &tptr, 1, "");
 }
@@ -118,8 +118,8 @@ void ac_add_weak_pointer(CompilerBundle *cb, LLVMValueRef ptr, LLVMValueRef weak
         return;
 
     LLVMValueRef vals[2];
-    vals[0] = LLVMBuildBitCast(cb->builder, ptr, LLVMPointerType(LLVMInt64Type(), 0), "");
-    vals[1] = LLVMBuildBitCast(cb->builder, weak, LLVMPointerType(LLVMInt8Type(), 0), "");
+    vals[0] = LLVMBuildBitCast(cb->builder, ptr, LLVMPointerType(LLVMInt64TypeInContext(utl_get_current_context()), 0), "");
+    vals[1] = LLVMBuildBitCast(cb->builder, weak, LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), "");
     LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_add_weak");
     LLVMBuildCall(cb->builder, func, vals, 2, "");
 }
@@ -129,7 +129,7 @@ void ac_remove_weak_pointer(CompilerBundle *cb, LLVMValueRef weak, EagleTypeType
     if(!ET_IS_WEAK(ty))
         return;
 
-    LLVMValueRef val = LLVMBuildBitCast(cb->builder, weak, LLVMPointerType(LLVMInt8Type(), 0), "");
+    LLVMValueRef val = LLVMBuildBitCast(cb->builder, weak, LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), "");
     LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_remove_weak");
     LLVMBuildCall(cb->builder, func, &val, 1, "");
 }
@@ -142,7 +142,7 @@ void ac_decr_val_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *t
         return;
 
     LLVMValueRef tptr = *ptr;
-    tptr = LLVMBuildBitCast(builder, tptr, LLVMPointerType(LLVMInt64Type(), 0), "cast");
+    tptr = LLVMBuildBitCast(builder, tptr, LLVMPointerType(LLVMInt64TypeInContext(utl_get_current_context()), 0), "cast");
     
     LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_decr_ptr");
     LLVMBuildCall(builder, func, &tptr, 1, ""); 
@@ -159,7 +159,7 @@ void ac_decr_val_pointer_no_free(CompilerBundle *cb, LLVMValueRef *ptr, EagleTyp
     }
 
     LLVMValueRef tptr = *ptr;
-    tptr = LLVMBuildBitCast(builder, tptr, LLVMPointerType(LLVMInt64Type(), 0), "cast");
+    tptr = LLVMBuildBitCast(builder, tptr, LLVMPointerType(LLVMInt64TypeInContext(utl_get_current_context()), 0), "cast");
     
     LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_decr_no_free");
     LLVMBuildCall(builder, func, &tptr, 1, ""); 
@@ -168,20 +168,20 @@ void ac_decr_val_pointer_no_free(CompilerBundle *cb, LLVMValueRef *ptr, EagleTyp
 void ac_nil_fill_array(CompilerBundle *cb, LLVMValueRef arr, int ct)
 {
     LLVMBuilderRef builder = cb->builder;
-    arr = LLVMBuildBitCast(builder, arr, LLVMPointerType(LLVMInt8Type(), 0), "");
+    arr = LLVMBuildBitCast(builder, arr, LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), "");
 
     LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_array_fill_nil");
-    LLVMValueRef vals[] = {arr, LLVMConstInt(LLVMInt64Type(), ct, 0)};
+    LLVMValueRef vals[] = {arr, LLVMConstInt(LLVMInt64TypeInContext(utl_get_current_context()), ct, 0)};
     LLVMBuildCall(builder, func, vals, 2, "");
 }
 
 void ac_decr_in_array(CompilerBundle *cb, LLVMValueRef arr, int ct)
 {
     LLVMBuilderRef builder = cb->builder;
-    arr = LLVMBuildBitCast(builder, arr, LLVMPointerType(LLVMPointerType(LLVMInt8Type(), 0), 0), "");
+    arr = LLVMBuildBitCast(builder, arr, LLVMPointerType(LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), 0), "");
 
     LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_array_decr_ptrs");
-    LLVMValueRef vals[] = {arr, LLVMConstInt(LLVMInt64Type(), ct, 0)};
+    LLVMValueRef vals[] = {arr, LLVMConstInt(LLVMInt64TypeInContext(utl_get_current_context()), ct, 0)};
     LLVMBuildCall(builder, func, vals, 2, "");
 }
 
@@ -197,7 +197,7 @@ void ac_decr_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty)
     }
 
     LLVMValueRef tptr = LLVMBuildLoad(builder, *ptr, "tptr");
-    tptr = LLVMBuildBitCast(builder, tptr, LLVMPointerType(LLVMInt64Type(), 0), "cast");
+    tptr = LLVMBuildBitCast(builder, tptr, LLVMPointerType(LLVMInt64TypeInContext(utl_get_current_context()), 0), "cast");
     
     LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_decr_ptr");
     LLVMBuildCall(builder, func, &tptr, 1, ""); 

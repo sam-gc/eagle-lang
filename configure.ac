@@ -7,6 +7,17 @@ AC_CHECK_PROG(llvmconf, llvm-config, yes)
 AC_PROG_LEX
 AC_PROG_YACC
 
+AC_CHECK_HEADER(pthread.h, have_pthread="yes")
+
+if test "$have_pthread" == "yes"
+then
+    AC_MSG_NOTICE([Using pthreads])
+    AC_SUBST(haspthreads, "HAS_PTHREAD")
+else
+    AC_MSG_NOTICE([No pthread support])
+    AC_SUBST(haspthreads, "NO_PTHREAD")
+fi
+
 AC_ARG_ENABLE(debug, [--enable-debug        enable debug mode])
 
 if test "$enable_debug" == "yes"

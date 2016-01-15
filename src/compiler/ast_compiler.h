@@ -8,6 +8,7 @@
 #include "ast.h"
 #include "variable_manager.h"
 #include "cpp/cpp.h"
+#include "core/utils.h"
 
 #define IS_ANY_PTR(t) (t->type == ETPointer && ((EaglePointerType *)t)->to->type == ETAny)
 #define ALN (ast->lineno)

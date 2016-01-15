@@ -7,13 +7,13 @@ LLVMValueRef ac_compile_value(AST *ast, CompilerBundle *cb)
     {
         case ETInt1:
             a->resultantType = ett_base_type(ETInt1);
-            return LLVMConstInt(LLVMInt1Type(), a->value.i, 1);
+            return LLVMConstInt(LLVMInt1TypeInContext(utl_get_current_context()), a->value.i, 1);
         case ETInt32:
             a->resultantType = ett_base_type(ETInt32);
-            return LLVMConstInt(LLVMInt32Type(), a->value.i, 1);
+            return LLVMConstInt(LLVMInt32TypeInContext(utl_get_current_context()), a->value.i, 1);
         case ETDouble:
             a->resultantType = ett_base_type(ETDouble);
-            return LLVMConstReal(LLVMDoubleType(), a->value.d);
+            return LLVMConstReal(LLVMDoubleTypeInContext(utl_get_current_context()), a->value.d);
         case ETCString:
             a->resultantType = ett_pointer_type(ett_base_type(ETInt8));
             return LLVMBuildGlobalStringPtr(cb->builder, a->value.id, "str");
@@ -148,13 +148,13 @@ LLVMValueRef ac_compile_struct_member(AST *ast, CompilerBundle *cb, int keepPoin
         char *interface = ty_interface_for_method(ty, a->ident);
 
         a->leftCompiled = a->left->type == AUNARY ? ((ASTUnary *)a->left)->savedWrapped : left;
-        a->leftCompiled = LLVMBuildBitCast(cb->builder, a->leftCompiled, LLVMPointerType(LLVMInt8Type(), 0), "");
+        a->leftCompiled = LLVMBuildBitCast(cb->builder, a->leftCompiled, LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), "");
         EagleTypeType *ut = ty_method_lookup(interface, a->ident);
         LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_lookup_method");
 
         LLVMValueRef params[] = {left, //LLVMBuildStructGEP(cb->builder, left, 0, "vtable"),
                                  LLVMBuildGlobalStringPtr(cb->builder, interface, "ifc"),
-                                 LLVMConstInt(LLVMInt32Type(), ty_interface_offset(interface, a->ident), 0)
+                                 LLVMConstInt(LLVMInt32TypeInContext(utl_get_current_context()), ty_interface_offset(interface, a->ident), 0)
         };
         LLVMValueRef fptr = LLVMBuildCall(cb->builder, func, params, 3, a->ident);
         fptr = LLVMBuildBitCast(cb->builder, fptr, LLVMPointerType(ett_llvm_type(ut), 0), "");
@@ -197,17 +197,17 @@ LLVMValueRef ac_compile_struct_member(AST *ast, CompilerBundle *cb, int keepPoin
 LLVMValueRef ac_compile_malloc_counted_raw(LLVMTypeRef rt, LLVMTypeRef *out, CompilerBundle *cb)
 {
     LLVMTypeRef ptmp[2];
-    ptmp[0] = LLVMPointerType(LLVMInt8Type(), 0);
-    ptmp[1] = LLVMInt1Type();
+    ptmp[0] = LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0);
+    ptmp[1] = LLVMInt1TypeInContext(utl_get_current_context());
     
     LLVMTypeRef tys[6];
-    tys[0] = LLVMInt64Type();
-    tys[1] = LLVMInt16Type();
-    tys[2] = LLVMInt16Type();
-    tys[3] = LLVMPointerType(LLVMInt8Type(), 0);
-    tys[4] = LLVMPointerType(LLVMFunctionType(LLVMVoidType(), ptmp, 2, 0), 0);
+    tys[0] = LLVMInt64TypeInContext(utl_get_current_context());
+    tys[1] = LLVMInt16TypeInContext(utl_get_current_context());
+    tys[2] = LLVMInt16TypeInContext(utl_get_current_context());
+    tys[3] = LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0);
+    tys[4] = LLVMPointerType(LLVMFunctionType(LLVMVoidTypeInContext(utl_get_current_context()), ptmp, 2, 0), 0);
     tys[5] = rt;
-    LLVMTypeRef tt = LLVMStructType(tys, 6, 0);
+    LLVMTypeRef tt = LLVMStructTypeInContext(utl_get_current_context(), tys, 6, 0);
     tt = ty_get_counted(tt);
     
     LLVMValueRef mal = LLVMBuildMalloc(cb->builder, tt, "new");
@@ -222,17 +222,17 @@ LLVMValueRef ac_compile_malloc_counted_raw(LLVMTypeRef rt, LLVMTypeRef *out, Com
 LLVMValueRef ac_compile_malloc_counted(EagleTypeType *type, EagleTypeType **res, LLVMValueRef ib, CompilerBundle *cb)
 {
     LLVMTypeRef ptmp[2];
-    ptmp[0] = LLVMPointerType(LLVMInt8Type(), 0);
-    ptmp[1] = LLVMInt1Type();
+    ptmp[0] = LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0);
+    ptmp[1] = LLVMInt1TypeInContext(utl_get_current_context());
     
     LLVMTypeRef tys[6];
-    tys[0] = LLVMInt64Type();
-    tys[1] = LLVMInt16Type();
-    tys[2] = LLVMInt16Type();
-    tys[3] = LLVMPointerType(LLVMInt8Type(), 0);
-    tys[4] = LLVMPointerType(LLVMFunctionType(LLVMVoidType(), ptmp, 2, 0), 0);
+    tys[0] = LLVMInt64TypeInContext(utl_get_current_context());
+    tys[1] = LLVMInt16TypeInContext(utl_get_current_context());
+    tys[2] = LLVMInt16TypeInContext(utl_get_current_context());
+    tys[3] = LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0);
+    tys[4] = LLVMPointerType(LLVMFunctionType(LLVMVoidTypeInContext(utl_get_current_context()), ptmp, 2, 0), 0);
     tys[5] = ett_llvm_type(type);
-    LLVMTypeRef tt = LLVMStructType(tys, 6, 0);
+    LLVMTypeRef tt = LLVMStructTypeInContext(utl_get_current_context(), tys, 6, 0);
 
     //LLVMDumpType(ett_llvm_type(type));
     tt = ty_get_counted(tt);
@@ -271,7 +271,7 @@ LLVMValueRef ac_compile_malloc_counted(EagleTypeType *type, EagleTypeType **res,
     }
     /*
     LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, mal, 0, "ctp");
-    LLVMBuildStore(cb->builder, LLVMConstInt(LLVMInt64Type(), 0, 0), pos);
+    LLVMBuildStore(cb->builder, LLVMConstInt(LLVMInt64TypeInContext(utl_get_current_context()), 0, 0), pos);
     */
 
 
@@ -328,7 +328,7 @@ LLVMValueRef ac_compile_new_decl(AST *ast, CompilerBundle *cb)
             args[i] = val;
         }
 
-        args[0] = val;//LLVMBuildBitCast(cb->builder, , LLVMPointerType(LLVMInt8Type(), 0), "");
+        args[0] = val;//LLVMBuildBitCast(cb->builder, , LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), "");
 
         ac_incr_val_pointer(cb, &val, NULL);
         LLVMBuildCall(cb->builder, func, args, ct, "");
@@ -409,7 +409,7 @@ LLVMValueRef ac_compile_index(AST *ast, int keepPointer, CompilerBundle *cb)
     LLVMValueRef gep;
     if(lt->type == ETArray && ((EagleArrayType *)lt)->ct >= 0)
     {
-        LLVMValueRef zero = LLVMConstInt(LLVMInt32Type(), 0, 0);
+        LLVMValueRef zero = LLVMConstInt(LLVMInt32TypeInContext(utl_get_current_context()), 0, 0);
         LLVMValueRef pts[] = {zero, r};
         gep = LLVMBuildInBoundsGEP(cb->builder, l, pts, 2, "idx");
     }
@@ -438,7 +438,7 @@ LLVMValueRef ac_compile_logical_or(AST *ast, CompilerBundle *cb)
 
     arr_append(&trees, a);
 
-    LLVMBasicBlockRef mergeBB = LLVMAppendBasicBlock(cb->currentFunction, "merge");
+    LLVMBasicBlockRef mergeBB = LLVMAppendBasicBlockInContext(utl_get_current_context(), cb->currentFunction, "merge");
 
     int i;
     for(i = trees.count - 1; i > 0; i--)
@@ -446,9 +446,9 @@ LLVMValueRef ac_compile_logical_or(AST *ast, CompilerBundle *cb)
         LLVMValueRef val = ac_dispatch_expression(trees.items[i], cb);
         LLVMValueRef cmp = ac_compile_test(trees.items[i], val, cb);
 
-        LLVMBasicBlockRef nextBB = LLVMAppendBasicBlock(cb->currentFunction, "next");
+        LLVMBasicBlockRef nextBB = LLVMAppendBasicBlockInContext(utl_get_current_context(), cb->currentFunction, "next");
 
-        arr_append(&values, LLVMConstInt(LLVMInt1Type(), 1, 0));
+        arr_append(&values, LLVMConstInt(LLVMInt1TypeInContext(utl_get_current_context()), 1, 0));
         arr_append(&blocks, LLVMGetInsertBlock(cb->builder));
 
         hst_for_each(&cb->transients, ac_decr_transients, cb);
@@ -485,7 +485,7 @@ LLVMValueRef ac_compile_logical_or(AST *ast, CompilerBundle *cb)
     LLVMMoveBasicBlockAfter(mergeBB, LLVMGetInsertBlock(cb->builder));
     LLVMPositionBuilderAtEnd(cb->builder, mergeBB);
 
-    LLVMValueRef phi = LLVMBuildPhi(cb->builder, LLVMInt1Type(), "phi");
+    LLVMValueRef phi = LLVMBuildPhi(cb->builder, LLVMInt1TypeInContext(utl_get_current_context()), "phi");
     LLVMAddIncoming(phi, (LLVMValueRef *)values.items, (LLVMBasicBlockRef *)blocks.items, values.count);
 
     ast->resultantType = ett_base_type(ETInt1);
@@ -511,7 +511,7 @@ LLVMValueRef ac_compile_logical_and(AST *ast, CompilerBundle *cb)
 
     arr_append(&trees, a);
 
-    LLVMBasicBlockRef mergeBB = LLVMAppendBasicBlock(cb->currentFunction, "merge");
+    LLVMBasicBlockRef mergeBB = LLVMAppendBasicBlockInContext(utl_get_current_context(), cb->currentFunction, "merge");
 
     int i;
     for(i = trees.count - 1; i > 0; i--)
@@ -531,10 +531,10 @@ LLVMValueRef ac_compile_logical_and(AST *ast, CompilerBundle *cb)
         cb->loadedTransients = hst_create();
         // ==============================================================
 
-        LLVMBasicBlockRef nextBB = LLVMAppendBasicBlock(cb->currentFunction, "next");
+        LLVMBasicBlockRef nextBB = LLVMAppendBasicBlockInContext(utl_get_current_context(), cb->currentFunction, "next");
         LLVMBuildCondBr(cb->builder, cmp, nextBB, mergeBB);
 
-        arr_append(&values, LLVMConstInt(LLVMInt1Type(), 0, 0));
+        arr_append(&values, LLVMConstInt(LLVMInt1TypeInContext(utl_get_current_context()), 0, 0));
         arr_append(&blocks, LLVMGetInsertBlock(cb->builder));
 
         LLVMPositionBuilderAtEnd(cb->builder, nextBB);
@@ -562,7 +562,7 @@ LLVMValueRef ac_compile_logical_and(AST *ast, CompilerBundle *cb)
     LLVMMoveBasicBlockAfter(mergeBB, LLVMGetInsertBlock(cb->builder));
     LLVMPositionBuilderAtEnd(cb->builder, mergeBB);
 
-    LLVMValueRef phi = LLVMBuildPhi(cb->builder, LLVMInt1Type(), "phi");
+    LLVMValueRef phi = LLVMBuildPhi(cb->builder, LLVMInt1TypeInContext(utl_get_current_context()), "phi");
     LLVMAddIncoming(phi, (LLVMValueRef *)values.items, (LLVMBasicBlockRef *)blocks.items, values.count);
 
     ast->resultantType = ett_base_type(ETInt1);
@@ -583,8 +583,8 @@ LLVMValueRef ac_generic_binary(ASTBinary *a, LLVMValueRef l, LLVMValueRef r, cha
     {
         if(a->op == 'e')
         {
-            l = LLVMBuildPtrToInt(cb->builder, l, LLVMInt64Type(), "");
-            r = LLVMBuildPtrToInt(cb->builder, r, LLVMInt64Type(), "");
+            l = LLVMBuildPtrToInt(cb->builder, l, LLVMInt64TypeInContext(utl_get_current_context()), "");
+            r = LLVMBuildPtrToInt(cb->builder, r, LLVMInt64TypeInContext(utl_get_current_context()), "");
 
             a->resultantType = ett_base_type(ETInt1);
             return LLVMBuildICmp(cb->builder, LLVMIntEQ, l, r, "");
@@ -834,7 +834,7 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
                 unsigned long size = LLVMABISizeOfType(cb->td, ty);
                 a->resultantType = ett_base_type(ETInt64);
 
-                return LLVMConstInt(LLVMInt64Type(), size, 0);
+                return LLVMConstInt(LLVMInt64TypeInContext(utl_get_current_context()), size, 0);
             }
         case '!':
             // TODO: Broken
@@ -858,8 +858,8 @@ LLVMValueRef ac_compile_generator_call(AST *ast, LLVMValueRef gen, CompilerBundl
     EagleGenType *ett = (EagleGenType *)((EaglePointerType *)a->callee->resultantType)->to;
     EagleTypeType *ypt = ett_pointer_type(ett->ytype);
 
-    LLVMTypeRef callee_types[] = {LLVMPointerType(LLVMInt8Type(), 0), ett_llvm_type(ypt)};
-    func = LLVMBuildBitCast(cb->builder, func, LLVMPointerType(LLVMFunctionType(LLVMInt1Type(), callee_types, 2, 0), 0), "");
+    LLVMTypeRef callee_types[] = {LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), ett_llvm_type(ypt)};
+    func = LLVMBuildBitCast(cb->builder, func, LLVMPointerType(LLVMFunctionType(LLVMInt1TypeInContext(utl_get_current_context()), callee_types, 2, 0), 0), "");
 
     AST *p = a->params;
 
@@ -876,7 +876,7 @@ LLVMValueRef ac_compile_generator_call(AST *ast, LLVMValueRef gen, CompilerBundl
         ac_decr_pointer(cb, &val, NULL);
     }
 
-    args[0] = LLVMBuildBitCast(cb->builder, gen, LLVMPointerType(LLVMInt8Type(), 0), "");
+    args[0] = LLVMBuildBitCast(cb->builder, gen, LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), "");
     args[1] = val;
 
     LLVMValueRef out = LLVMBuildCall(cb->builder, func, args, 2, "callout");
@@ -954,7 +954,7 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
         // if(ET_HAS_CLOASED(ett))
         args[0] = LLVMBuildLoad(cb->builder, LLVMBuildStructGEP(cb->builder, func, 1, ""), "");
         // else
-        //     args[0] = LLVMConstPointerNull(LLVMPointerType(LLVMInt8Type(), 0));
+        //     args[0] = LLVMConstPointerNull(LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0));
 
 
         func = LLVMBuildStructGEP(cb->builder, func, 0, "");
@@ -965,7 +965,7 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
     }
     else if(instanceOfClass)
     {
-        // args[0] = LLVMBuildBitCast(cb->builder, instanceOfClass, LLVMPointerType(LLVMInt8Type(), 0), "");
+        // args[0] = LLVMBuildBitCast(cb->builder, instanceOfClass, LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), "");
 
         args[0] = instanceOfClass;
         out = LLVMBuildCall(cb->builder, func, args, ct, ett->retType->type == ETVoid ? "" : "callout");

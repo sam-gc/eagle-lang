@@ -36,6 +36,8 @@ static hashtable method_table;
 static hashtable type_named_table;
 static hashtable init_table;
 static hashtable interface_table;
+static LLVMTypeRef indirect_struct_type = NULL;
+static LLVMTypeRef generator_type = NULL;
 
 void list_mempool_free(void *datum)
 {
@@ -95,6 +97,9 @@ void ty_teardown()
 
     pool_drain(&list_mempool);
     pool_drain(&type_mempool);
+
+    indirect_struct_type = NULL;
+    generator_type = NULL;
 }
 
 EagleTypeType *et_parse_string(char *text)
@@ -136,13 +141,13 @@ LLVMTypeRef et_llvm_type(EagleType type)
     switch(type)
     {
         case ETVoid:
-            return LLVMVoidType();
+            return LLVMVoidTypeInContext(utl_get_current_context());
         case ETDouble:
-            return LLVMDoubleType();
+            return LLVMDoubleTypeInContext(utl_get_current_context());
         case ETInt32:
-            return LLVMInt32Type();
+            return LLVMInt32TypeInContext(utl_get_current_context());
         case ETInt64:
-            return LLVMInt64Type();
+            return LLVMInt64TypeInContext(utl_get_current_context());
         default:
             return NULL;
     }
@@ -156,43 +161,42 @@ LLVMTypeRef ett_closure_type(EagleTypeType *type) { if(!ET_IS_CLOSURE(type)) ret
     int i;
     for(i = 1; i < ft->pct + 1; i++)
         tys[i] = ett_llvm_type(ft->params[i - 1]);
-    tys[0] = LLVMPointerType(LLVMInt8Type(), 0);
+    tys[0] = LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0);
 
     LLVMTypeRef out = LLVMFunctionType(ett_llvm_type(ft->retType), tys, ft->pct + 1, 0);
     free(tys);
     return out;
 }
 
-static LLVMTypeRef generator_type = NULL;
 LLVMTypeRef ett_llvm_type(EagleTypeType *type)
 {
     switch(type->type)
     {
         case ETVoid:
-            return LLVMVoidType();
+            return LLVMVoidTypeInContext(utl_get_current_context());
         case ETDouble:
-            return LLVMDoubleType();
+            return LLVMDoubleTypeInContext(utl_get_current_context());
         case ETInt1:
-            return LLVMInt1Type();
+            return LLVMInt1TypeInContext(utl_get_current_context());
         case ETAny:
         case ETInt8:
-            return LLVMInt8Type();
+            return LLVMInt8TypeInContext(utl_get_current_context());
         case ETInt16:
-            return LLVMInt16Type();
+            return LLVMInt16TypeInContext(utl_get_current_context());
         case ETInt32:
-            return LLVMInt32Type();
+            return LLVMInt32TypeInContext(utl_get_current_context());
         case ETInt64:
-            return LLVMInt64Type();
+            return LLVMInt64TypeInContext(utl_get_current_context());
         case ETCString:
-            return LLVMPointerType(LLVMInt8Type(), 0);
+            return LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0);
         case ETGenerator:
         {
             if(generator_type) 
                 return generator_type;
 
             LLVMTypeRef ptmp[2];
-            ptmp[0] = LLVMPointerType(LLVMInt8Type(), 0);
-            ptmp[1] = LLVMPointerType(LLVMInt8Type(), 0);
+            ptmp[0] = LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0);
+            ptmp[1] = LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0);
 
             generator_type = LLVMStructCreateNamed(utl_get_current_context(), "__egl_gen_strct");
             LLVMStructSetBody(generator_type, ptmp, 2, 0);
@@ -207,11 +211,11 @@ LLVMTypeRef ett_llvm_type(EagleTypeType *type)
                 return loaded;
 
             return NULL;
-           // LLVMTypeRef ty = LLVMStructType(
+           // LLVMTypeRef ty = LLVMStructTypeInContext(utl_get_current_context(), 
         }
         case ETInterface:
         {
-            return LLVMInt8Type();
+            return LLVMInt8TypeInContext(utl_get_current_context());
         }
         case ETPointer:
         {
@@ -219,18 +223,18 @@ LLVMTypeRef ett_llvm_type(EagleTypeType *type)
             if(pt->counted || pt->weak)
             {
                 LLVMTypeRef ptmp[2];
-                ptmp[0] = LLVMPointerType(LLVMInt8Type(), 0);
-                ptmp[1] = LLVMInt1Type();
+                ptmp[0] = LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0);
+                ptmp[1] = LLVMInt1TypeInContext(utl_get_current_context());
 
                 LLVMTypeRef tys[6];
-                tys[0] = LLVMInt64Type();
-                tys[1] = LLVMInt16Type();
-                tys[2] = LLVMInt16Type();
-                tys[3] = LLVMPointerType(LLVMInt8Type(), 0);
-                tys[4] = LLVMPointerType(LLVMFunctionType(LLVMVoidType(), ptmp, 2, 0), 0);
+                tys[0] = LLVMInt64TypeInContext(utl_get_current_context());
+                tys[1] = LLVMInt16TypeInContext(utl_get_current_context());
+                tys[2] = LLVMInt16TypeInContext(utl_get_current_context());
+                tys[3] = LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0);
+                tys[4] = LLVMPointerType(LLVMFunctionType(LLVMVoidTypeInContext(utl_get_current_context()), ptmp, 2, 0), 0);
                 tys[5] = ett_llvm_type(pt->to);
 
-                return LLVMPointerType(ty_get_counted(LLVMStructType(tys, 6, 0)), 0);
+                return LLVMPointerType(ty_get_counted(LLVMStructTypeInContext(utl_get_current_context(), tys, 6, 0)), 0);
             }
             return LLVMPointerType(ett_llvm_type(((EaglePointerType *)type)->to), 0);
         }
@@ -248,9 +252,9 @@ LLVMTypeRef ett_llvm_type(EagleTypeType *type)
                 if(ET_IS_CLOSURE(type))
                 {
                     LLVMTypeRef tys[2];
-                    tys[0] = LLVMPointerType(LLVMInt8Type(), 0);
-                    tys[1] = LLVMPointerType(LLVMInt8Type(), 0);
-                    return LLVMStructType(tys, 2, 0);
+                    tys[0] = LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0);
+                    tys[1] = LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0);
+                    return LLVMStructTypeInContext(utl_get_current_context(), tys, 2, 0);
                 }
 
                 LLVMTypeRef *tys = malloc(sizeof(LLVMTypeRef) * ft->pct);
@@ -268,10 +272,10 @@ LLVMTypeRef ett_llvm_type(EagleTypeType *type)
 
 EagleType et_eagle_type(LLVMTypeRef ty)
 {
-    ETEST(ETDouble, ty, LLVMDoubleType());
-    ETEST(ETInt32, ty, LLVMInt32Type());
-    ETEST(ETInt64, ty, LLVMInt64Type());
-    ETEST(ETVoid, ty, LLVMVoidType());
+    ETEST(ETDouble, ty, LLVMDoubleTypeInContext(utl_get_current_context()));
+    ETEST(ETInt32, ty, LLVMInt32TypeInContext(utl_get_current_context()));
+    ETEST(ETInt64, ty, LLVMInt64TypeInContext(utl_get_current_context()));
+    ETEST(ETVoid, ty, LLVMVoidTypeInContext(utl_get_current_context()));
 
     return ETNone;
 }
@@ -528,17 +532,16 @@ int ett_size_of_type(EagleTypeType *t)
 
 LLVMTypeRef ty_class_indirect()
 {
-    static LLVMTypeRef indirect_struct_type = NULL;
     if(indirect_struct_type)
         return indirect_struct_type;
 
     indirect_struct_type = LLVMStructCreateNamed(utl_get_current_context(), "__egl_class_indirect");
 
     LLVMTypeRef tys[] = {
-        LLVMInt32Type(),
-        LLVMPointerType(LLVMPointerType(LLVMInt8Type(), 0), 0),
-        LLVMPointerType(LLVMInt64Type(), 0),
-        LLVMPointerType(LLVMPointerType(LLVMInt8Type(), 0), 0)
+        LLVMInt32TypeInContext(utl_get_current_context()),
+        LLVMPointerType(LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), 0),
+        LLVMPointerType(LLVMInt64TypeInContext(utl_get_current_context()), 0),
+        LLVMPointerType(LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), 0)
     };
 
     LLVMStructSetBody(indirect_struct_type, tys, 4, 0);

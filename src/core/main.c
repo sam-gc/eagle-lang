@@ -8,6 +8,8 @@
 #include "environment/imports.h"
 #include "multibuffer.h"
 #include "config.h"
+#include "cpp/cpp.h"
+#include "threading.h"
 
 #define YY_BUF_SIZE 32768
 #define SEQU(a, b) strcmp((a), (b)) == 0
@@ -85,25 +87,39 @@ void fill_crate(ShippingCrate *crate, int argc, const char *argv[])
     crate->current_file = NULL;
     crate->source_files = arr_create(5);
     crate->object_files = arr_create(5);
+    crate->extra_code = arr_create(2);
 
     int skip = 0;
     int i;
     for(i = 1; i < argc; i++)
     {
         if(skip)
+        {
+            skip = 0;
             continue;
+        }
         const char *arg = argv[i];
-        if(SEQU(arg, "-o"))
+
+        if(SEQU(arg, "--code"))
+        {
+            if(i == argc - 1)
+                die(-1, "--code switch specified but no extra code defined.");
+            arr_append(&crate->extra_code, (void *)argv[i + 1]);
+        }
+
+        if(SEQU(arg, "-o") || SEQU(arg, "--code"))
             skip = 1;
         
         if(
             SEQU(arg, "-o") ||
             SEQU(arg, "-c") ||
+            SEQU(arg, "-S") ||
             SEQU(arg, "-h") ||
             SEQU(arg, "-O0") || SEQU(arg, "-O1") || SEQU(arg, "-O2") || SEQU(arg, "-O3") ||
             SEQU(arg, "--llvm") ||
             SEQU(arg, "--no-rc") ||
             SEQU(arg, "--verbose") ||
+            SEQU(arg, "--code") ||
             SEQU(arg, "--dump-code")) 
             continue;
         
@@ -148,7 +164,7 @@ void compile_generic(ShippingCrate *crate, int include_rc)
         LLVMDumpModule(module);
     else
     {
-        shp_produce_assembly(module);
+        shp_produce_assembly(module, crate);
         shp_produce_binary(crate);
     }
 
@@ -156,6 +172,29 @@ void compile_generic(ShippingCrate *crate, int include_rc)
 
     utl_free_registered();
     ast_free_nodes();
+}
+
+char *make_argcode_name()
+{
+    static int argcode_counter = 0;
+    char *text = malloc(100);
+    sprintf(text, "__egl_argcode_%d.egl", argcode_counter++);
+    return text;
+}
+
+void compile_string(char *str, ShippingCrate *crate)
+{
+    ymultibuffer = mb_alloc();
+    mb_add_str(ymultibuffer, str);
+
+    crate->current_file = make_argcode_name();
+
+    if(IN(global_args, "--verbose"))
+        printf("Compiling extra code {{\n%s\n}}\n", str);
+
+    compile_generic(crate, !IN(global_args, "--no-rc"));
+
+    free(crate->current_file);
 }
 
 void compile_rc(ShippingCrate *crate)
@@ -212,6 +251,8 @@ int main(int argc, const char *argv[])
         return 0;
     }
 
+    thr_init();
+
     /*
     yyin = fopen(argv[1], "r");
     if(!yyin)
@@ -236,8 +277,15 @@ int main(int argc, const char *argv[])
         LLVMContextDispose(utl_get_current_context());
     }
 
+    for(i = 0; i < crate.extra_code.count; i++)
+    {
+        utl_set_current_context(LLVMContextCreate());
+        compile_string(crate.extra_code.items[i], &crate);
+        LLVMContextDispose(utl_get_current_context());
+    }
+
     if(!IN(global_args, "-c") && !IN(global_args, "--llvm") && !IN(global_args, "-h") &&
-       !IN(global_args, "--dump-code"))
+       !IN(global_args, "--dump-code") && !IN(global_args, "-S"))
     {
         if(!IN(global_args, "--no-rc"))
         {

@@ -36,15 +36,15 @@ char *ac_generator_destruct_name(char *gen)
 LLVMValueRef ac_compile_generator_destructor(CompilerBundle *cb, GeneratorBundle *gb)
 {
     LLVMTypeRef des_params[2];
-    des_params[0] = LLVMPointerType(LLVMInt8Type(), 0);
-    des_params[1] = LLVMInt1Type();
+    des_params[0] = LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0);
+    des_params[1] = LLVMInt1TypeInContext(utl_get_current_context());
 
     char *desname = ac_generator_destruct_name(gb->ident);
-    LLVMTypeRef des_func = LLVMFunctionType(LLVMVoidType(), des_params, 2, 0);
+    LLVMTypeRef des_func = LLVMFunctionType(LLVMVoidTypeInContext(utl_get_current_context()), des_params, 2, 0);
     LLVMValueRef func_des = LLVMAddFunction(cb->module, desname, des_func);
     free(desname);
 
-    LLVMBasicBlockRef dentry = LLVMAppendBasicBlock(func_des, "entry");
+    LLVMBasicBlockRef dentry = LLVMAppendBasicBlockInContext(utl_get_current_context(), func_des, "entry");
 
     LLVMPositionBuilderAtEnd(cb->builder, dentry);
     LLVMValueRef strct = LLVMBuildBitCast(cb->builder, LLVMGetParam(func_des, 0), LLVMPointerType(gb->countedContextType, 0), "");
@@ -75,7 +75,7 @@ LLVMValueRef ac_compile_generator_init(AST *ast, CompilerBundle *cb, GeneratorBu
     VarBundle *vb = vs_get(cb->varScope, a->ident);
     LLVMValueRef func = vb->value;
 
-    LLVMBasicBlockRef entry = LLVMAppendBasicBlock(func, "entry");
+    LLVMBasicBlockRef entry = LLVMAppendBasicBlockInContext(utl_get_current_context(), func, "entry");
     LLVMPositionBuilderAtEnd(cb->builder, entry);
 
     EagleTypeType **eparam_types = gb->eparam_types;
@@ -107,7 +107,7 @@ LLVMValueRef ac_compile_generator_init(AST *ast, CompilerBundle *cb, GeneratorBu
     }
 
     LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, ctx, 0, "");
-    LLVMBuildStore(cb->builder, LLVMBuildBitCast(cb->builder, gb->func, LLVMPointerType(LLVMInt8Type(), 0), ""), pos);
+    LLVMBuildStore(cb->builder, LLVMBuildBitCast(cb->builder, gb->func, LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), ""), pos);
 
     pos = LLVMBuildStructGEP(cb->builder, ctx, 1, "");
     LLVMBuildStore(cb->builder, LLVMBlockAddress(gb->func, cb->yieldBlocks->items[0]), pos);
@@ -156,8 +156,8 @@ void ac_compile_generator_code(AST *ast, CompilerBundle *cb)//, LLVMValueRef fun
 
     char *codename = ac_generator_code_name(a->ident);
 
-    LLVMTypeRef pts[] = {LLVMPointerType(LLVMInt8Type(), 0), LLVMPointerType(ett_llvm_type(genType->etype), 0)};
-    LLVMTypeRef funcType = LLVMFunctionType(LLVMInt1Type(), pts, 2, 0);
+    LLVMTypeRef pts[] = {LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), LLVMPointerType(ett_llvm_type(genType->etype), 0)};
+    LLVMTypeRef funcType = LLVMFunctionType(LLVMInt1TypeInContext(utl_get_current_context()), pts, 2, 0);
     LLVMValueRef func = LLVMAddFunction(cb->module, codename, funcType);
     free(codename);
     
@@ -174,7 +174,7 @@ void ac_compile_generator_code(AST *ast, CompilerBundle *cb)//, LLVMValueRef fun
         eparam_types[i] = type->etype;
     }
 
-    LLVMBasicBlockRef entry = LLVMAppendBasicBlock(func, "entry");
+    LLVMBasicBlockRef entry = LLVMAppendBasicBlockInContext(utl_get_current_context(), func, "entry");
     LLVMPositionBuilderAtEnd(cb->builder, entry);
     
     vs_push(cb->varScope);
@@ -206,7 +206,7 @@ void ac_compile_generator_code(AST *ast, CompilerBundle *cb)//, LLVMValueRef fun
         }
     }
 
-    LLVMBasicBlockRef fy = LLVMAppendBasicBlock(func, "yield");
+    LLVMBasicBlockRef fy = LLVMAppendBasicBlockInContext(utl_get_current_context(), func, "yield");
     LLVMPositionBuilderAtEnd(cb->builder, fy);
     arr_append(cb->yieldBlocks, fy);
 
@@ -242,7 +242,7 @@ void ac_compile_generator_code(AST *ast, CompilerBundle *cb)//, LLVMValueRef fun
     ac_generator_replace_allocas(cb, &gb);
     LLVMPositionBuilderAtEnd(cb->builder, gb.last_block);
 
-    LLVMBuildRet(cb->builder, LLVMConstInt(LLVMInt1Type(), 0, 0));
+    LLVMBuildRet(cb->builder, LLVMConstInt(LLVMInt1TypeInContext(utl_get_current_context()), 0, 0));
 
     //     LLVMBuildRetVoid(cb->builder);
     // }
@@ -268,8 +268,8 @@ void ac_generator_replace_allocas(CompilerBundle *cb, GeneratorBundle *gb)
     LLVMBasicBlockRef entry = cb->currentFunctionEntry;
 
     arraylist elems = arr_create(10);
-    arr_append(&elems, LLVMPointerType(LLVMInt8Type(), 0));
-    arr_append(&elems, LLVMPointerType(LLVMInt8Type(), 0));
+    arr_append(&elems, LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0));
+    arr_append(&elems, LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0));
 
     LLVMValueRef first = LLVMGetFirstInstruction(entry);
     LLVMValueRef btb = NULL;

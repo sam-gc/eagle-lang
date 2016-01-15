@@ -155,7 +155,7 @@ void ac_check_and_register_implementation(char *method, ac_class_helper *h, char
             die(cd->lineno, "Implementation of method (%s) in class (%s) does not match interface", method, class);
 
 #ifdef llvm_OLD
-        func = LLVMConstBitCast(func, LLVMPointerType(LLVMInt8Type(), 0));
+        func = LLVMConstBitCast(func, LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0));
 #endif
 
         h->interface_pointers[sidx + offset] = func;
@@ -241,15 +241,15 @@ void ac_make_class_definitions(AST *ast, CompilerBundle *cb)
                 constnamesarr[i] = ac_make_floating_string(cb, interface, "_ifc");
 
                 // constnamesarr[i] = LLVMBuildGlobalStringPtr(cb->builder, a->interfaces.items[i], "iname");
-                offsetsarr[i] = LLVMConstInt(LLVMInt64Type(), curoffset, 0);
+                offsetsarr[i] = LLVMConstInt(LLVMInt64TypeInContext(utl_get_current_context()), curoffset, 0);
                 curoffset += ty_interface_count(interface);
             }
 
-            LLVMValueRef initcn = LLVMConstArray(LLVMPointerType(LLVMInt8Type(), 0), constnamesarr, (int)a->interfaces.count);
-            LLVMValueRef initof = LLVMConstArray(LLVMInt64Type(), offsetsarr, (int)a->interfaces.count);
+            LLVMValueRef initcn = LLVMConstArray(LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), constnamesarr, (int)a->interfaces.count);
+            LLVMValueRef initof = LLVMConstArray(LLVMInt64TypeInContext(utl_get_current_context()), offsetsarr, (int)a->interfaces.count);
 
-            constnames = LLVMAddGlobal(cb->module, LLVMArrayType(LLVMPointerType(LLVMInt8Type(), 0), count), "_ifn");
-            offsets = LLVMAddGlobal(cb->module, LLVMArrayType(LLVMInt64Type(), count), "_ifo");
+            constnames = LLVMAddGlobal(cb->module, LLVMArrayType(LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), count), "_ifn");
+            offsets = LLVMAddGlobal(cb->module, LLVMArrayType(LLVMInt64TypeInContext(utl_get_current_context()), count), "_ifo");
 
             LLVMSetInitializer(constnames, initcn);
             LLVMSetInitializer(offsets, initof);
@@ -276,14 +276,14 @@ void ac_make_class_definitions(AST *ast, CompilerBundle *cb)
             int i;
             for(i = 0; i < h.table_len; i++) if(!h.interface_pointers[i])
                 die(ast->lineno, "Class (%s) does not fully implement all announced interfaces", a->name);
-            LLVMValueRef initptrs = LLVMConstArray(LLVMPointerType(LLVMInt8Type(), 0), h.interface_pointers, h.table_len);
-            LLVMValueRef ptrs = LLVMAddGlobal(cb->module, LLVMArrayType(LLVMPointerType(LLVMInt8Type(), 0), h.table_len), "_ifp");
+            LLVMValueRef initptrs = LLVMConstArray(LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), h.interface_pointers, h.table_len);
+            LLVMValueRef ptrs = LLVMAddGlobal(cb->module, LLVMArrayType(LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), h.table_len), "_ifp");
             LLVMSetInitializer(ptrs, initptrs);
             free(h.interface_pointers);
 
-            LLVMValueRef z = LLVMConstInt(LLVMInt32Type(), 0, 0);
+            LLVMValueRef z = LLVMConstInt(LLVMInt32TypeInContext(utl_get_current_context()), 0, 0);
             LLVMValueRef indirvals[] = {
-                LLVMConstInt(LLVMInt32Type(), (int)a->interfaces.count, 0),
+                LLVMConstInt(LLVMInt32TypeInContext(utl_get_current_context()), (int)a->interfaces.count, 0),
                 LLVMConstGEP(constnames, &z, 1),
                 LLVMConstGEP(offsets, &z, 1),
                 LLVMConstGEP(ptrs, &z, 1)
@@ -291,10 +291,10 @@ void ac_make_class_definitions(AST *ast, CompilerBundle *cb)
 
 #ifdef llvm_OLD
             indirvals[1] = LLVMConstBitCast(indirvals[1], LLVMPointerType(LLVMPointerType(
-                LLVMInt8Type(), 0), 0));
-            indirvals[2] = LLVMConstBitCast(indirvals[2], LLVMPointerType(LLVMInt64Type(), 0));
+                LLVMInt8TypeInContext(utl_get_current_context()), 0), 0));
+            indirvals[2] = LLVMConstBitCast(indirvals[2], LLVMPointerType(LLVMInt64TypeInContext(utl_get_current_context()), 0));
             indirvals[3] = LLVMConstBitCast(indirvals[3], LLVMPointerType(LLVMPointerType(
-                LLVMInt8Type(), 0), 0));
+                LLVMInt8TypeInContext(utl_get_current_context()), 0), 0));
 #endif
             LLVMValueRef vtableinit = LLVMConstNamedStruct(indirtype, indirvals, 4);
 
@@ -318,7 +318,7 @@ void ac_make_class_constructor(AST *ast, CompilerBundle *cb, ac_class_helper *h)
 
     EagleTypeType *ett = ett_pointer_type(ett_struct_type(a->name));
 
-    LLVMBasicBlockRef entry = LLVMAppendBasicBlock(func, "entry");
+    LLVMBasicBlockRef entry = LLVMAppendBasicBlockInContext(utl_get_current_context(), func, "entry");
     LLVMPositionBuilderAtEnd(cb->builder, entry);
     LLVMValueRef in = LLVMGetParam(func, 0);
     LLVMValueRef strct = LLVMBuildBitCast(cb->builder, in, ett_llvm_type(ett), "");
@@ -341,7 +341,7 @@ void ac_make_class_constructor(AST *ast, CompilerBundle *cb, ac_class_helper *h)
         {
             LLVMValueRef fc = ac_gen_struct_constructor_func(((EagleStructType *)t)->name, cb, 0);
             LLVMValueRef param = LLVMBuildStructGEP(cb->builder, strct, i + 1, "");
-            param = LLVMBuildBitCast(cb->builder, param, LLVMPointerType(LLVMInt8Type(), 0), "");
+            param = LLVMBuildBitCast(cb->builder, param, LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), "");
             LLVMBuildCall(cb->builder, fc, &param, 1, "");
         }
 
@@ -365,7 +365,7 @@ void ac_make_class_destructor(AST *ast, CompilerBundle *cb)
     if(a->ext)
         return;
 
-    LLVMBasicBlockRef entry = LLVMAppendBasicBlock(func, "entry");
+    LLVMBasicBlockRef entry = LLVMAppendBasicBlockInContext(utl_get_current_context(), func, "entry");
     LLVMPositionBuilderAtEnd(cb->builder, entry);
 
     EaglePointerType *ett = (EaglePointerType *)ett_pointer_type(ett_struct_type(a->name));
@@ -381,10 +381,10 @@ void ac_make_class_destructor(AST *ast, CompilerBundle *cb)
         free(destruct_name);
     }
 
-    LLVMValueRef cmp = LLVMBuildICmp(cb->builder, LLVMIntEQ, LLVMGetParam(func, 1), LLVMConstInt(LLVMInt1Type(), 1, 0), "");
-    LLVMBasicBlockRef ifBB = LLVMAppendBasicBlock(func, "if");
-    LLVMBasicBlockRef elseBB = LLVMAppendBasicBlock(func, "else");
-    LLVMBasicBlockRef mergeBB = LLVMAppendBasicBlock(func, "merge");
+    LLVMValueRef cmp = LLVMBuildICmp(cb->builder, LLVMIntEQ, LLVMGetParam(func, 1), LLVMConstInt(LLVMInt1TypeInContext(utl_get_current_context()), 1, 0), "");
+    LLVMBasicBlockRef ifBB = LLVMAppendBasicBlockInContext(utl_get_current_context(), func, "if");
+    LLVMBasicBlockRef elseBB = LLVMAppendBasicBlockInContext(utl_get_current_context(), func, "else");
+    LLVMBasicBlockRef mergeBB = LLVMAppendBasicBlockInContext(utl_get_current_context(), func, "merge");
     LLVMBuildCondBr(cb->builder, cmp, ifBB, elseBB);
     LLVMPositionBuilderAtEnd(cb->builder, ifBB);
 
@@ -422,8 +422,8 @@ void ac_make_class_destructor(AST *ast, CompilerBundle *cb)
             LLVMValueRef fc = ac_gen_struct_destructor_func(((EagleStructType *)t)->name, cb);
             LLVMValueRef params[2];
             params[0] = LLVMBuildBitCast(cb->builder, LLVMBuildStructGEP(cb->builder, pos, i + 1, ""), 
-                    LLVMPointerType(LLVMInt8Type(), 0), "");
-            params[1] = LLVMConstInt(LLVMInt1Type(), 0, 0);
+                    LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), "");
+            params[1] = LLVMConstInt(LLVMInt1TypeInContext(utl_get_current_context()), 0, 0);
             LLVMBuildCall(cb->builder, fc, params, 2, "");
         }
     }

@@ -11,10 +11,6 @@
 #include <llvm/Support/TargetSelect.h>
 #include "core/config.h"
 
-#ifdef llvm_OLD
-#include <llvm/Support/FormattedStream.h>
-#endif
-
 #include <string>
 #include <iostream>
 #include "cpp.h"
@@ -37,49 +33,3 @@ void EGLEraseFunction(LLVMValueRef func)
 {
     unwrap<llvm::Function>(func)->eraseFromParent();
 }
-
-// Code created by examining llc.cpp source
-void EGLGenerateAssembly(LLVMModuleRef module)
-{
-    auto m = unwrap(module);
-    llvm::sys::fs::OpenFlags flags = llvm::sys::fs::F_None | llvm::sys::fs::F_Text;
-
-    InitializeAllTargets();
-    InitializeAllAsmPrinters();
-    InitializeAllTargetMCs();
-    InitializeAllAsmParsers();
-
-    std::error_code err;
-    llvm::tool_output_file file(llvm::StringRef("/tmp/egl_out.s"), err, flags);
-
-    llvm::legacy::PassManager pm;
-
-    llvm::Triple trp;
-
-#ifdef llvm_OLD
-    trp.setTriple(LLVMGetDefaultTargetTriple());
-#else
-    trp.setTriple(llvm::sys::getDefaultTargetTriple());
-#endif
-
-    std::string error;
-    const llvm::Target *targ = llvm::TargetRegistry::lookupTarget("x86-64", trp, error); 
-
-    auto tm = targ->createTargetMachine(trp.getTriple(), "", "", llvm::TargetOptions());
-
-#ifdef llvm_OLD
-    auto stream = new llvm::formatted_raw_ostream(file.os());
-    tm->addPassesToEmitFile(pm, *stream, llvm::TargetMachine::CodeGenFileType::CGFT_AssemblyFile);
-#else
-    tm->addPassesToEmitFile(pm, file.os(), llvm::TargetMachine::CodeGenFileType::CGFT_AssemblyFile);
-#endif
-
-    pm.run(*m);
-
-    file.keep();
-
-#ifdef llvm_OLD
-    delete stream;
-#endif
-}
-

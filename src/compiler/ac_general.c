@@ -22,7 +22,7 @@ LLVMModuleRef ac_compile(AST *ast, int include_rc)
 {
     CompilerBundle cb;
     cb.module = LLVMModuleCreateWithNameInContext("main-module", utl_get_current_context());
-    cb.builder = LLVMCreateBuilder();
+    cb.builder = LLVMCreateBuilderInContext(utl_get_current_context());
     cb.transients = hst_create();
     cb.loadedTransients = hst_create();
 
@@ -37,14 +37,14 @@ LLVMModuleRef ac_compile(AST *ast, int include_rc)
 
     if(include_rc)
         ac_prepare_module(cb.module);
-    LLVMTypeRef param_types[] = {LLVMPointerType(LLVMInt8Type(), 0)};
-    LLVMTypeRef func_type = LLVMFunctionType(LLVMInt32Type(), param_types, 1, 1);
+    LLVMTypeRef param_types[] = {LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0)};
+    LLVMTypeRef func_type = LLVMFunctionType(LLVMInt32TypeInContext(utl_get_current_context()), param_types, 1, 1);
     LLVMAddFunction(cb.module, "printf", func_type);
 
     the_module = cb.module;
     /*
     LLVMTypeRef st = LLVMStructCreateNamed(LLVMGetGlobalContext(), "teststruct");
-    LLVMTypeRef ty = LLVMInt64Type();
+    LLVMTypeRef ty = LLVMInt64TypeInContext(utl_get_current_context());
     LLVMStructSetBody(st, &ty, 1, 0);
     */
 
@@ -82,42 +82,42 @@ LLVMModuleRef ac_compile(AST *ast, int include_rc)
 
 void ac_prepare_module(LLVMModuleRef module)
 {
-    LLVMTypeRef param_types_rc[] = {LLVMPointerType(LLVMInt64Type(), 0)};
-    LLVMTypeRef func_type_rc = LLVMFunctionType(LLVMVoidType(), param_types_rc, 1, 0);
+    LLVMTypeRef param_types_rc[] = {LLVMPointerType(LLVMInt64TypeInContext(utl_get_current_context()), 0)};
+    LLVMTypeRef func_type_rc = LLVMFunctionType(LLVMVoidTypeInContext(utl_get_current_context()), param_types_rc, 1, 0);
     LLVMAddFunction(module, "__egl_incr_ptr", func_type_rc);
     LLVMAddFunction(module, "__egl_decr_ptr", func_type_rc);
     LLVMAddFunction(module, "__egl_decr_no_free", func_type_rc);
     LLVMAddFunction(module, "__egl_check_ptr", func_type_rc);
     LLVMAddFunction(module, "__egl_prepare", func_type_rc);
 
-    LLVMTypeRef param_types_we[] = { LLVMPointerType(LLVMInt64Type(), 0), LLVMPointerType(LLVMInt8Type(), 0)};
-    func_type_rc = LLVMFunctionType(LLVMVoidType(), param_types_we, 2, 0);
+    LLVMTypeRef param_types_we[] = { LLVMPointerType(LLVMInt64TypeInContext(utl_get_current_context()), 0), LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0)};
+    func_type_rc = LLVMFunctionType(LLVMVoidTypeInContext(utl_get_current_context()), param_types_we, 2, 0);
     LLVMAddFunction(module, "__egl_add_weak", func_type_rc);
 
-    LLVMTypeRef ty = LLVMPointerType(LLVMInt8Type(), 0);
-    func_type_rc = LLVMFunctionType(LLVMVoidType(), &ty, 1, 0);
+    LLVMTypeRef ty = LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0);
+    func_type_rc = LLVMFunctionType(LLVMVoidTypeInContext(utl_get_current_context()), &ty, 1, 0);
     LLVMAddFunction(module, "__egl_remove_weak", func_type_rc);
 
-    LLVMTypeRef param_types_arr1[] = {LLVMPointerType(LLVMInt8Type(), 0), LLVMInt64Type()};
-    func_type_rc = LLVMFunctionType(LLVMVoidType(), param_types_arr1, 2, 0);
+    LLVMTypeRef param_types_arr1[] = {LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), LLVMInt64TypeInContext(utl_get_current_context())};
+    func_type_rc = LLVMFunctionType(LLVMVoidTypeInContext(utl_get_current_context()), param_types_arr1, 2, 0);
     LLVMAddFunction(module, "__egl_array_fill_nil", func_type_rc);
 
-    param_types_arr1[0] = LLVMPointerType(LLVMPointerType(LLVMInt8Type(), 0), 0);
-    func_type_rc = LLVMFunctionType(LLVMVoidType(), param_types_arr1, 2, 0);
+    param_types_arr1[0] = LLVMPointerType(LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), 0);
+    func_type_rc = LLVMFunctionType(LLVMVoidTypeInContext(utl_get_current_context()), param_types_arr1, 2, 0);
     LLVMAddFunction(module, "__egl_array_decr_ptrs", func_type_rc);
 
-    func_type_rc = LLVMFunctionType(LLVMInt64Type(), NULL, 0, 0);
+    func_type_rc = LLVMFunctionType(LLVMInt64TypeInContext(utl_get_current_context()), NULL, 0, 0);
     LLVMAddFunction(module, "__egl_millis", func_type_rc);
 
 
     LLVMTypeRef param_types_destruct[2];
-    param_types_destruct[0] = LLVMPointerType(LLVMInt8Type(), 0);
-    param_types_destruct[1] = LLVMInt1Type();
-    func_type_rc = LLVMFunctionType(LLVMVoidType(), param_types_destruct, 2, 0);
+    param_types_destruct[0] = LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0);
+    param_types_destruct[1] = LLVMInt1TypeInContext(utl_get_current_context());
+    func_type_rc = LLVMFunctionType(LLVMVoidTypeInContext(utl_get_current_context()), param_types_destruct, 2, 0);
     LLVMAddFunction(module, "__egl_counted_destructor", func_type_rc);
 
-    LLVMTypeRef lookup_types[] = {LLVMPointerType(LLVMInt8Type(), 0), LLVMPointerType(LLVMInt8Type(), 0), LLVMInt32Type()};
-    func_type_rc = LLVMFunctionType(LLVMPointerType(LLVMInt8Type(), 0), lookup_types, 3, 0);
+    LLVMTypeRef lookup_types[] = {LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), LLVMInt32TypeInContext(utl_get_current_context())};
+    func_type_rc = LLVMFunctionType(LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), lookup_types, 3, 0);
     LLVMAddFunction(module, "__egl_lookup_method", func_type_rc);
 }
 

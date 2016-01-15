@@ -57,7 +57,7 @@ LLVMValueRef ac_finish_closure(CompilerBundle *cb, ClosureBundle *bun, LLVMTypeR
     LLVMTypeRef strTys[2];
 
     strTys[0] = LLVMPointerType(bun->funcType, 0);
-    strTys[1] = LLVMPointerType(LLVMInt8Type(), 0);
+    strTys[1] = LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0);
 
     LLVMStructSetBody(cloType, strTys, 2, 0);
 
@@ -80,12 +80,12 @@ LLVMValueRef ac_finish_closure(CompilerBundle *cb, ClosureBundle *bun, LLVMTypeR
     {
         bun->outerContext = LLVMBuildStructGEP(cb->builder, theFunc, 1, "blockContext");
 
-        LLVMBuildStore(cb->builder, LLVMBuildBitCast(cb->builder, contextTypeStruct, LLVMPointerType(LLVMInt8Type(), 0), ""), bun->outerContext);
+        LLVMBuildStore(cb->builder, LLVMBuildBitCast(cb->builder, contextTypeStruct, LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), ""), bun->outerContext);
         // bun->outerContext = LLVMBuildBitCast(cb->builder, , bun->contextType, "");
 
 
         // LLVMValueRef checkPos = LLVMBuildStructGEP(cb->builder, theFunc, 1, "");
-        // LLVMBuildStore(cb->builder, LLVMConstInt(LLVMInt1Type(), 1, 0), checkPos);
+        // LLVMBuildStore(cb->builder, LLVMConstInt(LLVMInt1TypeInContext(utl_get_current_context()), 1, 0), checkPos);
 
         int i;
         for(i = 0; i < bun->outerContextVals->count; i++)
@@ -117,17 +117,17 @@ LLVMValueRef ac_finish_closure(CompilerBundle *cb, ClosureBundle *bun, LLVMTypeR
         }
 
         LLVMTypeRef des_params[2];
-        des_params[0] = LLVMPointerType(LLVMInt8Type(), 0);
-        des_params[1] = LLVMInt1Type();
+        des_params[0] = LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0);
+        des_params[1] = LLVMInt1TypeInContext(utl_get_current_context());
 
         char *desname = ac_closure_destructor_name(bun->name);
-        LLVMTypeRef des_func = LLVMFunctionType(LLVMVoidType(), des_params, 2, 0);
+        LLVMTypeRef des_func = LLVMFunctionType(LLVMVoidTypeInContext(utl_get_current_context()), des_params, 2, 0);
         LLVMValueRef func_des = LLVMAddFunction(cb->module, desname, des_func);
         free(desname);
 
         LLVMSetLinkage(func_des, LLVMPrivateLinkage);
 
-        LLVMBasicBlockRef dentry = LLVMAppendBasicBlock(func_des, "entry");
+        LLVMBasicBlockRef dentry = LLVMAppendBasicBlockInContext(utl_get_current_context(), func_des, "entry");
 
         LLVMPositionBuilderAtEnd(cb->builder, dentry);
         LLVMValueRef strct = LLVMBuildBitCast(cb->builder, LLVMGetParam(func_des, 0), LLVMPointerType(ultType, 0), "");
@@ -155,7 +155,7 @@ LLVMValueRef ac_finish_closure(CompilerBundle *cb, ClosureBundle *bun, LLVMTypeR
     else
     {
         LLVMValueRef ctxPos = LLVMBuildStructGEP(cb->builder, theFunc, 1, "");
-        LLVMBuildStore(cb->builder, LLVMConstPointerNull(LLVMPointerType(LLVMInt8Type(), 0)), ctxPos);
+        LLVMBuildStore(cb->builder, LLVMConstPointerNull(LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0)), ctxPos);
     }
 
     LLVMPositionBuilderAtEnd(cb->builder, bun->cfib);
@@ -228,7 +228,7 @@ LLVMValueRef ac_compile_closure(AST *ast, CompilerBundle *cb)
         param_types[i] = ett_llvm_type(type->etype);
     }
     eparam_types[0] = ett_pointer_type(ett_base_type(ETInt8));
-    param_types[0] = LLVMPointerType(LLVMInt8Type(), 0);
+    param_types[0] = LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0);
 
     ASTTypeDecl *retType = (ASTTypeDecl *)a->retType;
 
@@ -244,7 +244,7 @@ LLVMValueRef ac_compile_closure(AST *ast, CompilerBundle *cb)
 
     cb->currentFunctionType = (EagleFunctionType *)ett_function_type(retType->etype, eparam_types, ct);
 
-    LLVMBasicBlockRef entry = LLVMAppendBasicBlock(func, "entry");
+    LLVMBasicBlockRef entry = LLVMAppendBasicBlockInContext(utl_get_current_context(), func, "entry");
     LLVMPositionBuilderAtEnd(cb->builder, entry);
     
     vs_push_closure(cb->varScope, ac_closure_callback, &cloclo);
@@ -277,11 +277,11 @@ LLVMValueRef ac_compile_closure(AST *ast, CompilerBundle *cb)
     LLVMValueRef pos = LLVMBuildAlloca(cb->builder, ett_llvm_type(penultEType), "recur");
 
     LLVMValueRef posa = LLVMBuildStructGEP(cb->builder, pos, 0, "");
-    LLVMValueRef conv = LLVMBuildBitCast(cb->builder, LLVMGetNamedFunction(cb->module, ccode), LLVMPointerType(LLVMInt8Type(), 0), "");
+    LLVMValueRef conv = LLVMBuildBitCast(cb->builder, LLVMGetNamedFunction(cb->module, ccode), LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), "");
     LLVMBuildStore(cb->builder, conv, posa);
 
     LLVMValueRef posb = LLVMBuildStructGEP(cb->builder, pos, 1, "");
-    conv = LLVMBuildBitCast(cb->builder, LLVMGetParam(func, 0), LLVMPointerType(LLVMInt8Type(), 0), "");
+    conv = LLVMBuildBitCast(cb->builder, LLVMGetParam(func, 0), LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), "");
     LLVMBuildStore(cb->builder, conv, posb);
 
     vs_put(cb->varScope, (char *)"recur", pos, penultEType);
@@ -357,7 +357,7 @@ void ac_compile_function_ex(AST *ast, CompilerBundle *cb, LLVMValueRef func, Eag
     
     cb->currentFunctionType = ft;
 
-    LLVMBasicBlockRef entry = LLVMAppendBasicBlock(func, "entry");
+    LLVMBasicBlockRef entry = LLVMAppendBasicBlockInContext(utl_get_current_context(), func, "entry");
     LLVMPositionBuilderAtEnd(cb->builder, entry);
     
     vs_push(cb->varScope);
