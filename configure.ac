@@ -3,7 +3,7 @@ AC_INIT(Eagle, 0.5.0, shorlbec@macalester.edu)
 AC_PROG_CC
 AC_PROG_CXX
 AC_SUBST(stuff, hello)
-AC_CHECK_PROG(llvmconf, llvm-config, yes)
+AC_CHECK_PROG(llvmconf, llvm-config, yes, no)
 AC_PROG_LEX
 AC_PROG_YACC
 
@@ -19,6 +19,16 @@ else
 fi
 
 AC_ARG_ENABLE(debug, [--enable-debug        enable debug mode])
+AC_ARG_WITH(llvm-config, [--with-llvm-config          set the llvm-config program], llvmconfprog=$withval, llvmconfprog="no")
+
+if test "$llvmconfprog" == "no"
+then
+    AC_MSG_NOTICE([Using default llvm-config])
+    AC_SUBST(llvmconfig, "llvm-config")
+else
+    AC_MSG_NOTICE([Using user-provided llvm-config])
+    AC_SUBST(llvmconfig, $llvmconfprog)
+fi
 
 if test "$enable_debug" == "yes"
 then
