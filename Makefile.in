@@ -14,7 +14,7 @@ CPP_OBJ_FILES=$(addprefix obj/cpp/,$(notdir $(CPP_SOURCES:.cpp=.o)))
 
 CFLAGS=-Isrc -std=c99 -Wall `@llvmconfig@ --cflags` @targ@
 CXXFLAGS=-Isrc -std=c++11 -fno-rtti -Wall `@llvmconfig@ --cxxflags` @targ@
-LDFLAGS=`@llvmconfig@ --ldflags --libs --libs core support analysis native transformutils bitwriter asmprinter asmparser target all-targets` -lrt -ldl -lpthread -lm -lcurses -lz
+LDFLAGS=`@llvmconfig@ --ldflags --libs --libs core support analysis native transformutils bitwriter asmprinter asmparser target all-targets` -ldl -lpthread -lm -lcurses -lz
 
 CC=@CC@
 CXX=@CXX@

@@ -11,60 +11,8 @@
 #include "threading.h"
 #include "mempool.h"
 
-static mempool unlink_pool;
 extern hashtable global_args;
 typedef LLVMPassManagerBuilderRef LPMB;
-
-void shp_setup()
-{
-    unlink_pool = pool_create();
-    unlink_pool.free_func = (void (*)(void *))unlink;
-}
-
-void shp_teardown()
-{
-    pool_drain(&unlink_pool);
-}
-
-void strip_ext(char *base)
-{
-    int i;
-    int len = strlen(base);
-    for(i = len - 1; i >= 0; i--)
-        if(base[i] == '.')
-        {
-            base[i] = 0;
-            break;
-        }
-}
-
-char *shp_temp_object_file(char *filename)
-{
-    char *dup = strdup(filename);
-    char *base = basename(dup);
-    strip_ext(base);
-
-    char *name = malloc(100);
-    sprintf(name, "/tmp/egl%d_%s.o", thr_request_number(), base);
-    free(dup);
-
-    pool_add(&unlink_pool, name);
-    return name;
-}
-
-char *shp_temp_assembly_file(char *filename)
-{
-    char *dup = strdup(filename);
-    char *base = basename(dup);
-    strip_ext(base);
-
-    char *name = malloc(100);
-    sprintf(name, "/tmp/egl%d_%s.s", thr_request_number(), base);
-    free(dup);
-
-    pool_add(&unlink_pool, name);
-    return name;
-}
 
 void shp_optimize(LLVMModuleRef module)
 {
@@ -116,44 +64,48 @@ char *shp_switch_file_ext(char *orig, const char *n)
     return out;
 }
 
-void shp_produce_assembly(LLVMModuleRef module, ShippingCrate *crate)
+void shp_produce_assembly(LLVMModuleRef module, char *filename, char **outname)
 {
     // EGLGenerateAssembly(module, "/tmp/egl_out.s");
 
     char *ofn = NULL;
 
     if(IN(global_args, "-S"))
-        ofn = shp_switch_file_ext(crate->current_file, "s");
+        ofn = shp_switch_file_ext(filename, "s");
     else
-        ofn = shp_temp_assembly_file(crate->current_file);
+        ofn = thr_temp_assembly_file(filename);
 
     LLVMTargetRef targ;
     LLVMGetTargetFromTriple(LLVMGetDefaultTargetTriple(), &targ, NULL);
     LLVMTargetMachineRef tm = LLVMCreateTargetMachine(targ, LLVMGetDefaultTargetTriple(), "", "", LLVMCodeGenLevelNone, LLVMRelocDefault, LLVMCodeModelDefault);
     LLVMTargetMachineEmitToFile(tm, module, ofn, LLVMAssemblyFile, NULL);
 
-    crate->current_temp_assembly = ofn;
+    *outname = ofn;
 
     LLVMDisposeTargetMachine(tm);
 }
 
-void shp_produce_binary(ShippingCrate *crate)
+void shp_produce_binary(char *filename, char *assemblyname, char **outname)
 {
-    char *outfile = shp_temp_object_file(crate->current_file);
+    if(IN(global_args, "-S"))
+        return;
+
+    char *outfile = thr_temp_object_file(filename);
 
     char command[500 + strlen(outfile)];
 
     if(IN(global_args, "-c"))
     {
         free(outfile);
-        outfile = shp_switch_file_ext(crate->current_file, "o");
+        outfile = shp_switch_file_ext(filename, "o");
     }
 
-    sprintf(command, CC " -c %s -o %s -g -O0", crate->current_temp_assembly, outfile); //objectfile, rcfile, outfile);
+    sprintf(command, CC " -c %s -o %s -g -O0", assemblyname, outfile); //objectfile, rcfile, outfile);
     
     system(command);
 
-    arr_append(&crate->object_files, outfile);
+    *outname = outfile;
+    // arr_append(&crate->object_files, outfile);
 }
 
 void shp_produce_executable(ShippingCrate *crate)

@@ -84,10 +84,10 @@ char *get_file_ext(const char *filename)
 
 void fill_crate(ShippingCrate *crate, int argc, const char *argv[])
 {
-    crate->current_file = NULL;
     crate->source_files = arr_create(5);
     crate->object_files = arr_create(5);
     crate->extra_code = arr_create(2);
+    crate->work = arr_create(10);
 
     int skip = 0;
     int i;
@@ -107,7 +107,7 @@ void fill_crate(ShippingCrate *crate, int argc, const char *argv[])
             arr_append(&crate->extra_code, (void *)argv[i + 1]);
         }
 
-        if(SEQU(arg, "-o") || SEQU(arg, "--code"))
+        if(SEQU(arg, "-o") || SEQU(arg, "--code") || SEQU(arg, "--threads"))
             skip = 1;
         
         if(
@@ -120,6 +120,7 @@ void fill_crate(ShippingCrate *crate, int argc, const char *argv[])
             SEQU(arg, "--no-rc") ||
             SEQU(arg, "--verbose") ||
             SEQU(arg, "--code") ||
+            SEQU(arg, "--threads") ||
             SEQU(arg, "--dump-code")) 
             continue;
         
@@ -130,7 +131,7 @@ void fill_crate(ShippingCrate *crate, int argc, const char *argv[])
     }
 }
 
-void compile_generic(ShippingCrate *crate, int include_rc)
+LLVMModuleRef compile_generic(ShippingCrate *crate, int include_rc, char *file)
 {
     YY_BUFFER_STATE yybuf = yy_create_buffer(NULL, YY_BUF_SIZE);
     yy_switch_to_buffer(yybuf);
@@ -140,11 +141,11 @@ void compile_generic(ShippingCrate *crate, int include_rc)
 
     if(IN(global_args, "--dump-code"))
     {
-        printf("Dump of:\n%s\n=================================================\n", crate->current_file);
+        printf("Dump of:\n%s\n=================================================\n", file);
         mb_print_all(ymultibuffer);
         printf("\n\n");
 
-        return;
+        return NULL;
     }
 
     //mb_add_file(ymultibuffer, argv[1]);
@@ -158,20 +159,13 @@ void compile_generic(ShippingCrate *crate, int include_rc)
 
     ty_teardown();
 
-    shp_optimize(module);
-
     if(IN(global_args, "--llvm"))
         LLVMDumpModule(module);
-    else
-    {
-        shp_produce_assembly(module, crate);
-        shp_produce_binary(crate);
-    }
-
-    LLVMDisposeModule(module);
 
     utl_free_registered();
     ast_free_nodes();
+
+    return module;
 }
 
 char *make_argcode_name()
@@ -187,14 +181,18 @@ void compile_string(char *str, ShippingCrate *crate)
     ymultibuffer = mb_alloc();
     mb_add_str(ymultibuffer, str);
 
-    crate->current_file = make_argcode_name();
+    // crate->current_file = make_argcode_name();
+    utl_set_current_context(LLVMContextCreate());
 
     if(IN(global_args, "--verbose"))
         printf("Compiling extra code {{\n%s\n}}\n", str);
 
-    compile_generic(crate, !IN(global_args, "--no-rc"));
+    char *file = make_argcode_name();
+    LLVMModuleRef module = compile_generic(crate, !IN(global_args, "--no-rc"), file);
 
-    free(crate->current_file);
+    arr_append(&crate->work, thr_create_bundle(module, utl_get_current_context(), file));
+
+    // free(crate->current_file);
 }
 
 void compile_rc(ShippingCrate *crate)
@@ -202,32 +200,29 @@ void compile_rc(ShippingCrate *crate)
     ymultibuffer = mb_alloc();
     mb_add_str(ymultibuffer, rc_code);
 
-    crate->current_file = (char *)"__egl_rc_str.egl";
+    // crate->current_file = (char *)"__egl_rc_str.egl";
+    utl_set_current_context(LLVMContextCreate());
 
     if(IN(global_args, "--verbose"))
         printf("Compiling runtime...\n");
 
-    compile_generic(crate, 0);
+    LLVMModuleRef module = compile_generic(crate, 0, (char *)"__egl_rc_str.egl");
+    arr_append(&crate->work, thr_create_bundle(module, utl_get_current_context(), (char *)"__egl_rc_str.egl"));
 }
 
 void compile_file(char *file, ShippingCrate *crate)
 {
     ymultibuffer = imp_generate_imports(file);
     mb_add_file(ymultibuffer, file);
-    crate->current_file = file;
+    // crate->current_file = file;
 
-    if(IN(global_args, "-h"))
-    {
-        char *text = mb_get_first_str(ymultibuffer);
-        if(text)
-            printf("%s\n", mb_get_first_str(ymultibuffer));
-    }
-    else
-    {
-        if(IN(global_args, "--verbose"))
-            printf("Compiling file (%s)...\n", file);
-        compile_generic(crate, !IN(global_args, "--no-rc"));
-    }
+    utl_set_current_context(LLVMContextCreate());
+
+    if(IN(global_args, "--verbose"))
+        printf("Compiling file (%s)...\n", file);
+
+    LLVMModuleRef module = compile_generic(crate, !IN(global_args, "--no-rc"), file);
+    arr_append(&crate->work, thr_create_bundle(module, utl_get_current_context(), file));
 }
 
 int main(int argc, const char *argv[])
@@ -252,38 +247,28 @@ int main(int argc, const char *argv[])
     }
 
     thr_init();
-    shp_setup();
 
     ShippingCrate crate;
     fill_crate(&crate, argc, argv);
 
     for(i = 0; i < crate.source_files.count; i++)
-    {
-        utl_set_current_context(LLVMContextCreate());
         compile_file(crate.source_files.items[i], &crate);
-        LLVMContextDispose(utl_get_current_context());
-    }
 
     for(i = 0; i < crate.extra_code.count; i++)
-    {
-        utl_set_current_context(LLVMContextCreate());
         compile_string(crate.extra_code.items[i], &crate);
-        LLVMContextDispose(utl_get_current_context());
-    }
+
+    if(!IN(global_args, "-c") && !IN(global_args, "--llvm") && !IN(global_args, "-h") &&
+       !IN(global_args, "--dump-code") && !IN(global_args, "-S") && !IN(global_args, "--no-rc"))
+        compile_rc(&crate);
+
+    if(!IN(global_args, "--dump-code") && !IN(global_args, "--llvm"))
+        thr_produce_machine_code(&crate);
 
     if(!IN(global_args, "-c") && !IN(global_args, "--llvm") && !IN(global_args, "-h") &&
        !IN(global_args, "--dump-code") && !IN(global_args, "-S"))
-    {
-        if(!IN(global_args, "--no-rc"))
-        {
-            utl_set_current_context(LLVMContextCreate());
-            compile_rc(&crate);
-            LLVMContextDispose(utl_get_current_context());
-        }
         shp_produce_executable(&crate);
-    }
 
-    shp_teardown();
+    thr_teardown();
     
     return 0;
 }
