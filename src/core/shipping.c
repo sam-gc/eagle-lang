@@ -29,10 +29,8 @@ void shp_optimize(LLVMModuleRef module)
         opt = 3;
 
     LLVMPassManagerBuilderSetOptLevel(passBuilder, opt);
-    LLVMPassManagerBuilderPopulateModulePassManager(passBuilder, pm);
 
-    LLVMInitializeNativeTarget();
-    LLVMInitializeNativeAsmPrinter();
+    thr_populate_pass_manager(passBuilder, pm);
 
     LLVMTargetDataRef td = LLVMCreateTargetData("");
     LLVMAddTargetData(td, pm);

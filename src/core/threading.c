@@ -23,7 +23,7 @@ typedef pthread_t th_thread;
 #define th_destroy_mutex(mut) pthread_mutex_destroy(&(mut))
 #define th_split(thread, func, data) pthread_create(&(thread), NULL, (func), (data))
 #define th_join(thread) pthread_join((thread), NULL)
-#define threadct() 4
+#define threadct() thr_pthread_sys_count()
 
 #else
 
@@ -43,6 +43,7 @@ static th_mutex number_lock;
 static th_mutex name_lock;
 static th_mutex work_lock;
 static th_mutex obj_lock;
+static th_mutex llvm_lock;
 
 static mempool unlink_pool;
 
@@ -50,6 +51,18 @@ typedef struct {
     ShippingCrate *crate;
     int thread_num;
 } ProcData;
+
+#ifdef HAS_PTHREAD
+
+int thr_pthread_sys_count()
+{
+    if(!LLVMIsMultithreaded())
+        return 1;
+
+    return 4;
+}
+
+#endif
 
 void strip_ext(char *base)
 {
@@ -80,6 +93,7 @@ void thr_init()
     th_init_mutex(name_lock);
     th_init_mutex(work_lock);
     th_init_mutex(obj_lock);
+    th_init_mutex(llvm_lock);
 
     unlink_pool = pool_create();
     unlink_pool.free_func = (void (*)(void *))unlink;
@@ -93,6 +107,7 @@ void thr_teardown()
     th_destroy_mutex(name_lock);
     th_destroy_mutex(work_lock);
     th_destroy_mutex(obj_lock);
+    th_destroy_mutex(llvm_lock);
 }
 
 ThreadingBundle *thr_create_bundle(LLVMModuleRef module, LLVMContextRef context, char *filename)
@@ -104,6 +119,13 @@ ThreadingBundle *thr_create_bundle(LLVMModuleRef module, LLVMContextRef context,
     bundle->assemblyname = NULL;
 
     return bundle;
+}
+
+void thr_populate_pass_manager(LLVMPassManagerBuilderRef pbr, LLVMPassManagerRef pm)
+{
+    th_lock(llvm_lock);
+    LLVMPassManagerBuilderPopulateModulePassManager(pbr, pm);
+    th_unlock(llvm_lock);
 }
 
 ThreadingBundle *thr_get_next_work(ShippingCrate *crate)
@@ -167,18 +189,6 @@ void thr_produce_machine_code(ShippingCrate *crate)
 
     for(int i = 0; i < thrct; i++)
         th_join(threads[i]);
-
-    // for(int i = 0; i < crate->work.count; i++)
-    // {
-    //     ThreadingBundle *bundle = crate->work.items[i];
-    //     shp_optimize(bundle->module);
-    //     char *out = NULL;
-    //     shp_produce_assembly(bundle->module, bundle->filename, &out);
-    //     char *object = NULL;
-    //     shp_produce_binary(bundle->filename, out, &object);
-
-    //     arr_append(&crate->object_files, object);
-    // }
 }
 
 char *thr_temp_object_file(char *filename)
@@ -212,3 +222,4 @@ char *thr_temp_assembly_file(char *filename)
     th_unlock(name_lock);
     return name;
 }
+

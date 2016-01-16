@@ -247,6 +247,8 @@ int main(int argc, const char *argv[])
     }
 
     thr_init();
+    LLVMInitializeNativeTarget();
+    LLVMInitializeNativeAsmPrinter();
 
     ShippingCrate crate;
     fill_crate(&crate, argc, argv);

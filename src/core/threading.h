@@ -18,6 +18,7 @@ ThreadingBundle *thr_create_bundle(LLVMModuleRef module, LLVMContextRef context,
 void thr_init();
 void thr_teardown();
 void thr_produce_machine_code(ShippingCrate *crate);
+void thr_populate_pass_manager(LLVMPassManagerBuilderRef pbr, LLVMPassManagerRef pm);
 
 char *thr_temp_object_file(char *filename);
 char *thr_temp_assembly_file(char *filename);
