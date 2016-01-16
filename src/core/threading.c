@@ -15,6 +15,8 @@ extern hashtable global_args;
 
 #ifdef HAS_PTHREAD
 
+#define THREADING
+
 typedef pthread_mutex_t th_mutex;
 typedef pthread_t th_thread;
 #define th_init_mutex(mut) pthread_mutex_init(&(mut), NULL)
@@ -39,17 +41,20 @@ typedef int th_thread;
 
 #endif
 
+#ifdef THREADING
 static th_mutex number_lock;
 static th_mutex name_lock;
 static th_mutex work_lock;
 static th_mutex obj_lock;
 static th_mutex llvm_lock;
+#endif
 
 static mempool unlink_pool;
 
 typedef struct {
     ShippingCrate *crate;
     int thread_num;
+    char **outputfiles;
 } ProcData;
 
 #ifdef HAS_PTHREAD
@@ -128,13 +133,15 @@ void thr_populate_pass_manager(LLVMPassManagerBuilderRef pbr, LLVMPassManagerRef
     th_unlock(llvm_lock);
 }
 
-ThreadingBundle *thr_get_next_work(ShippingCrate *crate)
+ThreadingBundle *thr_get_next_work(ShippingCrate *crate, int *idx)
 {
     th_lock(work_lock);
     ThreadingBundle *out = NULL;
 
     if(crate->widex < crate->work.count)
         out = crate->work.items[crate->widex++];
+
+    *idx = crate->widex - 1;
 
     th_unlock(work_lock);
 
@@ -147,8 +154,9 @@ void *thr_work_proc(void *data)
     ProcData *pd = data;
     ShippingCrate *crate = pd->crate;
 
+    int idx;
     int ct = 0;
-    while((bundle = thr_get_next_work(crate)))
+    while((bundle = thr_get_next_work(crate, &idx)))
     {
         shp_optimize(bundle->module);
         char *out = NULL;
@@ -156,9 +164,7 @@ void *thr_work_proc(void *data)
         char *object = NULL;
         shp_produce_binary(bundle->filename, out, &object);
 
-        th_lock(obj_lock);
-        arr_append(&crate->object_files, object);
-        th_unlock(obj_lock);
+        pd->outputfiles[idx] = object;
         ct += 1;
     }
 
@@ -179,21 +185,26 @@ void thr_produce_machine_code(ShippingCrate *crate)
         printf("Generating machine code (%d threads)\n", thrct);
 
     th_thread threads[thrct];
+    char *outputfiles[crate->work.count];
+
     for(int i = 0; i < thrct; i++)
     {
         ProcData *pd = malloc(sizeof(ProcData));
         pd->thread_num = i + 1;
         pd->crate = crate;
+        pd->outputfiles = outputfiles;
         th_split(threads[i], thr_work_proc, pd);
     }
 
     for(int i = 0; i < thrct; i++)
         th_join(threads[i]);
+
+    for(int i = 0; i < crate->work.count; i++)
+        arr_append(&crate->object_files, outputfiles[i]);
 }
 
 char *thr_temp_object_file(char *filename)
 {
-    th_lock(name_lock);
     char *dup = strdup(filename);
     char *base = basename(dup);
     strip_ext(base);
@@ -202,6 +213,7 @@ char *thr_temp_object_file(char *filename)
     sprintf(name, "/tmp/egl%d_%s.o", thr_request_number(), base);
     free(dup);
 
+    th_lock(name_lock);
     pool_add(&unlink_pool, name);
     th_unlock(name_lock);
     return name;
@@ -209,7 +221,6 @@ char *thr_temp_object_file(char *filename)
 
 char *thr_temp_assembly_file(char *filename)
 {
-    th_lock(name_lock);
     char *dup = strdup(filename);
     char *base = basename(dup);
     strip_ext(base);
@@ -218,6 +229,7 @@ char *thr_temp_assembly_file(char *filename)
     sprintf(name, "/tmp/egl%d_%s.s", thr_request_number(), base);
     free(dup);
 
+    th_lock(name_lock);
     pool_add(&unlink_pool, name);
     th_unlock(name_lock);
     return name;
