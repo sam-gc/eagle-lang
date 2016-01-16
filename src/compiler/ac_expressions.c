@@ -418,7 +418,7 @@ LLVMValueRef ac_compile_index(AST *ast, int keepPointer, CompilerBundle *cb)
         gep = LLVMBuildInBoundsGEP(cb->builder, l, &r, 1, "idx");
     }
 
-    if(keepPointer || (lt->type == ETArray && ((EagleArrayType *)lt)->of->type == ETArray))
+    if(keepPointer || (lt->type == ETArray && ((EagleArrayType *)lt)->of->type == ETArray) || (lt->type == ETArray && ((EagleArrayType *)lt)->of->type == ETStruct))
         return gep;
 
     return LLVMBuildLoad(cb->builder, gep, "dereftmp");
@@ -1068,6 +1068,12 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update)
 
     LLVMValueRef r = ac_dispatch_expression(a->right, cb);
     EagleTypeType *fromtype = a->right->resultantType;
+
+    // When pulling structure values out of arrays, we save the pointer so that the syntax
+    // array[a][b].member = 5 works. But if we want to actually store that struct member
+    // elsewhere, we need to load it in order to copy it.
+    if(fromtype->type == ETStruct && LLVMTypeOf(r) == ett_llvm_type(ett_pointer_type(fromtype)))
+        r = LLVMBuildLoad(cb->builder, r, "");
 
     if(totype->type == ETAuto)
     {

@@ -12,8 +12,8 @@ ENVIRONMENT_OBJ_FILES=$(addprefix obj/environment/,$(notdir $(ENVIRONMENT_SOURCE
 EXAMPLE_EXECUTABLES=$(addprefix builtex/,$(notdir $(EXAMPLE_SOURCES:.egl=.e)))
 CPP_OBJ_FILES=$(addprefix obj/cpp/,$(notdir $(CPP_SOURCES:.cpp=.o)))
 
-CFLAGS=-Isrc -std=c99 -Wall `@llvmconfig@ --cflags` @targ@
-CXXFLAGS=-Isrc -std=c++11 -fno-rtti -Wall `@llvmconfig@ --cxxflags` @targ@
+CFLAGS=-Isrc -std=c99 -Wall -Wextra -pedantic `@llvmconfig@ --cflags` @targ@
+CXXFLAGS=-Isrc -std=c++11 -fno-rtti -Wall -Wextra -pedantic `@llvmconfig@ --cxxflags` @targ@
 LDFLAGS=`@llvmconfig@ --ldflags --libs --libs core support analysis native transformutils bitwriter asmprinter asmparser target all-targets` -ldl -lpthread -lm -lcurses -lz
 
 CC=@CC@

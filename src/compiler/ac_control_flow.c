@@ -193,6 +193,7 @@ void ac_compile_loop(AST *ast, CompilerBundle *cb)
 
         vs_run_callbacks_through(cb->varScope, cb->varScope->scope);
         LLVMBuildBr(cb->builder, testBB);
+        //LLVMDumpValue(LLVMBasicBlockAsValue(incrBB));
 
         LLVMPositionBuilderAtEnd(cb->builder, cleanupBB);
         vs_run_callbacks_through(cb->varScope, cb->varScope->scope);

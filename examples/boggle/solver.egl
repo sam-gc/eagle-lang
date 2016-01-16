@@ -22,7 +22,7 @@ func resolve(int x, int y) : int
 class Solver
 {
     Dictionary^ dict
-    Tile* tiles
+    Tile[4][4] tiles
     LinkedListRaw^ found
 
     init(byte* str)
@@ -30,24 +30,16 @@ class Solver
         self->dict = new Dictionary('dict.txt')
         int len = strlen(str)
 
-        self->tiles = malloc(500)
-
-        for int i = 0; i < len; i += 1
+        for int i = 0; i < 4; i += 1
         {
-            int x = mod(i, 4)
-            int y = i / 4
-
-            var t = &self->tiles[i]
-            t->x = x
-            t->y = y
-            t->val = str[i]
+            for int j = 0; j < 4; j += 1
+            {
+                var t = &self->tiles[i][j]
+                t->x = i
+                t->y = j
+                t->val = str[i*4 + j]
+            }
         }
-
-    }
-
-    destruct()
-    {
-        free(self->tiles)
     }
 
     func listContains(LinkedListRaw^ ll, Tile* t) : bool
@@ -99,7 +91,7 @@ class Solver
                 if nX >= 0 && nX <= 3 && nY >= 0 && nY <= 3
                 {
 
-                    Tile* next = &self->tiles[resolve(nX, nY)]
+                    Tile* next = &self->tiles[nX][nY]
 
                     if self->listContains(current, next)
                         continue
@@ -131,39 +123,39 @@ class Solver
             int x = mod(i, 4)
             int y = i / 4
 
-            self->solveFrom(&self->tiles[resolve(x, y)])
+            self->solveFrom(&self->tiles[x][y])
         }
 
         return self->found
     }
 }
 
-func setNeighbors(int* ns)
+func setNeighbors(int[][2] ns)
 {
     int non = 0-1
-    ns[0] = non
-    ns[1] = non
+    ns[0][0] = non
+    ns[0][1] = non
 
-    ns[2] = 0
-    ns[3] = non
+    ns[1][0] = 0
+    ns[1][1] = non
 
-    ns[4] = 1
-    ns[5] = non
+    ns[2][0] = 1
+    ns[2][1] = non
 
-    ns[6] = 1
-    ns[7] = 0
+    ns[3][0] = 1
+    ns[3][1] = 0
 
-    ns[8] = 1
-    ns[9] = 1
+    ns[4][0] = 1
+    ns[4][1] = 1
 
-    ns[10] = 0
-    ns[11] = 1
+    ns[5][0] = 0
+    ns[5][1] = 1
 
-    ns[12] = non
-    ns[13] = 1
+    ns[6][0] = non
+    ns[6][1] = 1
 
-    ns[14] = non
-    ns[15] = 0
+    ns[7][0] = non
+    ns[7][1] = 0
 }
 
 struct Tile

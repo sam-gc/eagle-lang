@@ -55,7 +55,7 @@ int ec_allow(export_control *ec, const char *str)
 
 void ec_free(export_control *ec)
 {
-    rgxnode *node;
+    rgxnode *node = ec->head;
     while(node)
     {
         rgxnode *next = node->next;
