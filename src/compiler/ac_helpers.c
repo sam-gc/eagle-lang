@@ -184,6 +184,23 @@ LLVMValueRef ac_make_div(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
     }
 }
 
+LLVMValueRef ac_make_mod(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type)
+{
+    switch(type)
+    {
+        case ETDouble:
+            return LLVMBuildFRem(builder, left, right, "modtmp");
+        case ETInt8:
+        case ETInt16:
+        case ETInt32:
+        case ETInt64:
+            return LLVMBuildSRem(builder, left, right, "modtmp");
+        default:
+            die(-1, "The given types may not have modulo applied.");
+            return NULL;
+    }
+}
+
 LLVMValueRef ac_make_comp(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type, char comp)
 {
     LLVMIntPredicate ip;

@@ -64,6 +64,7 @@ cstr '(\\.|[^'])*'
 "*="        DISCARD_NL; return SET(TMULE);
 "/"         DISCARD_NL; return SET(TDIV);
 "/="        DISCARD_NL; return SET(TDIVE);
+"%"         DISCARD_NL; return SET(TMOD);
 "^"         SAVE_NL; return SET(TPOW);
 ">"         DISCARD_NL; return SET(TGT);
 ">="        DISCARD_NL; return SET(TGTE);

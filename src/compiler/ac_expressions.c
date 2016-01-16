@@ -633,6 +633,8 @@ LLVMValueRef ac_generic_binary(ASTBinary *a, LLVMValueRef l, LLVMValueRef r, cha
         case '/':
         case 'D':
             return ac_make_div(l, r, cb->builder, totype->type);
+        case '%':
+            return ac_make_mod(l, r, cb->builder, totype->type);
         default:
             die(a->lineno, "Invalid binary operation (%c).", a->op);
             return NULL;
