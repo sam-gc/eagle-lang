@@ -48,8 +48,11 @@ LLVMValueRef ac_build_conversion(LLVMBuilderRef builder, LLVMValueRef val, Eagle
                 if(!ty_class_implements_interface(from, to))
                     die(-1, "Class does not implement the requested interface");
             }
-            else if(ett_get_base_type(to) != ett_get_base_type(from))
+            else if(!ett_are_same(ett_get_root_pointee(to), ett_get_root_pointee(from)))
+            {
+                LLVMDumpType(ett_llvm_type(ett_get_root_pointee(from)));
                 die(-1, "Implicit pointer conversion invalid; pointer types are incompatible.");
+            }
 
             return LLVMBuildBitCast(builder, val, ett_llvm_type(to), "ptrtmp");
         }

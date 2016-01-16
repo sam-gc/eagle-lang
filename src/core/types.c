@@ -419,6 +419,14 @@ void ett_class_set_interfaces(EagleTypeType *ett, arraylist *interfaces)
     memcpy(&st->interfaces, interfaces, sizeof(arraylist));
 }
 
+EagleTypeType *ett_get_root_pointee(EagleTypeType *type)
+{
+    if(type->type == ETPointer)
+        return ett_get_root_pointee(((EaglePointerType *)type)->to);
+
+    return type;
+}
+
 EagleType ett_get_base_type(EagleTypeType *type)
 {
     if(type->type == ETPointer)
@@ -459,6 +467,16 @@ int ett_are_same(EagleTypeType *left, EagleTypeType *right)
         return ett_are_same(al->of, ar->of) && al->ct == ar->ct;
     }
 
+    // FOR NOW -- Classes are represented with the same C struct
+    // as structures. So this works.
+    if(theType == ETStruct || theType == ETClass)
+    {
+        EagleStructType *sl = (EagleStructType *)left;
+        EagleStructType *sr = (EagleStructType *)right;
+        
+        return strcmp(sl->name, sr->name) == 0;
+    }
+
     if(theType == ETFunction)
     {
         EagleFunctionType *fl = (EagleFunctionType *)left;
@@ -472,7 +490,7 @@ int ett_are_same(EagleTypeType *left, EagleTypeType *right)
         for(i = 0; i < fl->pct; i++)
             if(!ett_are_same(fl->params[i], fr->params[i]))
                 return 0;
-        if(fl->closure != fr->closure)
+        if((fl->closure && !fr->closure) || (!fl->closure && fr->closure))
             return 0;
 
         return fl->gen == fr->gen;

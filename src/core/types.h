@@ -117,6 +117,7 @@ void ett_composite_interface(EagleTypeType *ett, char *name);
 
 LLVMTypeRef ett_closure_type(EagleTypeType *type);
 EagleType ett_get_base_type(EagleTypeType *type);
+EagleTypeType *ett_get_root_pointee(EagleTypeType *type);
 LLVMTypeRef ett_llvm_type(EagleTypeType *type);
 int ett_are_same(EagleTypeType *left, EagleTypeType *right);
 int ett_pointer_depth(EagleTypeType *t);
