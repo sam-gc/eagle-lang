@@ -89,7 +89,8 @@ LLVMValueRef ac_compile_var_decl_ext(EagleTypeType *type, char *ident, CompilerB
     {
         LLVMBuildStore(cb->builder, LLVMConstPointerNull(ett_llvm_type(type)), pos);
 
-        vs_add_callback(cb->varScope, ident, ac_scope_leave_callback, cb);
+        if(!cb->compilingMethod || strcmp(ident, "self"))
+            vs_add_callback(cb->varScope, ident, ac_scope_leave_callback, cb);
     }
     else if(ET_IS_WEAK(type))
     {

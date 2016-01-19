@@ -26,6 +26,8 @@ LLVMModuleRef ac_compile(AST *ast, int include_rc)
     cb.transients = hst_create();
     cb.loadedTransients = hst_create();
 
+    cb.compilingMethod = 0;
+
     cb.currentLoopEntry = cb.currentLoopExit = NULL;
 
     cb.td = LLVMCreateTargetData("");

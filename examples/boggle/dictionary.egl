@@ -1,6 +1,6 @@
 import trie.egl
 
-export .*
+export *
 
 extern func fopen(byte*, byte*) : any*
 extern func fgets(byte*, int, any*) : int

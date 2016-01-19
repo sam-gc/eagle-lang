@@ -177,8 +177,10 @@ void ac_compile_class_methods_each(void *key, void *val, void *data)
 
     free(method_name);
 
+    h->cb->compilingMethod = 1;
     if(!cd->ext)
         ac_compile_function_ex((AST *)fd, h->cb, func, ety);
+    h->cb->compilingMethod = 0;
 
     ety->params[0] = ett_pointer_type(ett_base_type(ETAny));
 

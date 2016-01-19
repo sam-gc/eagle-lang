@@ -2,11 +2,25 @@
 #include "core/regex.h"
 #include <stdlib.h>
 #include <string.h>
+#include <fnmatch.h>
+
+typedef enum
+{
+    EREGX,
+    EWILD
+} rgxnodetype;
 
 typedef struct node
 {
+    rgxnodetype type;
     struct node *next;
-    rgx_regex *rgx;
+
+    union
+    {
+        rgx_regex *rgx;
+        char *wild;
+    } pattern;
+
 } rgxnode;
 
 struct export_control
@@ -28,7 +42,26 @@ void ec_add_str(export_control *ec, const char *str)
 {
     rgxnode *node = malloc(sizeof(rgxnode));
     node->next = NULL;
-    node->rgx = rgx_compile((char *)str);
+    node->pattern.rgx = rgx_compile((char *)str);
+    node->type = EREGX;
+
+    if(!ec->head)
+    {
+        ec->head = node;
+        ec->tail = node;
+        return;
+    }
+
+    ec->tail->next = node;
+    ec->tail = node;
+}
+
+void ec_add_wcard(export_control *ec, const char *str)
+{
+    rgxnode *node = malloc(sizeof(rgxnode));
+    node->next = NULL;
+    node->pattern.wild = strdup(str);
+    node->type = EWILD;
 
     if(!ec->head)
     {
@@ -46,7 +79,9 @@ int ec_allow(export_control *ec, const char *str)
     rgxnode *node;
     for(node = ec->head; node; node = node->next)
     {
-        if(rgx_matches(node->rgx, (char *)str))
+        if(node->type == EREGX && rgx_matches(node->pattern.rgx, (char *)str))
+            return 1;
+        else if(node->type == EWILD && fnmatch(node->pattern.wild, str, FNM_PATHNAME | FNM_PERIOD) == 0)
             return 1;
     }
 
@@ -59,7 +94,10 @@ void ec_free(export_control *ec)
     while(node)
     {
         rgxnode *next = node->next;
-        rgx_free(node->rgx);
+        if(node->type == EREGX)
+            rgx_free(node->pattern.rgx);
+        else
+            free(node->pattern.wild);
         free(node);
         node = next;
     }

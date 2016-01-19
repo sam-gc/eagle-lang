@@ -34,6 +34,8 @@ typedef struct {
     VarScopeStack *varScope;
     hashtable transients;
     hashtable loadedTransients;
+
+    int compilingMethod;
 } CompilerBundle;
 
 #include "ac_control_flow.h"

@@ -176,7 +176,7 @@ multibuffer *imp_generate_imports(const char *filename)
             }
 
             if(token == TEXPORT)
-                ec_add_str(ec, yytext + 7);
+                ec_add_wcard(ec, yytext + 7);
         }
 
         yypop_buffer_state();

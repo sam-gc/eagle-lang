@@ -375,6 +375,10 @@ void ac_compile_function_ex(AST *ast, CompilerBundle *cb, LLVMValueRef func, Eag
             EagleTypeType *ty = eparam_types[i];
             LLVMValueRef pos = ac_compile_var_decl(p, cb);
             LLVMBuildStore(cb->builder, LLVMGetParam(func, i), pos);
+
+            if(i == 0 && cb->compilingMethod)
+                continue;
+
             if(ET_IS_COUNTED(ty))
                 ac_incr_pointer(cb, &pos, eparam_types[i]);
             if(ET_IS_WEAK(ty))
