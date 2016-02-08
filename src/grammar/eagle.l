@@ -79,6 +79,7 @@ cstr '(\\.|[^'])*'
 "|"         DISCARD_NL; return SET(TOR);
 "func"      DISCARD_NL; in_interface && OVERRIDE; return SET(TFUNC);
 "gen"       DISCARD_NL; return SET(TGEN);
+"view"      DISCARD_NL; return SET(TVIEW);
 ":"         DISCARD_NL; return SET(TCOLON);
 ","         DISCARD_NL; return SET(TCOMMA);
 "."         DISCARD_NL; return SET(TDOT);

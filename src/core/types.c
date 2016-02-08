@@ -499,6 +499,56 @@ int ett_are_same(EagleTypeType *left, EagleTypeType *right)
     return 1;
 }
 
+#define TTJOIN(t) ET ## t
+#define NAME_BASIC(type) case TTJOIN(type):\
+    return strdup("__" #type "__")
+
+char *ett_unique_type_name(EagleTypeType *t)
+{
+    switch(t->type)
+    {
+        NAME_BASIC(None);
+        NAME_BASIC(Any);
+        NAME_BASIC(Nil);
+        NAME_BASIC(Int1);
+        NAME_BASIC(Int8);
+        NAME_BASIC(Int16);
+        NAME_BASIC(Int32);
+        NAME_BASIC(Int64);
+        NAME_BASIC(Double);
+        NAME_BASIC(CString);
+        
+        case ETPointer:
+        {
+            EaglePointerType *pt = (EaglePointerType *)t;
+            char *sub = ett_unique_type_name(pt->to);
+            char *out = malloc(strlen(sub) + 100);
+            sprintf(out, "__%s_%sptr__", sub, pt->counted ? "c" : "");
+            return out;
+        }
+
+        case ETArray:
+        {
+            EagleArrayType *at = (EagleArrayType *)t;
+            char *sub = ett_unique_type_name(at->of);
+            char *out = malloc(strlen(sub) + 100);
+            sprintf(out, "__%s_arr__", sub);
+            return out;
+        }
+
+        case ETGenerator:
+        {
+            EagleGenType *gt = (EagleGenType *)t;
+            char *sub = ett_unique_type_name(gt->ytype);
+            char *out = malloc(strlen(sub) + 100);
+            sprintf(out, "__%s_gen__", sub);
+            return out;
+        }
+
+        default: return NULL;
+    }
+}
+
 int ett_pointer_depth(EagleTypeType *t)
 {
     EaglePointerType *pt = (EaglePointerType *)t;

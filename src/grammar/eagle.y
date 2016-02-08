@@ -22,13 +22,13 @@
 %token <token> TPLUSE TMINUSE TMULE TDIVE TOR
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TLBRACKET TRBRACKET
 %token <token> TFUNC TRETURN TYIELD TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF TFOR TIN TWEAK TUNWRAP
-%token <token> TBREAK TCONTINUE TVAR TGEN  TELLIPSES
+%token <token> TBREAK TCONTINUE TVAR TGEN  TELLIPSES TVIEW
 %token <token> TCOLON TSEMI TNEWLINE TCOMMA TDOT TAMP TAT TARROW
 %token <token> TYES TNO TNIL TIMPORT TEXPORT
 %type <node> program declarations declaration statements statement block funcdecl ifstatement
 %type <node> variabledecl vardecllist funccall calllist funcident funcsident externdecl typelist type interfacetypelist
 %type <node> elifstatement elifblock elsestatement singif structdecl structlist blockalt classlist classdecl interfacedecl interfacelist compositetype
-%type <node> expr singexpr binexpr unexpr ounexpr forstatement clodecl genident gendecl initdecl
+%type <node> expr singexpr binexpr unexpr ounexpr forstatement clodecl genident gendecl initdecl viewdecl viewident
 
 %nonassoc TTYPE;
 %nonassoc TNEW;
@@ -124,6 +124,7 @@ classlist           : classlist variabledecl TSEMI { $$ = $1; ast_class_var_add(
                     | classlist initdecl { $$ = $1; ast_class_set_init($$, $2); }
                     | classlist funcident TSEMI { $$ = $1; ast_class_method_add($$, $2); }
                     | classlist funcsident TSEMI { $$ = $1; ast_class_method_add($$, $2); }
+                    | classlist viewdecl { $$ = $1; ast_class_method_add($$, $2); }
                     | variabledecl TSEMI { $$ = ast_make_class_decl(); ast_class_var_add($$, $1); }
                     | funcdecl { $$ = ast_make_class_decl(); ast_class_method_add($$, $1); }
                     | initdecl { $$ = ast_make_class_decl(); ast_class_set_init($$, $1); }
@@ -140,6 +141,12 @@ initdecl            : TIDENTIFIER TLPAREN TRPAREN block { $$ = ast_make_class_sp
 funcdecl            : funcident block { ((ASTFuncDecl *)$1)->body = $2; $$ = $1; };
 
 gendecl             : genident block { ((ASTFuncDecl *)$1)->body = $2; $$ = $1; };
+
+viewdecl            : viewident block { ((ASTFuncDecl *)$1)->body = $2; $$ = $1; }
+                    ;
+
+viewident           : TVIEW type { $$ = ast_make_func_decl($2, ett_unique_type_name(((ASTTypeDecl *)$2)->etype), NULL, NULL); }
+                    ;
 
 externdecl          : TEXTERN funcident { $$ = $2; }
                     | TEXTERN funcsident { $$ = $2; }

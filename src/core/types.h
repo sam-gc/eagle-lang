@@ -125,6 +125,7 @@ int ett_is_numeric(EagleTypeType *t);
 int ett_size_of_type(EagleTypeType *t);
 int ett_array_has_counted(EagleTypeType *t);
 int ett_array_count(EagleTypeType *t);
+char *ett_unique_type_name(EagleTypeType *t);
 
 LLVMTypeRef ty_class_indirect();
 
