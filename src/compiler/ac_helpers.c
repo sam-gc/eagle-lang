@@ -23,12 +23,49 @@ LLVMValueRef ac_make_floating_string(CompilerBundle *cb, const char *text, const
     return str;
 }
 
-LLVMValueRef ac_build_conversion(LLVMBuilderRef builder, LLVMValueRef val, EagleTypeType *from, EagleTypeType *to)
+LLVMValueRef ac_try_view_conversion(CompilerBundle *cb, LLVMValueRef val, EagleTypeType *from, EagleTypeType *to)
 {
+    EaglePointerType *pt = (EaglePointerType *)from;
+    if(pt->to->type != ETStruct && pt->to->type != ETClass)
+        return NULL;
+
+    EagleStructType *st = (EagleStructType *)pt->to;
+    if(!ty_is_class(st->name))
+        return NULL;
+
+    char *type_name = ett_unique_type_name(to);
+    
+    if(!ty_method_lookup(st->name, type_name))
+    {
+        free(type_name);
+        return NULL;
+    }
+    
+    char *method = ac_gen_method_name(st->name, type_name);
+
+    LLVMValueRef func = LLVMGetNamedFunction(cb->module, method);
+    LLVMValueRef call = LLVMBuildCall(cb->builder, func, &val, 1, "convertable");
+
+    free(method);
+    free(type_name);
+
+    return call;
+}
+
+LLVMValueRef ac_build_conversion(CompilerBundle *cb, LLVMValueRef val, EagleTypeType *from, EagleTypeType *to, int try_view)
+{
+    LLVMBuilderRef builder = cb->builder;
     switch(from->type)
     {
         case ETPointer:
         {
+            if(try_view)
+            {
+                LLVMValueRef cv = ac_try_view_conversion(cb, val, from, to);
+                if(cv)
+                    return cv;
+            }
+
             if(to->type != ETPointer)
                 die(-1, "Non-pointer type may not be converted to pointer type.");
 

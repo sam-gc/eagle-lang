@@ -292,7 +292,7 @@ LLVMValueRef ac_compile_new_decl(AST *ast, CompilerBundle *cb)
     {
         LLVMValueRef init = ac_dispatch_expression(a->right, cb);
         if(!ett_are_same(a->right->resultantType, type->etype))
-            init = ac_build_conversion(cb->builder, init, a->right->resultantType, type->etype);
+            init = ac_build_conversion(cb, init, a->right->resultantType, type->etype, LOOSE_CONVERSION);
         LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, val, 5, "");
         LLVMBuildStore(cb->builder, init, pos);
     }
@@ -321,7 +321,7 @@ LLVMValueRef ac_compile_new_decl(AST *ast, CompilerBundle *cb)
             if(i < ett->pct)
             {
                 if(!ett_are_same(rt, ett->params[i]))
-                    val = ac_build_conversion(cb->builder, val, rt, ett->params[i]);
+                    val = ac_build_conversion(cb, val, rt, ett->params[i], LOOSE_CONVERSION);
             }
 
             hst_remove_key(&cb->transients, p, ahhd, ahed);
@@ -353,7 +353,7 @@ LLVMValueRef ac_compile_cast(AST *ast, CompilerBundle *cb)
 
     if(ett_is_numeric(to) && ett_is_numeric(from))
     {
-        return ac_build_conversion(cb->builder, val, from, to);
+        return ac_build_conversion(cb, val, from, to, STRICT_CONVERSION);
     }
 
     if(to->type == ETPointer && from->type == ETPointer)
@@ -400,7 +400,7 @@ LLVMValueRef ac_compile_index(AST *ast, int keepPointer, CompilerBundle *cb)
         die(LN(right), "Arrays can only be indexed by a number.");
 
     if(ET_IS_REAL(rt->type))
-        r = ac_build_conversion(cb->builder, r, rt, ett_base_type(ETInt64));
+        r = ac_build_conversion(cb, r, rt, ett_base_type(ETInt64), STRICT_CONVERSION);
 
     if(lt->type == ETPointer)
         ast->resultantType = ((EaglePointerType *)lt)->to;
@@ -668,11 +668,11 @@ LLVMValueRef ac_compile_binary(AST *ast, CompilerBundle *cb)
 
     if(a->left->resultantType->type != promo)
     {
-        l = ac_build_conversion(cb->builder, l, a->left->resultantType, ett_base_type(promo));
+        l = ac_build_conversion(cb, l, a->left->resultantType, ett_base_type(promo), STRICT_CONVERSION);
     }
     else if(a->right->resultantType->type != promo)
     {
-        r = ac_build_conversion(cb->builder, r, a->right->resultantType, ett_base_type(promo));
+        r = ac_build_conversion(cb, r, a->right->resultantType, ett_base_type(promo), STRICT_CONVERSION);
     }
 
     switch(a->op)
@@ -870,7 +870,7 @@ LLVMValueRef ac_compile_generator_call(AST *ast, LLVMValueRef gen, CompilerBundl
     EagleTypeType *rt = p->resultantType;
 
     if(!ett_are_same(rt, ett_pointer_type(ett->ytype)))
-        val = ac_build_conversion(cb->builder, val, rt, ett_pointer_type(ett->ytype));
+        val = ac_build_conversion(cb, val, rt, ett_pointer_type(ett->ytype), STRICT_CONVERSION);
 
     LLVMValueRef args[2];
     EaglePointerType *pt = (EaglePointerType *)rt;
@@ -937,7 +937,7 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
         if(i < ett->pct)
         {
             if(!ett_are_same(rt, ett->params[i]))
-                val = ac_build_conversion(cb->builder, val, rt, ett->params[i]);
+                val = ac_build_conversion(cb, val, rt, ett->params[i], LOOSE_CONVERSION);
         }
 
         hst_remove_key(&cb->transients, p, ahhd, ahed);
@@ -1091,7 +1091,7 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update)
     a->resultantType = totype;
 
     if(!ett_are_same(fromtype, totype) && (!update || (update && totype->type != ETPointer)))
-        r = ac_build_conversion(cb->builder, r, fromtype, totype);
+        r = ac_build_conversion(cb, r, fromtype, totype, LOOSE_CONVERSION);
 
     int transient = 0;
     LLVMValueRef ptrPos = NULL;

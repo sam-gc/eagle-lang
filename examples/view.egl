@@ -1,0 +1,25 @@
+class TestView
+{
+    int value
+    init(int value)
+    {
+        self->value = value
+    }
+
+    view int
+    {
+        return self->value
+    }
+}
+
+func addOne(int a) : int
+{
+    return a + 1
+}
+
+func main()
+{
+    var n = new TestView(42)
+    puts addOne(n)
+}
+
