@@ -976,7 +976,7 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
     else
         out = LLVMBuildCall(cb->builder, func, args + 1, ct, ett->retType->type == ETVoid ? "" : "callout");
 
-    if(ET_IS_COUNTED(ett->retType) || (ett->retType->type == ETStruct && ty_needs_destructor(ett->retType)))
+    if((ET_IS_COUNTED(ett->retType)/* && ET_POINTEE(ett->retType)->type != ETGenerator*/) || (ett->retType->type == ETStruct && ty_needs_destructor(ett->retType)))
     {
         hst_put(&cb->loadedTransients, ast, out, ahhd, ahed);
     }

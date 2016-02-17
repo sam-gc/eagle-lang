@@ -1,3 +1,10 @@
+gen generator() : int
+{
+    for int i = 0; i < 10; i += 1
+    {
+        yield i
+    }
+}
 class TestView
 {
     int value
@@ -10,7 +17,13 @@ class TestView
     {
         return self->value
     }
+
+    view (gen : int)^
+    {
+        return generator()
+    }
 }
+
 
 func addOne(int a) : int
 {

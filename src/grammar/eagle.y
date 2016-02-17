@@ -79,7 +79,7 @@ type                : TTYPE { $$ = ast_make_type($1); }
                     | TLPAREN TCOLON type TRPAREN { $$ = ast_make_closure_type(NULL, $3); }
                     | TLPAREN TCOLON TRPAREN { $$ = ast_make_closure_type(NULL, ast_make_type((char *)"void")); }
                     | TLPAREN typelist TCOLON TRPAREN { $$ = ast_make_closure_type($2, ast_make_type((char *)"void")); }
-                    | TLPAREN TGEN TCOLON type TRPAREN { }
+                    | TLPAREN TGEN TCOLON type TRPAREN { $$ = ast_make_gen_type($4); }
                     | TLBRACKET typelist TCOLON type TRBRACKET { $$ = ast_make_function_type($2, $4); }
                     | TLBRACKET TCOLON type TRBRACKET { $$ = ast_make_function_type(NULL, $3); }
                     | TLBRACKET typelist TCOLON TRBRACKET { $$ = ast_make_function_type($2, ast_make_type((char *)"void")); }
@@ -124,6 +124,7 @@ classlist           : classlist variabledecl TSEMI { $$ = $1; ast_class_var_add(
                     | classlist initdecl { $$ = $1; ast_class_set_init($$, $2); }
                     | classlist funcident TSEMI { $$ = $1; ast_class_method_add($$, $2); }
                     | classlist funcsident TSEMI { $$ = $1; ast_class_method_add($$, $2); }
+                    | classlist viewident TSEMI { $$ = $1; ast_class_method_add($$, $2); }
                     | classlist viewdecl { $$ = $1; ast_class_method_add($$, $2); }
                     | variabledecl TSEMI { $$ = ast_make_class_decl(); ast_class_var_add($$, $1); }
                     | funcdecl { $$ = ast_make_class_decl(); ast_class_method_add($$, $1); }
@@ -152,6 +153,7 @@ externdecl          : TEXTERN funcident { $$ = $2; }
                     | TEXTERN funcsident { $$ = $2; }
                     | TEXTERN classdecl { $$ = $2; ast_class_set_extern($$); }
                     | TEXTERN structdecl { $$ = $2; ast_struct_set_extern($$); }
+                    | TEXTERN genident { $$ = $2; }
                     ;
 
 funcident           : TFUNC TIDENTIFIER TLPAREN TRPAREN TCOLON type { $$ = ast_make_func_decl($6, $2, NULL, NULL); }

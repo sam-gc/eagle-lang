@@ -78,16 +78,16 @@ char *imp_scan_file(const char *filename)
             identifier = strdup(yytext);
         }
 
-        if(token == TCLASS || token == TSTRUCT || token == TINTERFACE || token == TFUNC)
+        if(token == TCLASS || token == TSTRUCT || token == TINTERFACE || token == TFUNC || token == TGEN)
             save_next = 1;
 
-        if((token == TFUNC && !in_class) || token == TCLASS || token == TSTRUCT)
+        if(((token == TFUNC || token == TGEN) && !in_class) || token == TCLASS || token == TSTRUCT)
             sb_append(&stmp, "extern ");
 
         sb_append(&stmp, yytext);
         sb_append(&stmp, " ");
 
-        if(token == TFUNC || token == TCLASS || token == TSTRUCT || token == TEXTERN || token == TINTERFACE)
+        if(token == TFUNC || token == TCLASS || token == TSTRUCT || token == TEXTERN || token == TINTERFACE || token == TGEN)
         {
             if(identifier || first_time)
             {

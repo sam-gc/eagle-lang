@@ -160,6 +160,11 @@ void ac_compile_generator_code(AST *ast, CompilerBundle *cb)//, LLVMValueRef fun
     LLVMTypeRef funcType = LLVMFunctionType(LLVMInt1TypeInContext(utl_get_current_context()), pts, 2, 0);
     LLVMValueRef func = LLVMAddFunction(cb->module, codename, funcType);
     free(codename);
+
+    // If we have an extern generator, we will stop
+    // the compilation here.
+    if(!a->body)
+        return;
     
     int i;
     AST *p = a->params;
@@ -199,10 +204,10 @@ void ac_compile_generator_code(AST *ast, CompilerBundle *cb)//, LLVMValueRef fun
             hst_put(&param_mapping, pos, (void *)(uintptr_t)(i + 1), ahhd, ahed);
 
             // LLVMBuildStore(cb->builder, LLVMGetParam(func, i), pos);
-            if(ET_IS_COUNTED(ty))
-                ac_incr_pointer(cb, &pos, eparam_types[i]);
-            if(ET_IS_WEAK(ty))
-                ac_add_weak_pointer(cb, LLVMGetParam(func, i), pos, eparam_types[i]);
+            // if(ET_IS_COUNTED(ty))
+            //     ac_incr_pointer(cb, &pos, eparam_types[i]);
+            // if(ET_IS_WEAK(ty))
+            //     ac_add_weak_pointer(cb, LLVMGetParam(func, i), pos, eparam_types[i]);
         }
     }
 
@@ -305,6 +310,8 @@ void ac_generator_replace_allocas(CompilerBundle *cb, GeneratorBundle *gb)
 
         arr_free(&elems);
         elems = arr_create(10);
+
+        LLVMPositionBuilderBefore(cb->builder, first);
 
         int c;
         for(i = first, c = 2; i; i = LLVMGetNextInstruction(i))

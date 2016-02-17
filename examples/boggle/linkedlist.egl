@@ -143,14 +143,6 @@ class LinkedListRaw
         return out
     }
 
-    func each((any*:)^ ef)
-    {
-        for var n = self->head; n; n = n->next
-        {
-            ef(n->val)
-        }
-    }
-
     func split(LLNodeRaw^ head, LLNodeRaw^* front, LLNodeRaw^* back)
     {
         LLNodeRaw^ slow
@@ -251,6 +243,14 @@ class LinkedListRaw
     func sort((any*, any* : int)^ test)
     {
         self->head = self->mergeSort(test, self->head)
+    }
+
+    func each((any * :)^ callback)
+    {
+        for var n = self->head; n; n = n->next
+        {
+            callback(n->val)
+        }
     }
 }
 

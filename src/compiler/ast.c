@@ -531,6 +531,16 @@ AST *ast_make_function_type(AST *tysList, AST *resType)
     return (AST *)ast;
 }
 
+AST *ast_make_gen_type(AST *ytype)
+{
+    ASTTypeDecl *ast = ast_malloc(sizeof(ASTTypeDecl));
+    ast->type = ATYPE;
+
+    ast->etype = ett_gen_type(((ASTTypeDecl *)ytype)->etype);
+    
+    return (AST *)ast;
+}
+
 AST *ast_make_pointer(AST *ast)
 {
     ASTTypeDecl *a = (ASTTypeDecl *)ast;

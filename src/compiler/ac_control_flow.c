@@ -60,6 +60,10 @@ void ac_compile_return(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
             // function)
 
             hst_remove_key(&cb->transients, ((ASTUnary *)ast)->val, ahhd, ahed);
+
+            hst_for_each(&cb->loadedTransients, ac_decr_loaded_transients, cb);
+            hst_free(&cb->loadedTransients);
+            cb->loadedTransients = hst_create();
         }
     }
     
@@ -136,16 +140,31 @@ void ac_compile_loop(AST *ast, CompilerBundle *cb)
         if(rangeBased)
         {
             gen = rawGen = ac_dispatch_expression(a->test, cb);
+
             if(!hst_remove_key(&cb->loadedTransients, a->test, ahhd, ahed))
                 rawGen = NULL;
 
             if(a->test->resultantType->type != ETPointer ||
-                ((EaglePointerType *)a->test->resultantType)->to->type != ETGenerator)
+                (  ((EaglePointerType *)a->test->resultantType)->to->type != ETGenerator
+                && ((EaglePointerType *)a->test->resultantType)->to->type != ETClass))
                 die(ALN, "Range-based for-loops only work with generators.");
-            EagleGenType *gt = (EagleGenType *)((EaglePointerType *)a->test->resultantType)->to;
-            if(!ett_are_same(gt->ytype, a->setup->resultantType))
-                die(ALN, "Generator type and iterator do not match.");
-            ypt = ett_pointer_type(gt->ytype);
+
+            EagleTypeType *setupt = ((EaglePointerType *)a->test->resultantType)->to;
+            if(setupt->type == ETGenerator)
+            {
+                EagleGenType *gt = (EagleGenType *)setupt;
+                if(!ett_are_same(gt->ytype, a->setup->resultantType))
+                    die(ALN, "Generator type and iterator do not match.");
+                ypt = ett_pointer_type(gt->ytype);
+            }
+            else
+            {
+                EagleTypeType *gt = ett_gen_type(a->setup->resultantType);
+                EagleTypeType *pt = ett_pointer_type(gt);
+                ((EaglePointerType *)pt)->counted = 1;
+                rawGen = gen = ac_try_view_conversion(cb, gen, a->test->resultantType, pt);
+                ypt = ett_pointer_type(a->setup->resultantType);
+            }
         }
     }
 

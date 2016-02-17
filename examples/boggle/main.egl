@@ -35,11 +35,12 @@ func main(int argc, byte** argv) : int
         return strcmp(a, b)
     })
 
-    found->each(func(any* val) {
-        puts byte*@val
+    found->each(func(any *word) {
+        puts byte*@word
     })
 
     printf('Found %d words from board "%s"\n', found->length, text)
 
     return 0
 }
+
