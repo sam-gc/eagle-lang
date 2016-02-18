@@ -140,6 +140,7 @@ void ty_teardown();
 
 void ty_register_interface(char *name);
 void ty_register_class(char *name);
+void ty_register_typedef(char *name);
 void ty_add_init(char *name, EagleTypeType *ty);
 EagleTypeType *ty_get_init(char *name);
 void ty_add_method(char *name, char *method, EagleTypeType *ty);
@@ -148,6 +149,7 @@ void ty_add_struct_def(char *name, arraylist *names, arraylist *types);
 void ty_struct_member_index(EagleTypeType *ett, char *member, int *index, EagleTypeType **type);
 int ty_needs_destructor(EagleTypeType *ett);
 LLVMTypeRef ty_get_counted(LLVMTypeRef in);
+void ty_set_typedef(char *name, EagleTypeType *type);
 
 void ty_add_interface_method(char *name, char *method, EagleTypeType *ty);
 int ty_interface_offset(char *name, char *method);

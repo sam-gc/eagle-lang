@@ -19,6 +19,8 @@ extern void die(int, const char *, ...);
 #define ETEST(t, a, b) if(a == b) return t
 #define PLACEHOLDER ((void *)1)
 
+#define MAX_TYPE_SIZE 700
+
 LLVMModuleRef the_module = NULL;
 LLVMTargetDataRef etTargetData = NULL;
 
@@ -29,6 +31,7 @@ static mempool type_mempool;
 static mempool list_mempool;
 
 static hashtable name_table;
+static hashtable typedef_table;
 static hashtable struct_table;
 static hashtable types_table;
 static hashtable counted_table;
@@ -49,6 +52,9 @@ void ty_prepare()
 {
     name_table = hst_create();
     name_table.duplicate_keys = 1;
+
+    typedef_table = hst_create();
+    typedef_table.duplicate_keys = 1;
 
     struct_table = hst_create();
     struct_table.duplicate_keys = 1;
@@ -79,6 +85,9 @@ void ty_prepare()
 void ty_teardown()
 {
     hst_free(&name_table);
+
+    hst_for_each(&typedef_table, ty_struct_def_free, NULL);
+    hst_free(&typedef_table);
 
     hst_for_each(&struct_table, ty_struct_def_free, NULL);
     hst_free(&struct_table);
@@ -116,6 +125,10 @@ EagleTypeType *et_parse_string(char *text)
 
     if(ty_is_name(text))
     {
+        void *type = hst_get(&typedef_table, text, NULL, NULL);
+        if(type)
+            return type;
+
         if(ty_is_class(text))
             return ett_class_type(text);
         else if(ty_is_interface(text))
@@ -723,6 +736,48 @@ void ty_register_interface(char *name)
     *list = arr_create(10);
 
     hst_put(&interface_table, name, list, NULL, NULL);
+}
+
+void ty_register_typedef(char *name)
+{
+    void *tag = malloc(MAX_TYPE_SIZE);
+    hst_put(&typedef_table, name, tag, NULL, NULL);
+}
+
+void ty_set_typedef(char *name, EagleTypeType *type)
+{
+    void *tag = hst_get(&typedef_table, name, NULL, NULL);
+    if(!tag)
+        die(-1, "Internal compiler error.\n");
+
+    size_t memsize = 0;
+    switch(type->type)
+    {
+        case ETPointer:
+            memsize = sizeof(EaglePointerType);
+            break;
+        case ETArray:
+            memsize = sizeof(EagleArrayType);
+            break;
+        case ETFunction:
+            memsize = sizeof(EagleFunctionType);
+            break;
+        case ETGenerator:
+            memsize = sizeof(EagleGenType);
+            break;
+        case ETClass:
+        case ETStruct:
+            memsize = sizeof(EagleStructType);
+            break;
+        case ETInterface:
+            memsize = sizeof(EagleInterfaceType);
+            break;
+        default:
+            memsize = sizeof(EagleTypeType);
+            break;
+    }
+
+    memcpy(tag, type, memsize);
 }
 
 int ty_interface_offset(char *name, char *method)

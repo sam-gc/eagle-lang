@@ -48,6 +48,9 @@ clean-examples:
 	rm -f *.e
 	rm -rf builtex
 
+htest: src/core/c-headers.c
+	$(CC) $(CFLAGS) $(LDFLAGS) src/core/c-headers.c src/core/hashtable.c src/core/arraylist.c -o htest -DHTEST
+
 obj/compiler/%.o: src/compiler/%.c
 	$(MKDIR) obj/compiler/
 	$(CC) $(CFLAGS) -c -o $@ $<

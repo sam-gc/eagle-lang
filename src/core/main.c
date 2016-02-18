@@ -31,6 +31,21 @@ extern YY_BUFFER_STATE yy_create_buffer(FILE*, size_t);
 extern void yy_switch_to_buffer(YY_BUFFER_STATE buf);
 extern void yy_delete_buffer(YY_BUFFER_STATE buf);
 
+void register_typedef()
+{
+    char *prev = NULL;
+    int token;
+    while((token = yylex()) != TSEMI)
+    {
+        if(prev)
+            free(prev);
+        prev = strdup(yytext);
+    }
+    ty_add_name(prev);
+    ty_register_typedef(prev);
+    free(prev);
+}
+
 void first_pass()
 {
     int token;
@@ -57,6 +72,9 @@ void first_pass()
         saveNextStruct = (token == TSTRUCT || token == TCLASS || token == TINTERFACE);
         saveNextClass = token == TCLASS;
         saveNextInterface = token == TINTERFACE;
+
+        if(token == TTYPEDEF)
+            register_typedef();
     }
 
     //rewind(yyin);
