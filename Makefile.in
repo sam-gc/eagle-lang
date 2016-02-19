@@ -2,6 +2,7 @@ CORE_SOURCES=$(wildcard src/core/*.c)
 COMPILER_SOURCES=$(wildcard src/compiler/*.c)
 GRAMMAR_SOURCES=$(wildcard src/grammar/*.c)
 ENVIRONMENT_SOURCES=$(wildcard src/environment/*.c)
+HTOEGL_SOURCES=$(wildcard src/htoegl/*.c)
 EXAMPLE_SOURCES=$(wildcard examples/*.egl)
 CPP_SOURCES=$(wildcard src/cpp/*.cpp)
 
@@ -9,12 +10,15 @@ CORE_OBJ_FILES=$(addprefix obj/core/,$(notdir $(CORE_SOURCES:.c=.o)))
 COMPILER_OBJ_FILES=$(addprefix obj/compiler/,$(notdir $(COMPILER_SOURCES:.c=.o)))
 GRAMMAR_OBJ_FILES=$(addprefix obj/grammar/,$(notdir $(GRAMMAR_SOURCES:.c=.o)))
 ENVIRONMENT_OBJ_FILES=$(addprefix obj/environment/,$(notdir $(ENVIRONMENT_SOURCES:.c=.o)))
+HTOEGL_OBJ_FILES=$(addprefix obj/htoegl/,$(notdir $(HTOEGL_SOURCES:.c=.o)))
 EXAMPLE_EXECUTABLES=$(addprefix builtex/,$(notdir $(EXAMPLE_SOURCES:.egl=.e)))
 CPP_OBJ_FILES=$(addprefix obj/cpp/,$(notdir $(CPP_SOURCES:.cpp=.o)))
 
 CFLAGS=-Isrc -std=c99 -Wall -Wextra -pedantic `@llvmconfig@ --cflags` @targ@
 CXXFLAGS=-Isrc -std=c++11 -fno-rtti -Wall -Wextra -pedantic `@llvmconfig@ --cxxflags` @targ@
 LDFLAGS=`@llvmconfig@ --ldflags --libs --libs core support analysis native transformutils bitwriter asmprinter asmparser target all-targets` -ldl -lpthread -lm -lcurses -lz
+HTOEGL_CFLAGS=-Isrc -std=c99 -Wall -Wextra -pedantic
+HTOEGL_LDFLAGS=-lclang
 
 CC=@CC@
 CXX=@CXX@
@@ -23,9 +27,12 @@ LD=@CXX@
 LEX=@LEX@
 YACC=@YACC@
 
-eagle: guts
+eagle: guts htoegl
 	touch src/core/versioning.c
 	@$(MAKE) glory
+
+htoegl: $(HTOEGL_OBJ_FILES)
+	$(LD) -o htoegl $^ $(HTOEGL_LDFLAGS)
 
 guts: src/grammar/eagle.l src/grammar/eagle.y
 	$(YACC) -d -o src/grammar/eagle.tab.c src/grammar/eagle.y -v
@@ -66,6 +73,10 @@ obj/grammar/%.o: src/grammar/%.c
 obj/environment/%.o: src/environment/%.c
 	$(MKDIR) obj/environment/
 	$(CC) $(CFLAGS) -c -o $@ $<
+
+obj/htoegl/%.o: src/htoegl/%.c
+	$(MKDIR) obj/htoegl/
+	$(CC) $(HTOEGL_CFLAGS) -c -o $@ $<
 
 obj/cpp/%.o: src/cpp/%.cpp
 	$(MKDIR) obj/cpp/
