@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <clang-c/BuildSystem.h>
 #include <clang-c/CXCompilationDatabase.h>
 #include <clang-c/CXErrorCode.h>
@@ -6,6 +7,8 @@
 #include <clang-c/Index.h>
 #include <clang-c/Platform.h>
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include "arraylist.h"
 
 #define CKIND(cursor) clang_getCursorKind(cursor)
@@ -34,32 +37,40 @@ CXType ch_unwrap_pointer(CXType pointer, int *pointer_depth)
     return pointer;
 }
 
+// Caller frees
 char *ch_map_type(CXType *t)
 {
     switch(t->kind)
     {
         case CT(Int):
         case CT(UInt):
-            return "int";
+            return strdup("int");
         case CT(Short):
         case CT(UShort):
-            return "short";
-        case CT(Void):  return "any";
-        case CT(Bool):  return "bool";
+            return strdup("short");
+        case CT(Void):  return strdup("any");
+        case CT(Bool):  return strdup("bool");
         case CT(Long):
         case CT(LongLong):
         case CT(ULong):
         case CT(ULongLong):
-            return "long";
+            return strdup("long");
         case CT(Char_S):
         case CT(Char_U):
         case CT(SChar):
         case CT(UChar):
-            return "byte";
+            return strdup("byte");
         case CT(Float):
         case CT(Double):
         case CT(LongDouble):
-            return "double";
+            return strdup("double");
+        case CT(Typedef):
+        {
+            CXString spe = clang_getTypeSpelling(*t);
+            char *out = strdup(CSTR(spe));
+            CXSTR(spe);
+            return out;
+        }
         default:
             fprintf(stderr, "Unknown: %s (%d)\n", CSTR(clang_getTypeSpelling(*t)), t->kind);
             return "";
@@ -74,6 +85,7 @@ void ch_print_basic_type(HeaderBundle *hb, CXType type)
 
     char *res = ch_map_type(&type);
     fputs(res, hb->output);
+    free(res);
     for(int i = 0; i < pointer_depth; i++)
     {
         fputs("*", hb->output);
