@@ -6,6 +6,12 @@ struct blah
 
 typedef struct blah blahb;
 
+typedef struct
+{
+    int a;
+    char b;
+} TestStruct;
+
 int sum(int a, int b);
 void test_blah(struct blah *a);
 void swap(int *a, int *b);

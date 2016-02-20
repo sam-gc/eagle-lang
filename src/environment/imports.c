@@ -52,6 +52,17 @@ char *imp_scan_file(const char *filename)
     int first_time = 1;
     while((token = yylex()) != 0)
     {
+        if(token == TTYPEDEF)
+        {
+            do
+            {
+                sb_append(&stmp, yytext);
+                sb_append(&stmp, " ");
+            } while((token = yylex()) != TSEMI);
+
+            sb_append(&stmp, "\n");
+        }
+
         if(token == TLBRACE)
             bracket_depth++;
         if(token == TRBRACE)

@@ -9,7 +9,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include "arraylist.h"
+#include "hashtable.h"
 
 #define CKIND(cursor) clang_getCursorKind(cursor)
 #define CTYPE(cursor) clang_getCursorType(cursor)
@@ -19,13 +21,18 @@
 #define CT(t) CXType_ ## t
 #define CC(t) CXCursor_ ## t
 
+#define ONE_PTR ((void *)(uintptr_t)1)
+
 typedef struct {
     CXString  cf_name;
     CXType    cf_ret_type;
     int       cf_n_params;
     arraylist cf_param_types;
     FILE     *output;
+    hashtable seen;
 } HeaderBundle;
+
+void ch_print_basic_type(HeaderBundle *hb, CXType type);
 
 CXType ch_unwrap_pointer(CXType pointer, int *pointer_depth)
 {
@@ -113,7 +120,8 @@ char *ch_map_type(CXType *t)
         case CT(Typedef):
         {
             CXString spe = clang_getTypeSpelling(*t);
-            char *out = strdup(CSTR(spe));
+            int offset = clang_isConstQualifiedType(*t) ? 6 : 0;
+            char *out = strdup(CSTR(spe) + offset);
             CXSTR(spe);
             return out;
         }
@@ -122,11 +130,32 @@ char *ch_map_type(CXType *t)
     }
 }
 
+void ch_print_fptr_type(HeaderBundle *hb, CXType type)
+{
+    fputs("[", hb->output);
+
+    int nparams = clang_getNumArgTypes(type);
+    for(int i = 0; i < nparams; i++)
+    {
+        CXType p = clang_getArgType(type, i);
+        ch_print_basic_type(hb, p);
+        if(i < nparams - 1) fputs(", ", hb->output);
+    }
+
+    CXType rett = clang_getResultType(type);
+    fputs(" : ", hb->output);
+    if(rett.kind != CT(Void))
+        ch_print_basic_type(hb, rett);
+
+    fputs("]*", hb->output);
+}
+
 void ch_print_basic_type(HeaderBundle *hb, CXType type)
 {
     int pointer_depth = 0;
     if(type.kind == CT(Pointer))
         type = ch_unwrap_pointer(type, &pointer_depth);
+
     if(type.kind == CT(ConstantArray))
     {
         CXType at = clang_getArrayElementType(type);
@@ -134,12 +163,18 @@ void ch_print_basic_type(HeaderBundle *hb, CXType type)
 
         ch_print_basic_type(hb, at);
         fprintf(hb->output, "[%d]", sz);
-        return;
+    }
+    else if(type.kind == CT(FunctionProto))
+    {
+        ch_print_fptr_type(hb, type);
+    }
+    else
+    {
+        char *res = ch_map_type(&type);
+        fputs(res, hb->output);
+        free(res);
     }
 
-    char *res = ch_map_type(&type);
-    fputs(res, hb->output);
-    free(res);
     for(int i = 0; i < pointer_depth; i++)
     {
         fputs("*", hb->output);
@@ -198,7 +233,7 @@ char *ch_add_info_where_necessary(const char *info, const char *name)
     if(infolen > namelen)
     {
         char *output = malloc(namelen + infolen + 5);
-        sprintf("%s %s", info, name);
+        sprintf(output, "%s %s", info, name);
         return output;
     }
 
@@ -217,7 +252,6 @@ char *ch_add_info_where_necessary(const char *info, const char *name)
 void ch_handle_struct_cursor(CXCursor cursor, HeaderBundle *hb)
 {
     arraylist list = arr_create(10);
-
     clang_visitChildren(cursor, ch_handle_struct_field_cursor, &list);
 
     if(!list.count)
@@ -227,6 +261,16 @@ void ch_handle_struct_cursor(CXCursor cursor, HeaderBundle *hb)
     }
 
     CXString stname = clang_getTypeSpelling(CTYPE(cursor));
+
+    if(hst_get(&hb->seen, (char *)CSTR(stname), NULL, NULL))
+    {
+        arr_free(&list);
+        CXSTR(stname);
+        return;
+    }
+
+    hst_put(&hb->seen, (char *)CSTR(stname), ONE_PTR, NULL, NULL);
+
     char *text = ch_add_info_where_necessary("struct", CSTR(stname));
     fprintf(hb->output, "extern %s\n{\n", text);
     CXSTR(stname);
@@ -292,6 +336,8 @@ void ch_generate_symbols_for_file(char *filename, FILE *output)
     hb.cf_param_types.count = -1;
     hb.cf_n_params = -5;
     hb.output = output;
+    hb.seen = hst_create();
+    hb.seen.duplicate_keys = 1;
 
     CXIndex index = clang_createIndex(0, 0);
     const char *args[] = {
@@ -306,6 +352,8 @@ void ch_generate_symbols_for_file(char *filename, FILE *output)
             CXTranslationUnit_None);
 
     clang_visitChildren(clang_getTranslationUnitCursor(tu), ch_ast_dispatch, &hb);
+
+    hst_free(&hb.seen);
 }
 
 int main(int argc, char *argv[])

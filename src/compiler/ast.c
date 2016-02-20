@@ -37,9 +37,10 @@ void ast_free_tables(void *hst)
 }
 
 extern int yylineno;
+extern char *yytext;
 int yyerror(const char *text)
 {
-    fprintf(stderr, "%d: Error: %s\n", yylineno, text);
+    fprintf(stderr, "%d: Error: %s\n>>> %s\n", yylineno, text, yytext);
     return -1;
 }
 

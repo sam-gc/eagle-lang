@@ -14,10 +14,10 @@ void sb_init(Strbuilder *builder)
 void sb_append(Strbuilder *builder, const char *text)
 {
     size_t tlen = strlen(text);
-    if(tlen + builder->len > builder->alloced)
+    if(tlen + builder->len >= builder->alloced)
     {
-        builder->buffer = realloc(builder->buffer, builder->alloced + GROWTH_SIZE + 1);
-        builder->alloced += GROWTH_SIZE;
+        builder->buffer = realloc(builder->buffer, builder->alloced + tlen + GROWTH_SIZE + 1);
+        builder->alloced += GROWTH_SIZE + tlen;
     }
 
     memcpy(builder->buffer + builder->len, text, tlen);

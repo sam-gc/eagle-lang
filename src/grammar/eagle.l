@@ -127,6 +127,6 @@ cstr '(\\.|[^'])*'
 "long"      { SAVE_NL; SAVE_TOKEN; return TTYPE; }
 "double"    { SAVE_NL; SAVE_TOKEN; return TTYPE; }
 "any"       { SAVE_NL; SAVE_TOKEN; return TTYPE; }
-{alpha}       { SAVE_NL; SAVE_TOKEN; if(skip_type_check) return TIDENTIFIER; else return ty_is_name(yytext) ? TTYPE : TIDENTIFIER; }
+{nvar}       { SAVE_NL; SAVE_TOKEN; if(skip_type_check) return TIDENTIFIER; else return ty_is_name(yytext) ? TTYPE : TIDENTIFIER; }
 {cstr}      SAVE_NL; yylval.string = utl_gen_escaped_string((char *)yytext, yylineno); return TCSTR;
 %%
