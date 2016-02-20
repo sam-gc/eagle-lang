@@ -747,8 +747,11 @@ void ty_register_typedef(char *name)
 void ty_set_typedef(char *name, EagleTypeType *type)
 {
     void *tag = hst_get(&typedef_table, name, NULL, NULL);
+    
+    // If tag isn't found, we must have a redundant
+    // typedef
     if(!tag)
-        die(-1, "Internal compiler error.\n");
+        return;
 
     size_t memsize = 0;
     switch(type->type)

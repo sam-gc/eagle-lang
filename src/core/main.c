@@ -35,12 +35,21 @@ void register_typedef()
 {
     char *prev = NULL;
     int token;
+    int count = 0;
+    int same = 0;
     while((token = yylex()) != TSEMI)
     {
+        count++;
+
+        same = prev && strcmp(prev, yytext) == 0;
         if(prev)
             free(prev);
         prev = strdup(yytext);
     }
+
+    if(count == 2 && same)
+        return;
+
     ty_add_name(prev);
     ty_register_typedef(prev);
     free(prev);

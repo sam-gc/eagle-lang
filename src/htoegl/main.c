@@ -17,6 +17,7 @@
 #define CXSTR(cx) clang_disposeString(cx)
 #define CSPELL(cursor) clang_getCursorSpelling(cursor)
 #define CT(t) CXType_ ## t
+#define CC(t) CXCursor_ ## t
 
 typedef struct {
     CXString  cf_name;
@@ -126,6 +127,15 @@ void ch_print_basic_type(HeaderBundle *hb, CXType type)
     int pointer_depth = 0;
     if(type.kind == CT(Pointer))
         type = ch_unwrap_pointer(type, &pointer_depth);
+    if(type.kind == CT(ConstantArray))
+    {
+        CXType at = clang_getArrayElementType(type);
+        int sz = clang_getArraySize(type);
+
+        ch_print_basic_type(hb, at);
+        fprintf(hb->output, "[%d]", sz);
+        return;
+    }
 
     char *res = ch_map_type(&type);
     fputs(res, hb->output);
@@ -179,6 +189,31 @@ ch_handle_struct_field_cursor(CXCursor cursor, CXCursor parent, CXClientData cli
     return CXChildVisit_Continue;
 }
 
+char *ch_add_info_where_necessary(const char *info, const char *name)
+{
+    size_t infolen = strlen(info);
+    size_t namelen = strlen(name);
+    char buffer[infolen + 1];
+    
+    if(infolen > namelen)
+    {
+        char *output = malloc(namelen + infolen + 5);
+        sprintf("%s %s", info, name);
+        return output;
+    }
+
+    memcpy(buffer, name, infolen);
+    buffer[infolen] = '\0';
+    if(strcmp(buffer, info) == 0)
+    {
+        return strdup(name);
+    }
+
+    char *output = malloc(namelen + infolen + 5);
+    sprintf(output, "%s %s", info, name);
+    return output;
+}
+
 void ch_handle_struct_cursor(CXCursor cursor, HeaderBundle *hb)
 {
     arraylist list = arr_create(10);
@@ -192,8 +227,10 @@ void ch_handle_struct_cursor(CXCursor cursor, HeaderBundle *hb)
     }
 
     CXString stname = clang_getTypeSpelling(CTYPE(cursor));
-    fprintf(hb->output, "extern %s\n{\n", CSTR(stname));
+    char *text = ch_add_info_where_necessary("struct", CSTR(stname));
+    fprintf(hb->output, "extern %s\n{\n", text);
     CXSTR(stname);
+    free(text);
 
     for(int i = 0; i < list.count; i++)
     {
@@ -213,16 +250,38 @@ void ch_handle_struct_cursor(CXCursor cursor, HeaderBundle *hb)
     fputs("}\n", hb->output);
 }
 
+void ch_handle_typedef_cursor(CXCursor cursor, HeaderBundle *hb)
+{
+    CXString newname = CSPELL(cursor);
+
+    fputs("typedef ", hb->output);
+    ch_print_basic_type(hb, clang_getTypedefDeclUnderlyingType(cursor));
+    fprintf(hb->output, " %s\n", CSTR(newname));
+
+    CXSTR(newname);
+}
+
 enum CXChildVisitResult
 ch_ast_dispatch(CXCursor cursor, CXCursor parent, CXClientData client_data)
 {
     (void)parent; // Silence -pedantic warnings...
 
     HeaderBundle *hb = (HeaderBundle *)client_data;
-    if(CKIND(cursor) == CXCursor_FunctionDecl)
-        ch_handle_function_cursor(cursor, hb);
-    else if(CKIND(cursor) == CXCursor_StructDecl)
-        ch_handle_struct_cursor(cursor, hb);
+
+    switch(CKIND(cursor))
+    {
+        case CC(FunctionDecl):
+            ch_handle_function_cursor(cursor, hb);
+            break;
+        case CC(StructDecl):
+            ch_handle_struct_cursor(cursor, hb);
+            break;
+        case CC(TypedefDecl):
+            ch_handle_typedef_cursor(cursor, hb);
+            break;
+        default:
+            break;
+    }
 
     return CXChildVisit_Recurse;
 }

@@ -4,7 +4,9 @@ struct blah
     int j;
 };
 
+typedef struct blah blahb;
+
 int sum(int a, int b);
-void blah(struct blah *a);
+void test_blah(struct blah *a);
 void swap(int *a, int *b);
 void iterate(int **vector, char ct);
