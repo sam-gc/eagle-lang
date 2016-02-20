@@ -37,6 +37,51 @@ CXType ch_unwrap_pointer(CXType pointer, int *pointer_depth)
     return pointer;
 }
 
+char *ch_try_resolve_unknown_type(CXType *t)
+{
+    CXString spelling = clang_getTypeSpelling(*t);
+    const char *bytes = CSTR(spelling);
+    char buffer[10];
+    size_t len = strlen(bytes);
+    char *output;
+
+    if(t->kind != CXType_Unexposed)
+        goto error;
+
+    if(len < 5)
+        goto error;
+
+    memcpy(buffer, bytes, 5);
+    buffer[5] = '\0';
+
+    if(strcmp(buffer, "union") == 0)
+    {
+        output = malloc(len + 10);
+        sprintf(output, "[union %s]", bytes + 6);
+        goto success;
+    }
+
+    if(len < 6)
+        goto error;
+
+    memcpy(buffer, bytes, 6);
+    buffer[6] = '\0';
+
+    if(strcmp(buffer, "struct") == 0)
+    {
+        output = strdup(bytes + 7);
+        goto success;
+    }
+error:
+    fprintf(stderr, "Unknown: %s (%d)\n", CSTR(spelling), t->kind);
+    CXSTR(spelling);
+    return strdup("");
+
+success:
+    CXSTR(spelling);
+    return output;
+}
+
 // Caller frees
 char *ch_map_type(CXType *t)
 {
@@ -72,8 +117,7 @@ char *ch_map_type(CXType *t)
             return out;
         }
         default:
-            fprintf(stderr, "Unknown: %s (%d)\n", CSTR(clang_getTypeSpelling(*t)), t->kind);
-            return "";
+            return ch_try_resolve_unknown_type(t);
     }
 }
 
@@ -121,15 +165,64 @@ void ch_handle_function_cursor(CXCursor cursor, HeaderBundle *hb)
 }
 
 enum CXChildVisitResult
+ch_handle_struct_field_cursor(CXCursor cursor, CXCursor parent, CXClientData client_data)
+{
+    (void)parent;
+
+    arraylist *list = client_data;
+
+    CXCursor *c = malloc(sizeof(*c));
+    memcpy(c, &cursor, sizeof(*c));
+
+    arr_append(list, c);
+
+    return CXChildVisit_Continue;
+}
+
+void ch_handle_struct_cursor(CXCursor cursor, HeaderBundle *hb)
+{
+    arraylist list = arr_create(10);
+
+    clang_visitChildren(cursor, ch_handle_struct_field_cursor, &list);
+
+    if(!list.count)
+    {
+        arr_free(&list);
+        return;
+    }
+
+    CXString stname = clang_getTypeSpelling(CTYPE(cursor));
+    fprintf(hb->output, "extern %s\n{\n", CSTR(stname));
+    CXSTR(stname);
+
+    for(int i = 0; i < list.count; i++)
+    {
+        cursor = *((CXCursor *)list.items[i]);
+        fputs("    ", hb->output);
+        ch_print_basic_type(hb, CTYPE(cursor));
+        
+        CXString name = CSPELL(cursor);
+        fprintf(hb->output, " %s\n", CSTR(name));
+        CXSTR(name);
+
+        free(list.items[i]);
+    }
+
+    arr_free(&list);
+
+    fputs("}\n", hb->output);
+}
+
+enum CXChildVisitResult
 ch_ast_dispatch(CXCursor cursor, CXCursor parent, CXClientData client_data)
 {
     (void)parent; // Silence -pedantic warnings...
 
     HeaderBundle *hb = (HeaderBundle *)client_data;
     if(CKIND(cursor) == CXCursor_FunctionDecl)
-    {
         ch_handle_function_cursor(cursor, hb);
-    }
+    else if(CKIND(cursor) == CXCursor_StructDecl)
+        ch_handle_struct_cursor(cursor, hb);
 
     return CXChildVisit_Recurse;
 }

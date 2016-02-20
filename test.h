@@ -1,7 +1,8 @@
 struct blah
 {
     int i;
-}
+    int j;
+};
 
 int sum(int a, int b);
 void blah(struct blah *a);
