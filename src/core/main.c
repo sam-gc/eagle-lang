@@ -61,6 +61,7 @@ void first_pass()
     int saveNextStruct = 0;
     int saveNextClass = 0;
     int saveNextInterface = 0;
+    int saveNextEnum = 0;
     while((token = yylex()) != 0)
     {
         if(saveNextStruct)
@@ -78,9 +79,15 @@ void first_pass()
             ty_register_interface(yytext);
             saveNextInterface = 0;
         }
-        saveNextStruct = (token == TSTRUCT || token == TCLASS || token == TINTERFACE);
+        if(saveNextEnum)
+        {
+            die(-1, "Ain't implemented yet\n");
+        }
+
+        saveNextStruct = (token == TSTRUCT || token == TCLASS || token == TINTERFACE || token == TENUM);
         saveNextClass = token == TCLASS;
         saveNextInterface = token == TINTERFACE;
+        saveNextEnum = token == TENUM;
 
         if(token == TTYPEDEF)
             register_typedef();

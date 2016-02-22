@@ -655,6 +655,28 @@ AST *ast_make_cast(AST *type, AST *val)
     return (AST *)ast;
 }
 
+AST *ast_make_enum(char *type, AST *items)
+{
+    ASTEnumDecl *ast = ast_malloc(sizeof(ASTEnumDecl));
+    ast->type = AENUMDECL;
+
+    ast->name = type;
+    ast->items = items;
+
+    return (AST *)ast;
+}
+
+AST *ast_make_enumitem(char *name, AST *def)
+{
+    ASTEnumItem *ast = ast_malloc(sizeof(ASTEnumItem));
+    ast->type = AENUMITEM;
+
+    ast->item = name;
+    ast->def = def;
+
+    return (AST *)ast;
+}
+
 void ast_add_if(AST *ast, AST *next)
 {
     ASTIfBlock *i = (ASTIfBlock *)ast;

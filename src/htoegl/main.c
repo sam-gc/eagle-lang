@@ -209,21 +209,6 @@ void ch_handle_function_cursor(CXCursor cursor, HeaderBundle *hb)
     fputs("\n", hb->output);
 }
 
-enum CXChildVisitResult
-ch_handle_struct_field_cursor(CXCursor cursor, CXCursor parent, CXClientData client_data)
-{
-    (void)parent;
-
-    arraylist *list = client_data;
-
-    CXCursor *c = malloc(sizeof(*c));
-    memcpy(c, &cursor, sizeof(*c));
-
-    arr_append(list, c);
-
-    return CXChildVisit_Continue;
-}
-
 char *ch_add_info_where_necessary(const char *info, const char *name)
 {
     size_t infolen = strlen(info);
@@ -247,6 +232,21 @@ char *ch_add_info_where_necessary(const char *info, const char *name)
     char *output = malloc(namelen + infolen + 5);
     sprintf(output, "%s %s", info, name);
     return output;
+}
+
+enum CXChildVisitResult
+ch_handle_struct_field_cursor(CXCursor cursor, CXCursor parent, CXClientData client_data)
+{
+    (void)parent;
+
+    arraylist *list = client_data;
+
+    CXCursor *c = malloc(sizeof(*c));
+    memcpy(c, &cursor, sizeof(*c));
+
+    arr_append(list, c);
+
+    return CXChildVisit_Continue;
 }
 
 void ch_handle_struct_cursor(CXCursor cursor, HeaderBundle *hb)

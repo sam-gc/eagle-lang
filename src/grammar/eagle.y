@@ -24,11 +24,12 @@
 %token <token> TFUNC TRETURN TYIELD TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF TFOR TIN TWEAK TUNWRAP
 %token <token> TBREAK TCONTINUE TVAR TGEN  TELLIPSES TVIEW
 %token <token> TCOLON TSEMI TNEWLINE TCOMMA TDOT TAMP TAT TARROW
-%token <token> TYES TNO TNIL TIMPORT TEXPORT TTYPEDEF
+%token <token> TYES TNO TNIL TIMPORT TEXPORT TTYPEDEF TENUM
 %type <node> program declarations declaration statements statement block funcdecl ifstatement
 %type <node> variabledecl vardecllist funccall calllist funcident funcsident externdecl typelist type interfacetypelist
 %type <node> elifstatement elifblock elsestatement singif structdecl structlist blockalt classlist classdecl interfacedecl interfacelist compositetype
 %type <node> expr singexpr binexpr unexpr ounexpr forstatement clodecl genident gendecl initdecl viewdecl viewident
+%type <node> enumitem enumlist enumdecl
 
 %nonassoc TTYPE;
 %nonassoc TNEW;
@@ -64,6 +65,7 @@ declaration         : externdecl TSEMI { $$ = $1; }
                     | gendecl { $$ = $1; }
                     | classdecl TSEMI { $$ = $1; }
                     | interfacedecl TSEMI { $$ = $1; }
+                    | enumdecl TSEMI { $$ = $1; }
                     | TIMPORT { $$ = NULL; }
                     | TEXPORT { $$ = NULL; }
                     | TTYPEDEF type TTYPE TSEMI { $$ = NULL; ty_set_typedef($3, ((ASTTypeDecl *)$2)->etype); }
@@ -90,6 +92,16 @@ type                : TTYPE { $$ = ast_make_type($1); }
 
 compositetype       : TTYPE TOR TTYPE { $$ = ast_make_type($1); ast_make_composite($$, $3); }
                     | TTYPE TOR compositetype { $$ = ast_make_composite($3, $1); }
+                    ;
+
+enumdecl            : TENUM TTYPE TLBRACE enumlist TRBRACE { $$ = ast_make_enum($2, $4); }
+                    ;
+
+enumlist            : enumitem enumlist { $$ = $1; $1->next = $2; }
+                    | enumitem { $$ = $1; }
+                    ;
+
+enumitem            : TIDENTIFIER TSEMI { $$ = ast_make_enumitem($1, NULL); }
                     ;
 
 structdecl          : TSTRUCT TTYPE TLBRACE structlist TRBRACE { $$ = $4; ast_struct_name($$, $2); }

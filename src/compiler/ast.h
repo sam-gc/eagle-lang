@@ -34,7 +34,9 @@ typedef enum {
     ALOOP,
     ACAST,
     ATYPE,
-    AALLOC
+    AALLOC,
+    AENUMDECL,
+    AENUMITEM
 } ASTType;
 
 typedef struct AST {
@@ -203,6 +205,26 @@ typedef struct {
     int ext;
 } ASTClassDecl;
 
+typedef struct {
+    ASTType type;
+    EagleTypeType *resultantType;
+    struct AST *next;
+    long lineno;
+
+    char *name;
+    struct AST *items;
+} ASTEnumDecl;
+
+typedef struct {
+    ASTType type;
+    EagleTypeType *resultantType;
+    struct AST *next;
+    long lineno;
+
+    char *item;
+    struct AST *def;
+} ASTEnumItem;
+
 AST *ast_make();
 void ast_append(AST *old, AST *n);
 AST *ast_make_binary(AST *left, AST *right, char op);
@@ -248,6 +270,8 @@ AST *ast_make_array(AST *ast, int ct);
 AST *ast_make_if(AST *test, AST *block);
 AST *ast_make_loop(AST *setup, AST *test, AST *update, AST *block);
 AST *ast_make_cast(AST *type, AST *val);
+AST *ast_make_enum(char *type, AST *items);
+AST *ast_make_enumitem(char *name, AST *def);
 void ast_add_if(AST *ast, AST *next);
 
 void ast_free_nodes();

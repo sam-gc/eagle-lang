@@ -94,6 +94,7 @@ cstr '(\\.|[^'])*'
 "["         DISCARD_NL; return SET(TLBRACKET);
 "]"         SAVE_NL; return SET(TRBRACKET);
 "typedef"   DISCARD_NL; return SET(TTYPEDEF);
+"enum"      DISCARD_NL; return SET(TENUM);
 "return"    SAVE_NL; return SET(TRETURN);
 "yield"     DISCARD_NL; return SET(TYIELD);
 "break"     SAVE_NL; return SET(TBREAK);
