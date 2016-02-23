@@ -195,6 +195,25 @@ LLVMValueRef ac_compile_struct_member(AST *ast, CompilerBundle *cb, int keepPoin
     return LLVMBuildLoad(cb->builder, gep, "");
 }
 
+LLVMValueRef ac_compile_type_lookup(AST *ast, CompilerBundle *cb)
+{
+    ASTTypeLookup *a = (ASTTypeLookup *)ast;
+    
+    if(!ty_is_enum(a->name))
+        die(ALN, "Trying to lookup item of non-enum type %s.", a->name);
+
+    EagleTypeType *et = ett_enum_type(a->name);
+    int valid;
+    long enum_val = ty_lookup_enum_item(et, a->item, &valid);
+
+    if(!valid)
+        die(ALN, "Enum (%s) does not have item %s.", a->name, a->item);
+
+    a->resultantType = et;
+
+    return LLVMConstInt(LLVMInt64TypeInContext(utl_get_current_context()), enum_val, 0);
+}
+
 LLVMValueRef ac_compile_malloc_counted_raw(LLVMTypeRef rt, LLVMTypeRef *out, CompilerBundle *cb)
 {
     LLVMTypeRef ptmp[2];

@@ -284,6 +284,7 @@ LLVMValueRef ac_make_comp(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef 
         case ETInt16:
         case ETInt32:
         case ETInt64:
+        case ETEnum:
             return LLVMBuildICmp(builder, ip, left, right, "eqtmp");
         default:
             die(-1, "The given types may not be compared.");

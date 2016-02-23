@@ -304,6 +304,7 @@ singexpr            : TINT { $$ = ast_make_int32($1); }
                     | TIDENTIFIER { $$ = ast_make_identifier($1); }
                     | TLPAREN expr TRPAREN { $$ = $2; }
                     | funccall { $$ = $1; }
+                    | TTYPE TDOT TIDENTIFIER { $$ = ast_make_type_lookup($1, $3); }
                     ;
 
 %%

@@ -143,6 +143,7 @@ void ty_add_name(char *name);
 int ty_is_name(char *name);
 int ty_is_class(char *name);
 int ty_is_interface(char *name);
+int ty_is_enum(char *name);
 void ty_teardown();
 
 void ty_register_interface(char *name);
@@ -159,6 +160,7 @@ int ty_needs_destructor(EagleTypeType *ett);
 LLVMTypeRef ty_get_counted(LLVMTypeRef in);
 void ty_set_typedef(char *name, EagleTypeType *type);
 void ty_add_enum_item(char *name, char *item, long val);
+long ty_lookup_enum_item(EagleTypeType *ty, char *item, int *valid);
 
 void ty_add_interface_method(char *name, char *method, EagleTypeType *ty);
 int ty_interface_offset(char *name, char *method);

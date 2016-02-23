@@ -625,6 +625,7 @@ ac_subst_vars='LTLIBOBJS
 LIBOBJS
 configcode
 llvmvsn
+debug
 targ
 haspthreads
 EGREP
@@ -3388,7 +3389,6 @@ fi
 done
 test -n "$llvmconfig" || llvmconfig="no"
 
-echo $llvmconfig
 
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
@@ -3827,8 +3827,12 @@ then
 $as_echo "$as_me: Debug mode is enabled" >&6;}
     targ="-O0 -g"
 
+    debug="DEBUG"
+
 else
     targ=-O3
+
+    debug="RELEASE"
 
 fi
 

@@ -6,17 +6,36 @@
 
 extern hashtable global_args;
 
+#ifdef RELEASE
 void die(int lineno, const char *fmt, ...)
 {
     size_t len = strlen(fmt);
     char format[len + 9];
     sprintf(format, "Error: %s\n", fmt);
     va_list args;
-    va_start(args, fmt); vfprintf(stderr, format, args); fprintf(stderr, "\t-> Line %d\n", lineno);
+    va_start(args, fmt);
+    vfprintf(stderr, format, args);
+    fprintf(stderr, "\t-> Line %d\n", lineno);
     va_end(args);
 
     exit(0);
 }
+#else
+void die_debug(int complineno, const char *file, int lineno, const char *fmt, ...)
+{
+    size_t len = strlen(fmt);
+    char format[len + 9];
+    sprintf(format, "Error: %s\n", fmt);
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(stderr, format, args);
+    fprintf(stderr, "\t-> Line %d\n", lineno);
+    fprintf(stderr, "\tCompiler: %s:%d\n", file, complineno);
+    va_end(args);
+
+    exit(0);
+}
+#endif
 
 LLVMModuleRef ac_compile(AST *ast, int include_rc)
 {
@@ -44,11 +63,6 @@ LLVMModuleRef ac_compile(AST *ast, int include_rc)
     LLVMAddFunction(cb.module, "printf", func_type);
 
     the_module = cb.module;
-    /*
-    LLVMTypeRef st = LLVMStructCreateNamed(LLVMGetGlobalContext(), "teststruct");
-    LLVMTypeRef ty = LLVMInt64TypeInContext(utl_get_current_context());
-    LLVMStructSetBody(st, &ty, 1, 0);
-    */
 
     AST *old = ast;
     for(; ast; ast = ast->next)
@@ -61,6 +75,7 @@ LLVMModuleRef ac_compile(AST *ast, int include_rc)
 
     ast = old;
 
+    ac_make_enum_definitions(ast, &cb);
     ac_make_struct_definitions(ast, &cb);
     ac_generate_interface_definitions(ast, &cb);
     ac_make_class_definitions(ast, &cb);
@@ -230,6 +245,9 @@ LLVMValueRef ac_dispatch_expression(AST *ast, CompilerBundle *cb)
         case AFUNCDECL:
             val = ac_compile_closure(ast, cb);
             break;
+        case ATYPELOOKUP:
+            val = ac_compile_type_lookup(ast, cb);
+            break;
         default:
             die(ALN, "Invalid expression type.");
             return NULL;
@@ -277,6 +295,9 @@ void ac_dispatch_statement(AST *ast, CompilerBundle *cb)
         case AFUNCDECL:
             ac_compile_closure(ast, cb);
             break;
+        case ATYPELOOKUP:
+            ac_compile_type_lookup(ast, cb);
+            break;
         default:
             die(ALN, "Invalid statement type.");
     }
@@ -301,6 +322,7 @@ void ac_dispatch_declaration(AST *ast, CompilerBundle *cb)
         case ASTRUCTDECL:
         case ACLASSDECL:
         case AIFCDECL:
+        case AENUMDECL:
             break;
         case AGENDECL:
             ac_compile_generator_code(ast, cb);

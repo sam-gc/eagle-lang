@@ -1,7 +1,8 @@
 #ifndef AC_GENERAL_H
 #define AC_GENERAL_H
 
-void die(int lineno, const char *fmt, ...);
+#include "core/config.h"
+
 LLVMModuleRef ac_compile(AST *ast, int include_rc);
 void ac_prepare_module(LLVMModuleRef module);
 void ac_add_early_name_declaration(AST *ast, CompilerBundle *cb);

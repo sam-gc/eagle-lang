@@ -12,8 +12,7 @@
 #include "types.h"
 #include "mempool.h"
 #include "utils.h"
-
-extern void die(int, const char *, ...);
+#include "config.h"
 
 #define TTEST(t, targ, out) if(!strcmp(t, targ)) return ett_base_type(out)
 #define ETEST(t, a, b) if(a == b) return t
@@ -39,6 +38,7 @@ static hashtable types_table;
 static hashtable counted_table;
 static hashtable method_table;
 static hashtable type_named_table;
+static hashtable enum_named_table;
 static hashtable init_table;
 static hashtable interface_table;
 static LLVMTypeRef indirect_struct_type = NULL;
@@ -79,6 +79,9 @@ void ty_prepare()
     type_named_table = hst_create();
     type_named_table.duplicate_keys = 1;
 
+    enum_named_table = hst_create();
+    enum_named_table.duplicate_keys = 1;
+
     interface_table = hst_create();
     interface_table.duplicate_keys = 1;
 
@@ -103,6 +106,8 @@ void ty_teardown()
     hst_for_each(&types_table, ty_struct_def_free, NULL);
     hst_free(&types_table);
     hst_free(&counted_table);
+
+    hst_free(&enum_named_table);
 
     hst_for_each(&method_table, ty_method_free, NULL);
     hst_free(&method_table);
@@ -141,6 +146,8 @@ EagleTypeType *et_parse_string(char *text)
             return ett_class_type(text);
         else if(ty_is_interface(text))
             return ett_interface_type(text);
+        else if(ty_is_enum(text))
+            return ett_enum_type(text);
         else
             return ett_struct_type(text);
     }
@@ -191,6 +198,8 @@ LLVMTypeRef ett_llvm_type(EagleTypeType *type)
             return LLVMInt64TypeInContext(utl_get_current_context());
         case ETCString:
             return LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0);
+        case ETEnum:
+            return LLVMInt64TypeInContext(utl_get_current_context());
         case ETGenerator:
         {
             if(generator_type) 
@@ -422,8 +431,23 @@ EagleTypeType *ett_interface_type(char *name)
 
 EagleTypeType *ett_enum_type(char *name)
 {
-    die(__LINE__, "%s: Ain't done yet", __FILE__);
-    return NULL;
+    EagleTypeType *et = hst_get(&enum_named_table, name, NULL, NULL);
+    if(et)
+        return et;
+
+    char *anam = hst_retrieve_duped_key(&enum_table, name);
+    if(!anam)
+        die(__LINE__, "Internal compiler error: no such enum %s", name);
+
+    EagleEnumType *en = malloc(sizeof(*en));
+    en->type = ETEnum;
+    en->name = anam;
+
+    pool_add(&type_mempool, en);
+
+    hst_put(&enum_named_table, name, en, NULL, NULL);
+    
+    return (EagleTypeType *)en;
 }
 
 void ett_composite_interface(EagleTypeType *ett, char *name)
@@ -468,7 +492,6 @@ int ett_are_same(EagleTypeType *left, EagleTypeType *right)
     {
         return 0;
     }
-
 
     EagleType theType = left->type;
     if(theType == ETPointer)
@@ -521,6 +544,14 @@ int ett_are_same(EagleTypeType *left, EagleTypeType *right)
             return 0;
 
         return fl->gen == fr->gen;
+    }
+
+    if(theType == ETEnum)
+    {
+        EagleEnumType *el = (EagleEnumType *)left;
+        EagleEnumType *er = (EagleEnumType *)right;
+
+        return strcmp(el->name, er->name) == 0;
     }
 
     return 1;
@@ -705,6 +736,11 @@ int ty_is_interface(char *name)
     return (int)(uintptr_t)hst_get(&interface_table, name, NULL, NULL);
 }
 
+int ty_is_enum(char *name)
+{
+    return (int)(uintptr_t)hst_get(&enum_table, name, NULL, NULL);
+}
+
 void ty_method_free(void *k, void *v, void *d)
 {
     hst_free(v);
@@ -758,7 +794,7 @@ void ty_register_enum(char *name)
     if(en)
         die(-1, "Redeclaring enum with name: %s", name);
 
-    en = malloc(sizeof(en));
+    en = malloc(sizeof(*en));
     *en = hst_create();
     en->duplicate_keys = 1;
     hst_put(&enum_table, name, en, NULL, NULL);

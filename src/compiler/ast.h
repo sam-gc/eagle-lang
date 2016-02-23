@@ -36,7 +36,8 @@ typedef enum {
     ATYPE,
     AALLOC,
     AENUMDECL,
-    AENUMITEM
+    AENUMITEM,
+    ATYPELOOKUP
 } ASTType;
 
 typedef struct AST {
@@ -225,6 +226,16 @@ typedef struct {
     struct AST *def;
 } ASTEnumItem;
 
+typedef struct {
+    ASTType type;
+    EagleTypeType *resultantType;
+    struct AST *next;
+    long lineno;
+
+    char *name;
+    char *item;
+} ASTTypeLookup;
+
 AST *ast_make();
 void ast_append(AST *old, AST *n);
 AST *ast_make_binary(AST *left, AST *right, char op);
@@ -272,6 +283,7 @@ AST *ast_make_loop(AST *setup, AST *test, AST *update, AST *block);
 AST *ast_make_cast(AST *type, AST *val);
 AST *ast_make_enum(char *type, AST *items);
 AST *ast_make_enumitem(char *name, AST *def);
+AST *ast_make_type_lookup(char *type, char *item);
 void ast_add_if(AST *ast, AST *next);
 
 void ast_free_nodes();

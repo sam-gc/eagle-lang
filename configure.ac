@@ -25,8 +25,10 @@ if test "$enable_debug" == "yes"
 then
     AC_MSG_NOTICE([Debug mode is enabled])
     AC_SUBST(targ, "-O0 -g")
+    AC_SUBST(debug, "DEBUG")
 else
     AC_SUBST(targ, -O3)
+    AC_SUBST(debug, "RELEASE")
 fi
 
 if test $llvmconfig == "no"

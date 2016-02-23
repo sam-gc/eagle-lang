@@ -677,6 +677,17 @@ AST *ast_make_enumitem(char *name, AST *def)
     return (AST *)ast;
 }
 
+AST *ast_make_type_lookup(char *type, char *item)
+{
+    ASTTypeLookup *ast = ast_malloc(sizeof(ASTTypeLookup));
+    ast->type = ATYPELOOKUP;
+
+    ast->name = type;
+    ast->item = item;
+
+    return (AST *)ast;
+}
+
 void ast_add_if(AST *ast, AST *next)
 {
     ASTIfBlock *i = (ASTIfBlock *)ast;
