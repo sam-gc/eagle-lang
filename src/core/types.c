@@ -18,6 +18,7 @@ extern void die(int, const char *, ...);
 #define TTEST(t, targ, out) if(!strcmp(t, targ)) return ett_base_type(out)
 #define ETEST(t, a, b) if(a == b) return t
 #define PLACEHOLDER ((void *)1)
+#define PTR(p) ((void *)(uintptr_t)p)
 
 #define MAX_TYPE_SIZE 700
 
@@ -32,6 +33,7 @@ static mempool list_mempool;
 
 static hashtable name_table;
 static hashtable typedef_table;
+static hashtable enum_table;
 static hashtable struct_table;
 static hashtable types_table;
 static hashtable counted_table;
@@ -55,6 +57,9 @@ void ty_prepare()
 
     typedef_table = hst_create();
     typedef_table.duplicate_keys = 1;
+
+    enum_table = hst_create();
+    enum_table.duplicate_keys = 1;
 
     struct_table = hst_create();
     struct_table.duplicate_keys = 1;
@@ -88,6 +93,9 @@ void ty_teardown()
 
     hst_for_each(&typedef_table, ty_struct_def_free, NULL);
     hst_free(&typedef_table);
+
+    hst_for_each(&enum_table, ty_method_free, NULL);
+    hst_free(&enum_table);
 
     hst_for_each(&struct_table, ty_struct_def_free, NULL);
     hst_free(&struct_table);
@@ -410,6 +418,12 @@ EagleTypeType *ett_interface_type(char *name)
     pool_add(&type_mempool, ett);
 
     return (EagleTypeType *)ett;
+}
+
+EagleTypeType *ett_enum_type(char *name)
+{
+    die(__LINE__, "%s: Ain't done yet", __FILE__);
+    return NULL;
 }
 
 void ett_composite_interface(EagleTypeType *ett, char *name)
@@ -736,6 +750,45 @@ void ty_register_interface(char *name)
     *list = arr_create(10);
 
     hst_put(&interface_table, name, list, NULL, NULL);
+}
+
+void ty_register_enum(char *name)
+{
+    hashtable *en = hst_get(&enum_table, name, NULL, NULL);
+    if(en)
+        die(-1, "Redeclaring enum with name: %s", name);
+
+    en = malloc(sizeof(en));
+    *en = hst_create();
+    en->duplicate_keys = 1;
+    hst_put(&enum_table, name, en, NULL, NULL);
+}
+
+long ty_lookup_enum_item(EagleTypeType *ty, char *item, int *valid)
+{
+    EagleEnumType *et = (EagleEnumType *)ty;
+
+    hashtable *en = hst_get(&enum_table, et->name, NULL, NULL);
+    if(!en)
+        die(__LINE__, "Internal compiler error could not find enum item %s.%s", et->name, item);
+
+    if(!hst_contains_key(en, item, NULL, NULL))
+    {
+        *valid = 0;
+        return 0;
+    }
+
+    *valid = 1;
+    return (long)hst_get(en, item, NULL, NULL);
+}
+
+void ty_add_enum_item(char *name, char *item, long val)
+{
+    hashtable *en = hst_get(&enum_table, name, NULL, NULL);
+    if(!en)
+        die(__LINE__, "Internal compiler error declaring enum item %s.%s", name, item);
+
+    hst_put(en, item, PTR(val), NULL, NULL);
 }
 
 void ty_register_typedef(char *name)

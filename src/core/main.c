@@ -81,7 +81,8 @@ void first_pass()
         }
         if(saveNextEnum)
         {
-            die(-1, "Ain't implemented yet\n");
+            ty_register_enum(yytext);
+            saveNextEnum = 0;
         }
 
         saveNextStruct = (token == TSTRUCT || token == TCLASS || token == TINTERFACE || token == TENUM);

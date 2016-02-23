@@ -47,5 +47,6 @@ typedef struct {
 #include "ac_struct.h"
 #include "ac_class.h"
 #include "ac_generator.h"
+#include "ac_enum.h"
 
 #endif

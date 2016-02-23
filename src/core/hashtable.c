@@ -1,21 +1,3 @@
-/* Lanky -- Scripting Language and Virtual Machine
- * Copyright (C) 2014  Sam Olsen
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
-
 #include <stdlib.h>
 #include <string.h>
 #include "hashtable.h"
@@ -151,6 +133,21 @@ void *hst_get(hashtable *ht, void *key, hst_hash_function hashfunc, hst_equa_fun
     return NULL;
 }
 
+char *hst_retrieve_duped_key(hashtable *ht, char *key)
+{
+    if(!ht->duplicate_keys)
+        return NULL;
+
+    long hash = hst_djb2(key, NULL);
+    long mod = (unsigned long)hash % ht->size;
+
+    hst_node *n = ht->buckets[mod];
+
+    for(; n; n = n->next) if(!strcmp(key, n->key)) return n->key;
+
+    return NULL;
+}
+
 void hst_add_all_from(hashtable *ht, hashtable *ot, hst_hash_function hashfunc, hst_equa_function equfunc)
 {
     if(!hashfunc)
@@ -167,7 +164,17 @@ void hst_add_all_from(hashtable *ht, hashtable *ot, hst_hash_function hashfunc, 
 
 int hst_contains_key(hashtable *ht, void *key, hst_hash_function hashfunc, hst_equa_function equfunc)
 {
-    return !!hst_get(ht, key, hashfunc, equfunc);
+    if(!hashfunc)
+        hashfunc = hst_djb2;
+
+    long hash = hashfunc(key, NULL);
+    long mod = (unsigned long)hash % ht->size;
+
+    hst_node *n = ht->buckets[mod];
+
+    for(; n; n = n->next) if(EQU_CHECK(n->key, key, equfunc)) return 1;
+
+    return 0;
 }
 
 int hst_contains_value(hashtable *ht, void *val, hst_equa_function equfunc)

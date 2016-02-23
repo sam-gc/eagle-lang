@@ -52,7 +52,8 @@ typedef enum {
     ETGenerator,
     ETStruct,
     ETClass,
-    ETInterface
+    ETInterface,
+    ETEnum
 } EagleType;
 
 typedef struct {
@@ -101,6 +102,11 @@ typedef struct {
     arraylist names;
 } EagleInterfaceType;
 
+typedef struct {
+    EagleType type;
+    char *name;
+} EagleEnumType;
+
 EagleTypeType *et_parse_string(char *text);
 EagleType et_promotion(EagleType left, EagleType right);
 EagleType et_eagle_type(LLVMTypeRef ty);
@@ -113,6 +119,7 @@ EagleTypeType *ett_gen_type(EagleTypeType *ytype);
 EagleTypeType *ett_struct_type(char *name);
 EagleTypeType *ett_class_type(char *name);
 EagleTypeType *ett_interface_type(char *name);
+EagleTypeType *ett_enum_type(char *name);
 void ett_composite_interface(EagleTypeType *ett, char *name);
 
 LLVMTypeRef ett_closure_type(EagleTypeType *type);
@@ -141,6 +148,7 @@ void ty_teardown();
 void ty_register_interface(char *name);
 void ty_register_class(char *name);
 void ty_register_typedef(char *name);
+void ty_register_enum(char *name);
 void ty_add_init(char *name, EagleTypeType *ty);
 EagleTypeType *ty_get_init(char *name);
 void ty_add_method(char *name, char *method, EagleTypeType *ty);
@@ -150,6 +158,7 @@ void ty_struct_member_index(EagleTypeType *ett, char *member, int *index, EagleT
 int ty_needs_destructor(EagleTypeType *ett);
 LLVMTypeRef ty_get_counted(LLVMTypeRef in);
 void ty_set_typedef(char *name, EagleTypeType *type);
+void ty_add_enum_item(char *name, char *item, long val);
 
 void ty_add_interface_method(char *name, char *method, EagleTypeType *ty);
 int ty_interface_offset(char *name, char *method);
