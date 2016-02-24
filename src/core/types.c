@@ -13,6 +13,7 @@
 #include "mempool.h"
 #include "utils.h"
 #include "config.h"
+#include "stringbuilder.h"
 
 #define TTEST(t, targ, out) if(!strcmp(t, targ)) return ett_base_type(out)
 #define ETEST(t, a, b) if(a == b) return t
@@ -601,6 +602,27 @@ char *ett_unique_type_name(EagleTypeType *t)
             char *out = malloc(strlen(sub) + 100);
             sprintf(out, "__%s_gen__", sub);
             return out;
+        }
+
+        case ETClass:
+        case ETStruct:
+        {
+            EagleStructType *st = (EagleStructType *)t;
+            return strdup(st->name);
+        }
+
+        case ETInterface:
+        {
+            EagleInterfaceType *it = (EagleInterfaceType *)t;
+            Strbuilder sb;
+            sb_init(&sb);
+            for(int i = 0; i < it->names.count; i++)
+            {
+                sb_append(&sb, it->names.items[i]);
+                sb_append(&sb, "_");
+            }
+
+            return sb.buffer;
         }
 
         default: return NULL;
