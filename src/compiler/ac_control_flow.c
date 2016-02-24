@@ -42,7 +42,11 @@ void ac_compile_return(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
 
     if(reta->val)
     {
+        if(cb->currentFunctionType->retType->type == ETEnum)
+            cb->enum_lookup = cb->currentFunctionType->retType;
+
         val = ac_dispatch_expression(reta->val, cb);
+        cb->enum_lookup = NULL;
         EagleTypeType *t = reta->val->resultantType;
         EagleTypeType *o = cb->currentFunctionType->retType;
 
@@ -85,8 +89,12 @@ void ac_compile_yield(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
     LLVMBasicBlockRef nblock = LLVMAppendBasicBlockInContext(utl_get_current_context(), cb->currentFunction, "yield");
     LLVMMoveBasicBlockAfter(nblock, cb->yieldBlocks->items[cb->yieldBlocks->count - 1]);
     arr_append(cb->yieldBlocks, nblock);
+
+    if(cb->currentGenType->ytype->type == ETEnum)
+        cb->enum_lookup = cb->currentGenType->ytype;
     
     val = ac_dispatch_expression(ya->val, cb);
+    cb->enum_lookup = NULL;
     EagleTypeType *t = ya->val->resultantType;
     EagleTypeType *o = cb->currentGenType->ytype;
 

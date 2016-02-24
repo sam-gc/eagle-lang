@@ -29,6 +29,20 @@ func part_of_week(Day d)
         puts 'Humpday!'
 }
 
+func get_tuesday() : Day
+{
+    return Tuesday
+}
+
+gen week_days() : Day
+{
+    yield Monday
+    yield Day.Tuesday
+    yield Wednesday
+    yield Day.Thursday
+    yield Friday
+}
+
 func main()
 {
     Day d = Day.Sunday
@@ -50,5 +64,10 @@ func main()
     p^ = Tuesday
     part_of_week(d)
 
-    puts int@Day.Monday
+    puts int@get_tuesday()
+
+    for Day wd in week_days()
+    {
+        puts int@wd
+    }
 }
