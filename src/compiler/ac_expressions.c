@@ -26,10 +26,30 @@ LLVMValueRef ac_compile_value(AST *ast, CompilerBundle *cb)
     }
 }
 
+LLVMValueRef ac_lookup_enum(EagleTypeType *et, char *item)
+{
+    int valid;
+    long enum_val = ty_lookup_enum_item(et, item, &valid);
+
+    if(!valid)
+        return NULL;
+
+    return LLVMConstInt(LLVMInt64TypeInContext(utl_get_current_context()), enum_val, 0);
+}
+
 LLVMValueRef ac_compile_identifier(AST *ast, CompilerBundle *cb)
 {
     ASTValue *a = (ASTValue *)ast;
     VarBundle *b = vs_get(cb->varScope, a->value.id);
+
+    if(!b && cb->enum_lookup)
+    {
+        LLVMValueRef enl = ac_lookup_enum(cb->enum_lookup, a->value.id);
+        if(!enl)
+            die(ALN, "Item %s not associated with enum %s.", a->value.id, ((EagleEnumType *)cb->enum_lookup)->name);
+        a->resultantType = cb->enum_lookup;
+        return enl;
+    }
 
     if(!b) // We are dealing with a local variable
         die(ALN, "Undeclared Identifier (%s)", a->value.id);
@@ -370,6 +390,11 @@ LLVMValueRef ac_compile_cast(AST *ast, CompilerBundle *cb)
 
     ast->resultantType = to;
 
+    if(from->type == ETEnum)
+        from = ett_base_type(ETInt64);
+    if(to->type == ETEnum)
+        to   = ett_base_type(ETInt64);
+
     if(ett_is_numeric(to) && ett_is_numeric(from))
     {
         return ac_build_conversion(cb, val, from, to, STRICT_CONVERSION);
@@ -676,7 +701,11 @@ LLVMValueRef ac_compile_binary(AST *ast, CompilerBundle *cb)
         return ac_build_store(ast, cb, 1);
 
     LLVMValueRef l = ac_dispatch_expression(a->left, cb);
+
+    if(a->left->resultantType->type == ETEnum)
+        cb->enum_lookup = a->left->resultantType;
     LLVMValueRef r = ac_dispatch_expression(a->right, cb);
+    cb->enum_lookup = NULL;
 
     if(a->left->resultantType->type == ETPointer || a->right->resultantType->type == ETPointer)
         return ac_generic_binary(a, l, r, 0, a->right->resultantType, a->left->resultantType, cb);
@@ -950,8 +979,13 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
     LLVMValueRef args[ct + offset];
     for(p = a->params, i = start; p; p = p->next, i++)
     {
+        if(ett->params[i]->type == ETEnum)
+            cb->enum_lookup = ett->params[i];
+
         LLVMValueRef val = ac_dispatch_expression(p, cb);
         EagleTypeType *rt = p->resultantType;
+
+        cb->enum_lookup = NULL;
 
         if(i < ett->pct)
         {
@@ -1088,7 +1122,10 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update)
     }
     */
 
+    if(totype && totype->type == ETEnum)
+        cb->enum_lookup = totype;
     LLVMValueRef r = ac_dispatch_expression(a->right, cb);
+    cb->enum_lookup = NULL;
     EagleTypeType *fromtype = a->right->resultantType;
 
     // When pulling structure values out of arrays, we save the pointer so that the syntax

@@ -36,6 +36,7 @@ typedef struct {
     hashtable loadedTransients;
 
     int compilingMethod;
+    EagleTypeType *enum_lookup;
 } CompilerBundle;
 
 #include "ac_control_flow.h"

@@ -95,6 +95,7 @@ compositetype       : TTYPE TOR TTYPE { $$ = ast_make_type($1); ast_make_composi
                     ;
 
 enumdecl            : TENUM TTYPE TLBRACE enumlist TRBRACE { $$ = ast_make_enum($2, $4); }
+                    | TENUM TTYPE TLBRACE TSEMI enumlist TRBRACE { $$ = ast_make_enum($2, $5); }
                     ;
 
 enumlist            : enumitem enumlist { $$ = $1; $1->next = $2; }
@@ -102,6 +103,7 @@ enumlist            : enumitem enumlist { $$ = $1; $1->next = $2; }
                     ;
 
 enumitem            : TIDENTIFIER TSEMI { $$ = ast_make_enumitem($1, NULL); }
+                    | TIDENTIFIER TCOLON TINT TSEMI { $$ = ast_make_enumitem($1, $3); }
                     ;
 
 structdecl          : TSTRUCT TTYPE TLBRACE structlist TRBRACE { $$ = $4; ast_struct_name($$, $2); }

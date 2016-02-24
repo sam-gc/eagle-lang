@@ -53,6 +53,7 @@ LLVMModuleRef ac_compile(AST *ast, int include_rc)
     
     VarScopeStack vs = vs_make();
     cb.varScope = &vs;
+    cb.enum_lookup = NULL;
 
     vs_push(cb.varScope);
 
@@ -255,6 +256,7 @@ LLVMValueRef ac_dispatch_expression(AST *ast, CompilerBundle *cb)
 
     if(!ast->resultantType)
         die(ALN, "Internal Error. AST Resultant Type for expression not set.");
+
     return val;
 }
 

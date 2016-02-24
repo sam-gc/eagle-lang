@@ -19,6 +19,9 @@ void ac_compile_enum_decleration(AST *ast, CompilerBundle *cb)
     long counter = 0;
     for(; item; item = (ASTEnumItem *)item->next)
     {
+        if(item->has_def)
+            counter = item->def;
+
         ty_add_enum_item(enum_name, item->item, counter++);
     }
 }

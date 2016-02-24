@@ -223,7 +223,8 @@ typedef struct {
     long lineno;
 
     char *item;
-    struct AST *def;
+    long def;
+    int has_def;
 } ASTEnumItem;
 
 typedef struct {
@@ -282,7 +283,7 @@ AST *ast_make_if(AST *test, AST *block);
 AST *ast_make_loop(AST *setup, AST *test, AST *update, AST *block);
 AST *ast_make_cast(AST *type, AST *val);
 AST *ast_make_enum(char *type, AST *items);
-AST *ast_make_enumitem(char *name, AST *def);
+AST *ast_make_enumitem(char *name, char *def);
 AST *ast_make_type_lookup(char *type, char *item);
 void ast_add_if(AST *ast, AST *next);
 

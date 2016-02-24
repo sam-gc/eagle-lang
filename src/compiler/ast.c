@@ -666,13 +666,15 @@ AST *ast_make_enum(char *type, AST *items)
     return (AST *)ast;
 }
 
-AST *ast_make_enumitem(char *name, AST *def)
+AST *ast_make_enumitem(char *name, char *def)
 {
     ASTEnumItem *ast = ast_malloc(sizeof(ASTEnumItem));
     ast->type = AENUMITEM;
 
     ast->item = name;
-    ast->def = def;
+
+    ast->def = def ? atol(def) : 0;
+    ast->has_def = def ? 1 : 0;
 
     return (AST *)ast;
 }

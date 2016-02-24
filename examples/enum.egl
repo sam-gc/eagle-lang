@@ -1,0 +1,54 @@
+enum Day
+{
+    Sunday : 3
+    Monday
+    Tuesday : 9
+    Wednesday
+    Thursday
+    Friday
+    Saturday
+}
+
+func is_sunday(Day d)
+{
+    if d == Day.Sunday
+        puts 'Yep! It is Sunday!'
+    elif d == Friday
+        puts 'Not Sunday, but Friday!'
+    else
+        puts 'Nope, not Sunday!'
+}
+
+func part_of_week(Day d)
+{
+    if d < Wednesday
+        puts 'First part of week!'
+    elif d > Wednesday
+        puts 'Second part of week!'
+    else
+        puts 'Humpday!'
+}
+
+func main()
+{
+    Day d = Day.Sunday
+    Day y = Wednesday
+
+    is_sunday(d)
+    is_sunday(Day.Friday)
+    is_sunday(Monday)
+
+    part_of_week(Friday)
+
+    int i = int@Day.Friday
+
+    puts i
+
+    is_sunday(Day@i)
+
+    Day* p = &d
+    p^ = Tuesday
+    part_of_week(d)
+
+    puts int@Day.Monday
+}
