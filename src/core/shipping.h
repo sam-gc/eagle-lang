@@ -11,6 +11,7 @@ typedef struct {
     arraylist object_files;
     arraylist extra_code;
     arraylist work;
+    arraylist libs;
 
     int widex;
 } ShippingCrate;

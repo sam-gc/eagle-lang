@@ -245,6 +245,7 @@ AST *ast_make_allocater(char op, AST *val, AST *init);
 AST *ast_make_bool(int i);
 AST *ast_make_nil();
 AST *ast_make_int32(char *text);
+AST *ast_make_byte(char *text);
 AST *ast_make_double(char *text);
 AST *ast_make_cstr(char *text);
 AST *ast_make_identifier(char *ident);

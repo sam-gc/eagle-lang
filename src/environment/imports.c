@@ -62,6 +62,18 @@ char *imp_scan_file(const char *filename)
 
             sb_append(&stmp, "\n");
         }
+        else if(token == TENUM)
+        {
+            do
+            {
+                if(token == TSEMI)
+                    sb_append(&stmp, "\n");
+                sb_append(&stmp, yytext);
+                sb_append(&stmp, " ");
+            } while((token = yylex()) != TRBRACE);
+            sb_append(&stmp, "}\n");
+            continue;
+        }
 
         if(token == TLBRACE)
             bracket_depth++;

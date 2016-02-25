@@ -17,7 +17,7 @@
     AST *node;
 }
 
-%token <string> TIDENTIFIER TINT TDOUBLE TTYPE TCOUNTED TNEW TSTRUCT TCLASS TTOUCH TCSTR TINTERFACE
+%token <string> TIDENTIFIER TINT TDOUBLE TCHARLIT TTYPE TCOUNTED TNEW TSTRUCT TCLASS TTOUCH TCSTR TINTERFACE
 %token <token> TPLUS TMINUS TEQUALS TMUL TDIV TGT TLT TEQ TNE TGTE TLTE TNOT TPOW TLOGAND TLOGOR TMOD
 %token <token> TPLUSE TMINUSE TMULE TDIVE TOR
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TLBRACKET TRBRACKET
@@ -297,6 +297,7 @@ ounexpr             : singexpr { $$ = $1; }
                     ;
 
 singexpr            : TINT { $$ = ast_make_int32($1); }
+                    | TCHARLIT { $$ = ast_make_byte($1); }
                     | TDOUBLE { $$ = ast_make_double($1); }
                     | TCSTR { $$ = ast_make_cstr($1); }
                     | clodecl { $$ = $1; }

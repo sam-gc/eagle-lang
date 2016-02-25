@@ -45,6 +45,7 @@ rbrace ("}"|"}"{whitechar}*"\n")
 func ("func"|"func"{whitechar}*"\n")
 semi (";"|";"{whitechar}*"\n")
 cstr '(\\.|[^'])*'
+charlit `[^`]`
 
 %%
 
@@ -53,9 +54,11 @@ cstr '(\\.|[^'])*'
 "\n"          { if(save_newline || override) {save_newline = override = 0; return TSEMI;} override = 0; /*else printf("IGNORING! %d\n", yylineno);*/ }
 
 {integer}     { SAVE_NL; SAVE_TOKEN; return TINT; }
+{charlit}   { SAVE_NL; SAVE_TOKEN; return TCHARLIT; }
 {real}      { SAVE_NL; SAVE_TOKEN; return TDOUBLE; }
 {import}    { SAVE_TOKEN; return TIMPORT; }
 {export}    { SAVE_TOKEN; return TEXPORT; }
+{comment}   ;
 "+"         DISCARD_NL; return SET(TPLUS);
 "+="        DISCARD_NL; return SET(TPLUSE);
 "-"         DISCARD_NL; return SET(TMINUS);
@@ -128,6 +131,6 @@ cstr '(\\.|[^'])*'
 "long"      { SAVE_NL; SAVE_TOKEN; return TTYPE; }
 "double"    { SAVE_NL; SAVE_TOKEN; return TTYPE; }
 "any"       { SAVE_NL; SAVE_TOKEN; return TTYPE; }
-{nvar}       { SAVE_NL; SAVE_TOKEN; if(skip_type_check) return TIDENTIFIER; else return ty_is_name(yytext) ? TTYPE : TIDENTIFIER; }
+{nvar}       { /*printf("%s\n", yytext);*/ SAVE_NL; SAVE_TOKEN; if(skip_type_check) return TIDENTIFIER; else return ty_is_name(yytext) ? TTYPE : TIDENTIFIER; }
 {cstr}      SAVE_NL; yylval.string = utl_gen_escaped_string((char *)yytext, yylineno); return TCSTR;
 %%

@@ -153,6 +153,16 @@ AST *ast_make_int32(char *text)
     return (AST *)ast;
 }
 
+AST *ast_make_byte(char *text)
+{
+    ASTValue *ast = ast_malloc(sizeof(ASTValue));
+    ast->type = AVALUE;
+    ast->etype = ETInt8;
+    ast->value.i = text[1];
+
+    return (AST *)ast;
+}
+
 AST *ast_make_double(char *text)
 {
     ASTValue *ast = ast_malloc(sizeof(ASTValue));

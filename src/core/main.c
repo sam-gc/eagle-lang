@@ -123,6 +123,7 @@ void fill_crate(ShippingCrate *crate, int argc, const char *argv[])
     crate->object_files = arr_create(5);
     crate->extra_code = arr_create(2);
     crate->work = arr_create(10);
+    crate->libs = arr_create(5);
 
     int skip = 0;
     int i;
@@ -158,6 +159,12 @@ void fill_crate(ShippingCrate *crate, int argc, const char *argv[])
             SEQU(arg, "--threads") ||
             SEQU(arg, "--dump-code")) 
             continue;
+
+        if(strlen(arg) > 2 && arg[0] == '-' && arg[1] == 'l')
+        {
+            arr_append(&crate->libs, (char *)arg);
+            continue;
+        }
         
         if(SEQU(get_file_ext(arg), ".o"))
             arr_append(&crate->object_files, (char *)arg);

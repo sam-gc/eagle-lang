@@ -206,7 +206,7 @@ void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
     LLVMValueRef func = LLVMAddFunction(cb->module, a->ident, func_type);
 
     if(retType->etype->type == ETStruct)
-        die(ALN, "Returning struct by value not supported.");
+        die(ALN, "Returning struct by value not supported. (%s)\n", a->ident);
 
     vs_put(cb->varScope, a->ident, func, ett_function_type(retType->etype, eparam_types, ct));
 }

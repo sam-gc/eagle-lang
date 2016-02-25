@@ -7,6 +7,7 @@ void ac_add_class_declaration(AST *ast, CompilerBundle *cb)
 {
     ASTClassDecl *a = (ASTClassDecl *)ast;
     LLVMStructCreateNamed(utl_get_current_context(), a->name);
+    
 }
 
 char *ac_gen_method_name(char *class_name, char *method)

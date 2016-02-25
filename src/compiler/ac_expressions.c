@@ -8,6 +8,9 @@ LLVMValueRef ac_compile_value(AST *ast, CompilerBundle *cb)
         case ETInt1:
             a->resultantType = ett_base_type(ETInt1);
             return LLVMConstInt(LLVMInt1TypeInContext(utl_get_current_context()), a->value.i, 1);
+        case ETInt8:
+            a->resultantType = ett_base_type(ETInt8);
+            return LLVMConstInt(LLVMInt8TypeInContext(utl_get_current_context()), a->value.i, 1);
         case ETInt32:
             a->resultantType = ett_base_type(ETInt32);
             return LLVMConstInt(LLVMInt32TypeInContext(utl_get_current_context()), a->value.i, 1);
@@ -979,7 +982,7 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
     LLVMValueRef args[ct + offset];
     for(p = a->params, i = start; p; p = p->next, i++)
     {
-        if(ett->params[i]->type == ETEnum)
+        if(i < ett->pct && ett->params[i]->type == ETEnum)
             cb->enum_lookup = ett->params[i];
 
         LLVMValueRef val = ac_dispatch_expression(p, cb);

@@ -56,6 +56,18 @@ char *ch_try_resolve_unknown_type(CXType *t)
     if(t->kind != CXType_Unexposed)
         goto error;
 
+    if(len < 4)
+        goto error;
+
+    memcpy(buffer, bytes, 4);
+    buffer[4] = '\0';
+
+    if(strcmp(buffer, "enum") == 0)
+    {
+        output = strdup(bytes + 5);
+        goto success;
+    }
+
     if(len < 5)
         goto error;
 
@@ -83,7 +95,7 @@ char *ch_try_resolve_unknown_type(CXType *t)
 error:
     fprintf(stderr, "Unknown: %s (%d)\n", CSTR(spelling), t->kind);
     CXSTR(spelling);
-    return strdup("");
+    return strdup("INVALID_UNKNOWN_TYPE");
 
 success:
     CXSTR(spelling);
@@ -294,6 +306,58 @@ void ch_handle_struct_cursor(CXCursor cursor, HeaderBundle *hb)
     fputs("}\n", hb->output);
 }
 
+static long enum_value = 0;
+enum CXChildVisitResult
+ch_handle_enum_constant_cursor(CXCursor cursor, CXCursor parent, CXClientData client_data)
+{
+    HeaderBundle *hb = (HeaderBundle *)client_data;
+    (void)parent;
+
+    if(CKIND(cursor) != CC(EnumConstantDecl))
+    {
+        return CXChildVisit_Recurse;
+    }
+
+    CXString name = CSPELL(cursor);
+    fprintf(hb->output, "    %s", CSTR(name));
+    CXSTR(name);
+
+    long val = (long)clang_getEnumConstantDeclValue(cursor);
+    if(val != enum_value)
+    {
+        enum_value = val;
+        fprintf(hb->output, " : %ld\n", enum_value);
+    }
+    else
+        fputs("\n", hb->output);
+
+
+    enum_value++;
+    return CXChildVisit_Recurse;
+}
+
+void ch_handle_enum_cursor(CXCursor cursor, HeaderBundle *hb)
+{
+    CXString ename = clang_getTypeSpelling(CTYPE(cursor));
+    char *text = ch_add_info_where_necessary("enum", CSTR(ename));
+    if(hst_get(&hb->seen, (char *)CSTR(ename), NULL, NULL))
+    {
+        CXSTR(ename);
+        return;
+    }
+
+    hst_put(&hb->seen, (char *)CSTR(ename), ONE_PTR, NULL, NULL);
+    CXSTR(ename);
+
+    fprintf(hb->output, "%s\n{\n", text);
+    free(text);
+
+    enum_value = 0;
+    clang_visitChildren(cursor, ch_handle_enum_constant_cursor, hb);
+
+    fputs("}\n", hb->output);
+}
+
 void ch_handle_typedef_cursor(CXCursor cursor, HeaderBundle *hb)
 {
     CXString newname = CSPELL(cursor);
@@ -322,6 +386,9 @@ ch_ast_dispatch(CXCursor cursor, CXCursor parent, CXClientData client_data)
             break;
         case CC(TypedefDecl):
             ch_handle_typedef_cursor(cursor, hb);
+            break;
+        case CC(EnumDecl):
+            ch_handle_enum_cursor(cursor, hb);
             break;
         default:
             break;

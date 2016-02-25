@@ -122,11 +122,20 @@ void shp_produce_executable(ShippingCrate *crate)
         sb_append(&sbd, " ");
     }
 
-    char command[500 + strlen(outfile) + strlen(sbd.buffer)];
+    Strbuilder libb;
+    sb_init(&libb);
+    for(i = 0; i < crate->libs.count; i++)
+    {
+        sb_append(&libb, crate->libs.items[i]);
+        sb_append(&libb, " ");
+    }
+
+    char command[500 + strlen(outfile) + strlen(sbd.buffer) + strlen(libb.buffer)];
 
     //const char *rcfile = IN(global_args, "--no-rc") ? "" : "rc.o";
-    sprintf(command, CC " %s -o %s -lm", sbd.buffer, outfile);
+    sprintf(command, CC " %s -o %s %s", sbd.buffer, outfile, libb.buffer);
     free(sbd.buffer); 
+    free(libb.buffer);
 
     system(command);
 }
