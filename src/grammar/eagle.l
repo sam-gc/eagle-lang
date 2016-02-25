@@ -19,12 +19,12 @@
     int skip_type_check = 0;
     extern multibuffer *ymultibuffer;
 
+    extern int yyerror(const char *);
     #define YY_INPUT(buf, result, max_size) if(skip_type_check) result = fread( buf, 1, max_size, yyin ); else result = mb_buffer(ymultibuffer, buf, max_size)
 %}
 
 %option noyywrap
 %option yylineno
-%option noinput
 %option nounput
 
 reset "=== RESET ==="
@@ -38,7 +38,7 @@ exponent [eE][+-]?{integer}
 real {integer}("."{digit}*){exponent}?
 nvar {alpha}({alpha}|{digit})*
 strlit \"(\\.|[^"])*\"
-comment (\#|(\-\-)).*(\n)
+comment (\-\-).*(\n)
 import "import ".*
 export "export ".*
 lbrace ("{"|"{"{whitechar}*"\n"|"\n"{whitechar}*"{")
@@ -51,7 +51,7 @@ charlit `[^`]`
 %%
 
 {white}       ;
-
+{comment}   ;
 "\n"          { if(save_newline || override) {save_newline = override = 0; return TSEMI;} override = 0; /*else printf("IGNORING! %d\n", yylineno);*/ }
 
 {integer}     { SAVE_NL; SAVE_TOKEN; return TINT; }
@@ -59,7 +59,6 @@ charlit `[^`]`
 {real}      { SAVE_NL; SAVE_TOKEN; return TDOUBLE; }
 {import}    { SAVE_TOKEN; return TIMPORT; }
 {export}    { SAVE_TOKEN; return TEXPORT; }
-{comment}   ;
 {reset}     yylineno = 1;
 "+"         DISCARD_NL; return SET(TPLUS);
 "+="        DISCARD_NL; return SET(TPLUSE);
@@ -135,4 +134,21 @@ charlit `[^`]`
 "any"       { SAVE_NL; SAVE_TOKEN; return TTYPE; }
 {nvar}       { SAVE_NL; SAVE_TOKEN; if(skip_type_check) return TIDENTIFIER; else return ty_is_name(yytext) ? TTYPE : TIDENTIFIER; }
 {cstr}      SAVE_NL; yylval.string = utl_gen_escaped_string((char *)yytext, yylineno); return TCSTR;
+"-*"        {
+// Adapted from https://www.cs.princeton.edu/~appel/modern/c/software/flex/flex.html
+char c;
+while(1)
+{
+    while((c = input()) != '*' && c != EOF);
+    if(c == '*')
+    {
+        while((c = input()) == '*');
+        if(c == '-')
+            break;
+    }
+
+    if(c == EOF)
+        yyerror("End of line in comment");
+}
+}
 %%

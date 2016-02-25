@@ -1,0 +1,9 @@
+func main()
+{
+    puts 'Hello, world!'
+
+    -- This is a single line comment. The comment runs to the end of the line
+    -* This is a block comment; anything up to the opposite will be ignored
+    Blah blah blah
+    *-
+}
