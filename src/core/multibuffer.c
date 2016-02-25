@@ -18,6 +18,7 @@ typedef struct mbnode {
     // For string buffers
     size_t slen;
     size_t bufpt;
+
 } mbnode;
 
 struct multibuffer {
@@ -61,11 +62,21 @@ void mb_append_node(mbnode *head, mbnode *next)
     head->next = next;
 }
 
+void mb_add_reset(multibuffer *buf)
+{
+    mbnode *next = mb_create_node(MBSTR, "=== RESET ===");
+    mb_append_node(buf->head, next);
+}
+
 void mb_add_file(multibuffer *buf, const char *filename)
 {
     mbnode *next = mb_create_node(MBFILE, filename);
+
     if(buf->head)
+    {
+        mb_add_reset(buf);
         mb_append_node(buf->head, next);
+    }
     else
     {
         buf->head = next;
@@ -76,8 +87,12 @@ void mb_add_file(multibuffer *buf, const char *filename)
 void mb_add_str(multibuffer *buf, const char *c)
 {
     mbnode *next = mb_create_node(MBSTR, c);
+    
     if(buf->head)
+    {
+        mb_add_reset(buf);
         mb_append_node(buf->head, next);
+    }
     else
     {
         buf->head = next;
@@ -100,6 +115,7 @@ size_t min(size_t a, size_t b)
     return a < b ? a : b;
 }
 
+extern int yylineno;
 int mb_buffer(multibuffer *buf, char *dest, size_t max_size)
 {
     mbnode *n = buf->cur;
@@ -126,19 +142,21 @@ int mb_buffer(multibuffer *buf, char *dest, size_t max_size)
                 size_t lenl = n->slen - n->bufpt;
                 size_t ct = min(lenl, left);
                 memcpy(dest + loc, n->src.s + n->bufpt, ct);
-                
+
                 n->bufpt += ct;
                 if(ct == left)
                     return loc + ct;
 
                 loc += ct;
                 left -= ct;
+                break;
             }
         }
 
         n = n->next;
         if(!n)
             return loc;
+
     }
 
     return 1;
@@ -161,6 +179,7 @@ void mb_rewind(multibuffer *buf)
                 break;
         }
     }
+
 }
 
 void mb_print_all(multibuffer *buf)

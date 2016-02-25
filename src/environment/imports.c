@@ -23,7 +23,7 @@ extern char *yytext;
 extern int skip_type_check;
 extern FILE *yyin;
 extern int yylex();
-extern int yylineno();
+extern int yylineno;
 extern YY_BUFFER_STATE yy_create_buffer(FILE*, size_t);
 extern void yypush_buffer_state(YY_BUFFER_STATE);
 extern void yypop_buffer_state();
@@ -145,6 +145,9 @@ void imp_build_buffer(void *k, void *v, void *data)
 {
     multibuffer *mb = data;
     char *filename = k;
+
+    char *debgname = malloc(100 + strlen(filename));
+    sprintf(debgname, "<imported from %s>", filename);
 
     char *text = imp_scan_file(filename);
 //    printf("%s\n", text);

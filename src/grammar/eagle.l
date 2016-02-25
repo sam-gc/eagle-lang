@@ -27,6 +27,7 @@
 %option noinput
 %option nounput
 
+reset "=== RESET ==="
 white [ \t]+
 whitechar [ \t]
 digit [0-9]
@@ -59,6 +60,7 @@ charlit `[^`]`
 {import}    { SAVE_TOKEN; return TIMPORT; }
 {export}    { SAVE_TOKEN; return TEXPORT; }
 {comment}   ;
+{reset}     yylineno = 1;
 "+"         DISCARD_NL; return SET(TPLUS);
 "+="        DISCARD_NL; return SET(TPLUSE);
 "-"         DISCARD_NL; return SET(TMINUS);
@@ -131,6 +133,6 @@ charlit `[^`]`
 "long"      { SAVE_NL; SAVE_TOKEN; return TTYPE; }
 "double"    { SAVE_NL; SAVE_TOKEN; return TTYPE; }
 "any"       { SAVE_NL; SAVE_TOKEN; return TTYPE; }
-{nvar}       { /*printf("%s\n", yytext);*/ SAVE_NL; SAVE_TOKEN; if(skip_type_check) return TIDENTIFIER; else return ty_is_name(yytext) ? TTYPE : TIDENTIFIER; }
+{nvar}       { SAVE_NL; SAVE_TOKEN; if(skip_type_check) return TIDENTIFIER; else return ty_is_name(yytext) ? TTYPE : TIDENTIFIER; }
 {cstr}      SAVE_NL; yylval.string = utl_gen_escaped_string((char *)yytext, yylineno); return TCSTR;
 %%

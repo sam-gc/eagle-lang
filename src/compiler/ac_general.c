@@ -5,6 +5,7 @@
 #include "core/utils.h"
 
 extern hashtable global_args;
+extern char *current_file_name;
 
 #ifdef RELEASE
 void die(int lineno, const char *fmt, ...)
@@ -15,7 +16,7 @@ void die(int lineno, const char *fmt, ...)
     va_list args;
     va_start(args, fmt);
     vfprintf(stderr, format, args);
-    fprintf(stderr, "\t-> Line %d\n", lineno);
+    fprintf(stderr, "\t-> %s:%d\n", current_file_name, lineno);
     va_end(args);
 
     exit(0);
@@ -29,7 +30,7 @@ void die_debug(int complineno, const char *file, int lineno, const char *fmt, ..
     va_list args;
     va_start(args, fmt);
     vfprintf(stderr, format, args);
-    fprintf(stderr, "\t-> Line %d\n", lineno);
+    fprintf(stderr, "\t-> %s:%d\n", current_file_name, lineno);
     fprintf(stderr, "\tCompiler: %s:%d\n", file, complineno);
     va_end(args);
 

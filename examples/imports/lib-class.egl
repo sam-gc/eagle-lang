@@ -1,3 +1,5 @@
+export *
+
 extern func printf(byte*...) : int
 
 interface Polite

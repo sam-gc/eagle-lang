@@ -31,6 +31,8 @@ extern YY_BUFFER_STATE yy_create_buffer(FILE*, size_t);
 extern void yy_switch_to_buffer(YY_BUFFER_STATE buf);
 extern void yy_delete_buffer(YY_BUFFER_STATE buf);
 
+char *current_file_name = NULL;
+
 void register_typedef()
 {
     char *prev = NULL;
@@ -197,6 +199,7 @@ LLVMModuleRef compile_generic(ShippingCrate *crate, int include_rc, char *file)
     mb_free(ymultibuffer);
     yy_delete_buffer(yybuf);
 
+    current_file_name = file;
     LLVMModuleRef module = ac_compile(ast_root, include_rc);
 
     ty_teardown();
@@ -220,6 +223,7 @@ char *make_argcode_name()
 
 void compile_string(char *str, ShippingCrate *crate)
 {
+    char *file = make_argcode_name();
     ymultibuffer = mb_alloc();
     mb_add_str(ymultibuffer, str);
 
@@ -229,7 +233,6 @@ void compile_string(char *str, ShippingCrate *crate)
     if(IN(global_args, "--verbose"))
         printf("Compiling extra code {{\n%s\n}}\n", str);
 
-    char *file = make_argcode_name();
     LLVMModuleRef module = compile_generic(crate, !IN(global_args, "--no-rc"), file);
 
     arr_append(&crate->work, thr_create_bundle(module, utl_get_current_context(), file));

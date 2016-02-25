@@ -3,6 +3,8 @@
 
 #include <stdio.h>
 
+typedef void (*mb_callback)(void *);
+
 typedef struct multibuffer multibuffer;
 
 multibuffer *mb_alloc();
