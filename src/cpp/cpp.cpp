@@ -1,4 +1,14 @@
+#include <llvm/ADT/Triple.h>
+#include <llvm/CodeGen/CommandFlags.h>
 #include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/PassSupport.h>
+#include <llvm/Support/FileSystem.h>
+#include <llvm/Support/ToolOutputFile.h>
+#include <llvm/Support/TargetRegistry.h>
+#include <llvm/Target/TargetMachine.h>
+#include <llvm/Support/TargetSelect.h>
 #include "core/config.h"
 
 #include <string>

@@ -1,11 +1,5 @@
 #define _GNU_SOURCE
-#include <clang-c/BuildSystem.h>
-#include <clang-c/CXCompilationDatabase.h>
-#include <clang-c/CXErrorCode.h>
-#include <clang-c/CXString.h>
-#include <clang-c/Documentation.h>
 #include <clang-c/Index.h>
-#include <clang-c/Platform.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
