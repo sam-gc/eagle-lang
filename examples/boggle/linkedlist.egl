@@ -252,6 +252,19 @@ class LinkedListRaw
             callback(n->val)
         }
     }
+
+    view (gen : any*)^
+    {
+        return list_raw_iter(self->head)
+    }
+}
+
+gen list_raw_iter(LLNodeRaw^ head) : any*
+{
+    for head; head; head = head->next
+    {
+        yield head->val
+    }
 }
 
 struct LLNode

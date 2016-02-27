@@ -108,25 +108,27 @@ LLVMValueRef ac_compile_var_decl_ext(EagleTypeType *type, char *ident, CompilerB
     if(b && !b->value)
         b->value = pos;
 
-    if(ET_IS_COUNTED(type) && !noSetNil)
+    if(ET_IS_COUNTED(type))
     {
-        LLVMBuildStore(cb->builder, LLVMConstPointerNull(ett_llvm_type(type)), pos);
+        if(!noSetNil)
+            LLVMBuildStore(cb->builder, LLVMConstPointerNull(ett_llvm_type(type)), pos);
 
         if(!cb->compilingMethod || strcmp(ident, "self"))
             vs_add_callback(cb->varScope, ident, ac_scope_leave_callback, cb);
     }
-    else if(ET_IS_WEAK(type) && !noSetNil)
+    else if(ET_IS_WEAK(type))
     {
-        LLVMBuildStore(cb->builder, LLVMConstPointerNull(ett_llvm_type(type)), pos);
+        if(!noSetNil)
+            LLVMBuildStore(cb->builder, LLVMConstPointerNull(ett_llvm_type(type)), pos);
         vs_add_callback(cb->varScope, ident, ac_scope_leave_weak_callback, cb);
     }
-    else if(type->type == ETStruct && ty_needs_destructor(type) && !noSetNil)
+    else if(type->type == ETStruct && ty_needs_destructor(type))
     {
         ac_call_constructor(cb, pos, type);
         vs_add_callback(cb->varScope, ident, ac_scope_leave_struct_callback, cb);
     }
 
-    if(type->type == ETArray && ett_array_has_counted(type) && !noSetNil)
+    if(type->type == ETArray && ett_array_has_counted(type))
     {
         ac_nil_fill_array(cb, pos, ett_array_count(type));
         vs_add_callback(cb->varScope, ident, ac_scope_leave_array_callback, cb);

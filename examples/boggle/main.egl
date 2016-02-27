@@ -35,9 +35,10 @@ func main(int argc, byte** argv) : int
         return strcmp(a, b)
     })
 
-    found->each(func(any *word) {
+    for any* word in found
+    {
         puts byte*@word
-    })
+    }
 
     printf('Found %d words from board "%s"\n', found->length, text)
 

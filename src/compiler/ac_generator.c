@@ -87,6 +87,37 @@ LLVMValueRef ac_compile_generator_init(AST *ast, CompilerBundle *cb, GeneratorBu
     LLVMValueRef mmc = ac_compile_malloc_counted_raw(gb->contextType, &gb->countedContextType, cb);
     LLVMValueRef ctx = LLVMBuildStructGEP(cb->builder, mmc, 5, "");
 
+    LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, ctx, 0, "");
+    LLVMBuildStore(cb->builder, LLVMBuildBitCast(cb->builder, gb->func, LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), ""), pos);
+
+    pos = LLVMBuildStructGEP(cb->builder, ctx, 1, "");
+    LLVMBuildStore(cb->builder, LLVMBlockAddress(gb->func, cb->yieldBlocks->items[0]), pos);
+
+    ac_incr_val_pointer(cb, &mmc, ((EagleFunctionType *)vb->type)->retType);
+
+    pos = LLVMBuildStructGEP(cb->builder, mmc, 4, "");
+
+    LLVMValueRef des_func = ac_compile_generator_destructor(cb, gb);
+    LLVMPositionBuilderAtEnd(cb->builder, entry);
+    LLVMBuildStore(cb->builder, des_func, pos);
+
+
+    // Null out the references in the context in case the generator is never used
+    unsigned ct = LLVMCountStructElementTypes(gb->contextType);
+    LLVMTypeRef tys[ct];
+    LLVMGetStructElementTypes(gb->contextType, tys);
+
+    unsigned i;
+    for(i = 2; i < ct; i++)
+    {
+        if(LLVMGetTypeKind(tys[i]) == LLVMPointerTypeKind)
+        {
+            LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, ctx, i, "");
+            LLVMBuildStore(cb->builder, LLVMConstPointerNull(tys[i]), pos);
+        }
+    }
+    // ==========================================================================
+
     if(a->params)
     {
         int i;
@@ -105,38 +136,6 @@ LLVMValueRef ac_compile_generator_init(AST *ast, CompilerBundle *cb, GeneratorBu
                 ac_add_weak_pointer(cb, LLVMGetParam(func, i), pos, eparam_types[i]);
         }
     }
-
-    LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, ctx, 0, "");
-    LLVMBuildStore(cb->builder, LLVMBuildBitCast(cb->builder, gb->func, LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), ""), pos);
-
-    pos = LLVMBuildStructGEP(cb->builder, ctx, 1, "");
-    LLVMBuildStore(cb->builder, LLVMBlockAddress(gb->func, cb->yieldBlocks->items[0]), pos);
-
-    ac_incr_val_pointer(cb, &mmc, ((EagleFunctionType *)vb->type)->retType);
-
-    pos = LLVMBuildStructGEP(cb->builder, mmc, 4, "");
-
-    LLVMValueRef des_func = ac_compile_generator_destructor(cb, gb);
-    LLVMPositionBuilderAtEnd(cb->builder, entry);
-    LLVMBuildStore(cb->builder, des_func, pos);
-
-
-    // Null out the references in the context in case the generator is never used
-    /*
-    unsigned ct = LLVMCountStructElementTypes(gb->contextType);
-    LLVMTypeRef tys[ct];
-    LLVMGetStructElementTypes(gb->contextType, tys);
-
-    unsigned i;
-    for(i = 2; i < ct; i++)
-    {
-        if(LLVMGetTypeKind(tys[i]) == LLVMPointerTypeKind)
-        {
-            LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, ctx, i, "");
-            LLVMBuildStore(cb->builder, LLVMConstPointerNull(tys[i]), pos);
-        }
-    }*/
-    // ==========================================================================
 
     // LLVMDumpType(ett_llvm_type(vb->type));
     LLVMValueRef ret = LLVMBuildBitCast(cb->builder, mmc, ett_llvm_type(((EagleFunctionType *)vb->type)->retType), "");
@@ -308,7 +307,7 @@ void ac_generator_replace_allocas(CompilerBundle *cb, GeneratorBundle *gb)
 
         gb->elems = &elems;
 
-        //ac_null_out_counted(cb, gb, btb);
+        ac_null_out_counted(cb, gb, btb);
 
         arr_free(&elems);
         elems = arr_create(10);
