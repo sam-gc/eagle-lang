@@ -91,7 +91,7 @@ LLVMValueRef ac_compile_identifier(AST *ast, CompilerBundle *cb)
     return LLVMBuildLoad(cb->builder, b->value, "loadtmp");
 }
 
-LLVMValueRef ac_compile_var_decl_ext(EagleTypeType *type, char *ident, CompilerBundle *cb)
+LLVMValueRef ac_compile_var_decl_ext(EagleTypeType *type, char *ident, CompilerBundle *cb, int noSetNil)
 {
 
     LLVMBasicBlockRef curblock = LLVMGetInsertBlock(cb->builder);
@@ -108,25 +108,25 @@ LLVMValueRef ac_compile_var_decl_ext(EagleTypeType *type, char *ident, CompilerB
     if(b && !b->value)
         b->value = pos;
 
-    if(ET_IS_COUNTED(type))
+    if(ET_IS_COUNTED(type) && !noSetNil)
     {
         LLVMBuildStore(cb->builder, LLVMConstPointerNull(ett_llvm_type(type)), pos);
 
         if(!cb->compilingMethod || strcmp(ident, "self"))
             vs_add_callback(cb->varScope, ident, ac_scope_leave_callback, cb);
     }
-    else if(ET_IS_WEAK(type))
+    else if(ET_IS_WEAK(type) && !noSetNil)
     {
         LLVMBuildStore(cb->builder, LLVMConstPointerNull(ett_llvm_type(type)), pos);
         vs_add_callback(cb->varScope, ident, ac_scope_leave_weak_callback, cb);
     }
-    else if(type->type == ETStruct && ty_needs_destructor(type))
+    else if(type->type == ETStruct && ty_needs_destructor(type) && !noSetNil)
     {
         ac_call_constructor(cb, pos, type);
         vs_add_callback(cb->varScope, ident, ac_scope_leave_struct_callback, cb);
     }
 
-    if(type->type == ETArray && ett_array_has_counted(type))
+    if(type->type == ETArray && ett_array_has_counted(type) && !noSetNil)
     {
         ac_nil_fill_array(cb, pos, ett_array_count(type));
         vs_add_callback(cb->varScope, ident, ac_scope_leave_array_callback, cb);
@@ -148,7 +148,7 @@ LLVMValueRef ac_compile_var_decl(AST *ast, CompilerBundle *cb)
     }
 
     vs_put(cb->varScope, a->ident, NULL, type->etype);
-    LLVMValueRef pos = ac_compile_var_decl_ext(type->etype, a->ident, cb);
+    LLVMValueRef pos = ac_compile_var_decl_ext(type->etype, a->ident, cb, a->noSetNil);
 
     return pos;
 }
@@ -1184,7 +1184,7 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update)
         if(!storageBundle || !storageIdent)
             die(ALN, "Internal compiler error!\nstorageBundle = %p; storageIdent = %p;", storageBundle, storageIdent);
 
-        pos = ac_compile_var_decl_ext(totype, storageIdent, cb);
+        pos = ac_compile_var_decl_ext(totype, storageIdent, cb, 0);
         storageBundle->type = totype;
     }
 

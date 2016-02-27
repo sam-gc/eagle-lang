@@ -115,6 +115,11 @@ typedef struct {
     struct AST *atype;
     char *ident;
     struct AST *arrct;
+
+    // This field is *only* used for generator calls
+    // when we want to avoid setting a parameter in
+    // the generator context to nil...
+    int noSetNil;
 } ASTVarDecl;
 
 typedef struct {

@@ -487,6 +487,7 @@ AST *ast_make_arr_decl(AST *atype, char *ident, AST *expr)
     ast->atype = atype;
     ast->ident = ident;
     ast->arrct = expr;
+    ast->noSetNil = 0;
 
     return (AST *)ast;
 }

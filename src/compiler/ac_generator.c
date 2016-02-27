@@ -122,6 +122,7 @@ LLVMValueRef ac_compile_generator_init(AST *ast, CompilerBundle *cb, GeneratorBu
 
 
     // Null out the references in the context in case the generator is never used
+    /*
     unsigned ct = LLVMCountStructElementTypes(gb->contextType);
     LLVMTypeRef tys[ct];
     LLVMGetStructElementTypes(gb->contextType, tys);
@@ -134,7 +135,7 @@ LLVMValueRef ac_compile_generator_init(AST *ast, CompilerBundle *cb, GeneratorBu
             LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, ctx, i, "");
             LLVMBuildStore(cb->builder, LLVMConstPointerNull(tys[i]), pos);
         }
-    }
+    }*/
     // ==========================================================================
 
     // LLVMDumpType(ett_llvm_type(vb->type));
@@ -198,6 +199,7 @@ void ac_compile_generator_code(AST *ast, CompilerBundle *cb)//, LLVMValueRef fun
         for(i = 0; p; p = p->next, i++)
         {
             EagleTypeType *ty = eparam_types[i];
+            ((ASTVarDecl *)p)->noSetNil = 1;
             LLVMValueRef pos = ac_compile_var_decl(p, cb);
 
             arr_append(&param_values, pos);
@@ -306,7 +308,7 @@ void ac_generator_replace_allocas(CompilerBundle *cb, GeneratorBundle *gb)
 
         gb->elems = &elems;
 
-        ac_null_out_counted(cb, gb, btb);
+        //ac_null_out_counted(cb, gb, btb);
 
         arr_free(&elems);
         elems = arr_create(10);
