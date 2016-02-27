@@ -622,6 +622,19 @@ LLVMValueRef ac_compile_logical_and(AST *ast, CompilerBundle *cb)
     return phi;
 }
 
+LLVMValueRef ac_generic_unary(ASTUnary *a, LLVMValueRef val, CompilerBundle *cb)
+{
+    switch(a->op)
+    {
+        case '-':
+            return ac_make_neg(val, cb->builder, a->val->resultantType->type);
+        default:
+            die(a->lineno, "Internal compiler error");
+    }
+
+    return NULL;
+}
+
 LLVMValueRef ac_generic_binary(ASTBinary *a, LLVMValueRef l, LLVMValueRef r, char save_left, EagleTypeType *fromtype, EagleTypeType *totype, CompilerBundle *cb)
 {
     if(
@@ -894,6 +907,11 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
             // TODO: Broken
             a->resultantType = ett_base_type(ETInt1);
             return ac_compile_ntest(a->val, v, cb);
+        case '-':
+            if(!ett_is_numeric(a->val->resultantType))
+                die(ALN, "Trying to negate non-numeric type");
+            a->resultantType = a->val->resultantType;
+            return ac_generic_unary(a, v, cb);
         default:
             die(ALN, "Invalid unary operator (%c).", a->op);
             break;

@@ -238,6 +238,23 @@ LLVMValueRef ac_make_mod(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
     }
 }
 
+LLVMValueRef ac_make_neg(LLVMValueRef val, LLVMBuilderRef builder, EagleType type)
+{
+    switch(type)
+    {
+        case ETDouble:
+            return LLVMBuildFNeg(builder, val, "negtmp");
+        case ETInt8:
+        case ETInt16:
+        case ETInt32:
+        case ETInt64:
+            return LLVMBuildNeg(builder, val, "negtmp");
+        default:
+            die(-1, "The given type may not have negation applied (%d).", type);
+            return NULL;
+    }
+}
+
 LLVMValueRef ac_make_comp(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type, char comp)
 {
     LLVMIntPredicate ip;

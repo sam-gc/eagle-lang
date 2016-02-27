@@ -15,6 +15,7 @@ LLVMValueRef ac_make_mul(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
 LLVMValueRef ac_make_div(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type);
 LLVMValueRef ac_make_mod(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type);
 LLVMValueRef ac_make_comp(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type, char comp);
+LLVMValueRef ac_make_neg(LLVMValueRef val, LLVMBuilderRef builder, EagleType type);
 void ac_replace_with_counted(CompilerBundle *cb, VarBundle *b);
 
 #endif

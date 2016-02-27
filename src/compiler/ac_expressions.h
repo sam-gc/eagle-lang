@@ -18,5 +18,6 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb);
 LLVMValueRef ac_compile_generator_call(AST *ast, LLVMValueRef gen, CompilerBundle *cb);
 LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb);
 LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update);
+LLVMValueRef ac_generic_unary(ASTUnary *a, LLVMValueRef val, CompilerBundle *cb);
 
 #endif

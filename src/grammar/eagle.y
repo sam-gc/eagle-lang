@@ -44,6 +44,7 @@
 %left TEQ TNE TLT TGT TLTE TGTE
 %left TPLUS TMINUS;
 %left TMUL TDIV TMOD;
+%precedence NEG
 %left TAT;
 %left TDOT TPOW TARROW;
 %nonassoc TSIZEOF TCOUNTOF;
@@ -290,6 +291,7 @@ unexpr              : ounexpr TPOW { $$ = ast_make_unary($1, '*'); }
                     | ounexpr TLBRACKET expr TRBRACKET { $$ = ast_make_binary($1, $3, '['); }
                     | ounexpr TDOT TIDENTIFIER { $$ = ast_make_struct_get($1, $3); }
                     | ounexpr TARROW TIDENTIFIER { $$ = ast_make_struct_get(ast_make_unary($1, '*'), $3); }
+                    | TMINUS ounexpr %prec NEG { $$ = ast_make_unary($2, '-'); }
                     ; 
 
 ounexpr             : singexpr { $$ = $1; }
