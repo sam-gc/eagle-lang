@@ -11,6 +11,11 @@ func test_dec_weak(weak int^ num)
     puts num
 }
 
+func test_dec_raw(any* val)
+{
+    __dec any^@val
+}
+
 func main()
 {
     var i = new int(5)
@@ -18,7 +23,7 @@ func main()
     test_dec_weak(i) -- Next we do a decrement that matches that increment, returning the pointer to a normal state
 
     var j = new int
-    test_dec_weak(j) -- There is no explicit increment, so this will free the pointer, giving us problems
+    test_dec_raw(j)  -- There is no explicit increment, so this will free the pointer, giving us problems
     __dec i
     exit(0)          -- Exiting early short-circuits the reference counting, preventing errors from the above decrement
 }
