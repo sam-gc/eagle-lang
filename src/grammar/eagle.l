@@ -113,6 +113,8 @@ charlit `[^`]`
 "weak"      DISCARD_NL; return SET(TWEAK);
 "unwrap"    DISCARD_NL; return SET(TUNWRAP);
 "touch"     DISCARD_NL; return SET(TTOUCH);
+"__inc"     DISCARD_NL; return SET(T__INC);
+"__dec"     DISCARD_NL; return SET(T__DEC);
 "new"       DISCARD_NL; return SET(TNEW);
 "if"        DISCARD_NL; return SET(TIF);
 "for"       DISCARD_NL; return SET(TFOR);

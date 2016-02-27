@@ -138,8 +138,11 @@ void ac_decr_val_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *t
 {
     LLVMBuilderRef builder = cb->builder;
     EaglePointerType *pt = (EaglePointerType *)ty;
-    if(!pt->counted)
-        return;
+    if(pt)
+    {
+        if(!pt->counted)
+            return;
+    }
 
     LLVMValueRef tptr = *ptr;
     tptr = LLVMBuildBitCast(builder, tptr, LLVMPointerType(LLVMInt64TypeInContext(utl_get_current_context()), 0), "cast");

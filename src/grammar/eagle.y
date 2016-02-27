@@ -23,7 +23,7 @@
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TLBRACKET TRBRACKET
 %token <token> TFUNC TRETURN TYIELD TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF TFOR TIN TWEAK TUNWRAP
 %token <token> TBREAK TCONTINUE TVAR TGEN  TELLIPSES TVIEW
-%token <token> TCOLON TSEMI TNEWLINE TCOMMA TDOT TAMP TAT TARROW
+%token <token> TCOLON TSEMI TNEWLINE TCOMMA TDOT TAMP TAT TARROW T__DEC T__INC
 %token <token> TYES TNO TNIL TIMPORT TEXPORT TTYPEDEF TENUM
 %type <node> program declarations declaration statements statement block funcdecl ifstatement
 %type <node> variabledecl vardecllist funccall calllist funcident funcsident externdecl typelist type interfacetypelist
@@ -213,6 +213,8 @@ statement           : expr TSEMI { $$ = $1; }
                     | TRETURN expr TSEMI { $$ = ast_make_unary($2, 'r'); }
                     | TYIELD expr TSEMI { $$ = ast_make_unary($2, 'y'); }
                     | TPUTS expr TSEMI { $$ = ast_make_unary($2, 'p'); }
+                    | T__INC expr TSEMI { $$ = ast_make_unary($2, 'i'); }
+                    | T__DEC expr TSEMI { $$ = ast_make_unary($2, 'd'); }
                     | TSEMI { $$ = NULL; }
                     | ifstatement { $$ = $1; }
                     | forstatement { $$ = $1; }

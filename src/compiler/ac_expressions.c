@@ -885,6 +885,22 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
             LLVMBuildBr(cb->builder, cb->currentLoopEntry);
             break;
             */
+        case 'i':
+            {
+                if(!ET_IS_COUNTED(a->val->resultantType) && !ET_IS_WEAK(a->val->resultantType))
+                    die(ALN, "Only pointers in the counted regime may be manipulated using __inc");
+                a->resultantType = a->val->resultantType;
+                ac_incr_val_pointer(cb, &v, NULL);
+                return v;
+            }
+        case 'd':
+            {
+                if(!ET_IS_COUNTED(a->val->resultantType) && !ET_IS_WEAK(a->val->resultantType))
+                    die(ALN, "Only pointers in the counted regime may be manipulated using __dec");
+                a->resultantType = a->val->resultantType;
+                ac_decr_val_pointer(cb, &v, NULL);
+                return v;
+            }
         case 'u':
             {
                 if(!ET_IS_COUNTED(a->val->resultantType) && !ET_IS_WEAK(a->val->resultantType))

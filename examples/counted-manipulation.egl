@@ -1,0 +1,24 @@
+extern func exit(int)
+
+func test_inc_weak(weak int^ num)
+{
+    __inc num
+}
+
+func test_dec_weak(weak int^ num)
+{
+    __dec num
+    puts num
+}
+
+func main()
+{
+    var i = new int(5)
+    test_inc_weak(i) -- First we do an explicit increment, so now the pointer will never be freed
+    test_dec_weak(i) -- Next we do a decrement that matches that increment, returning the pointer to a normal state
+
+    var j = new int
+    test_dec_weak(j) -- There is no explicit increment, so this will free the pointer, giving us problems
+    __dec i
+    exit(0)          -- Exiting early short-circuits the reference counting, preventing errors from the above decrement
+}
