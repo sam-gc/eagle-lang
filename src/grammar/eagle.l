@@ -25,7 +25,6 @@
 
 %option noyywrap
 %option yylineno
-%option nounput
 
 reset "=== RESET ==="
 white [ \t]+
@@ -51,7 +50,6 @@ charlit `[^`]`
 %%
 
 {white}       ;
-{comment}   ;
 "\n"          { if(save_newline || override) {save_newline = override = 0; return TSEMI;} override = 0; /*else printf("IGNORING! %d\n", yylineno);*/ }
 
 {integer}     { SAVE_NL; SAVE_TOKEN; return TINT; }
@@ -145,6 +143,21 @@ while(1)
         while((c = input()) == '*');
         if(c == '-')
             break;
+    }
+
+    if(c == EOF)
+        yyerror("End of line in comment");
+}
+}
+"--"        {
+char c;
+while(1)
+{
+    while((c = input()) != '\n' && c != EOF);
+    if(c == '\n')
+    {
+        unput('\n');
+        break;
     }
 
     if(c == EOF)
