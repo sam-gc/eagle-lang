@@ -1,10 +1,10 @@
-//
-//  ast.h //  Eagle
-//
-//  Created by Sam Olsen on 7/22/15.
-//  Copyright (c) 2015 Sam Olsen. All rights reserved.
-//
-
+/*
+ * Copyright (c) 2015-2016 Sam Horlbeck Olsen
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 #ifndef __Eagle__ast__
 #define __Eagle__ast__
 
@@ -51,7 +51,7 @@ typedef struct {
     EagleTypeType *resultantType;
     struct AST *next;
     long lineno;
-    
+
     struct AST *left;
     struct AST *right;
     char op;
@@ -74,7 +74,7 @@ typedef struct {
     EagleTypeType *resultantType;
     struct AST *next;
     long lineno;
-    
+
     EagleType etype;
     union {
         int32_t i;
@@ -88,7 +88,7 @@ typedef struct {
     EagleTypeType *resultantType;
     struct AST *next;
     long lineno;
-    
+
     struct AST *retType;
     struct AST *body;
     struct AST *params;

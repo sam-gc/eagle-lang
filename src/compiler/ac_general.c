@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2015-2016 Sam Horlbeck Olsen
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
@@ -52,7 +60,7 @@ LLVMModuleRef ac_compile(AST *ast, int include_rc)
     cb.currentLoopEntry = cb.currentLoopExit = NULL;
 
     cb.td = LLVMCreateTargetData("");
-    
+
     VarScopeStack vs = vs_make();
     cb.varScope = &vs;
     cb.enum_lookup = NULL;
@@ -308,7 +316,7 @@ void ac_dispatch_statement(AST *ast, CompilerBundle *cb)
 
     hst_for_each(&cb->transients, ac_decr_transients, cb);
     hst_for_each(&cb->loadedTransients, ac_decr_loaded_transients, cb);
-    
+
     hst_free(&cb->transients);
     hst_free(&cb->loadedTransients);
 

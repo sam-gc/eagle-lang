@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2015-2016 Sam Horlbeck Olsen
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
 #include "ast_compiler.h"
 #include "core/config.h"
 #include "core/utils.h"
@@ -7,7 +15,7 @@ void ac_add_class_declaration(AST *ast, CompilerBundle *cb)
 {
     ASTClassDecl *a = (ASTClassDecl *)ast;
     LLVMStructCreateNamed(utl_get_current_context(), a->name);
-    
+
 }
 
 char *ac_gen_method_name(char *class_name, char *method)
@@ -82,7 +90,7 @@ void ac_class_add_early_definitions(ASTClassDecl *cd, CompilerBundle *cb, ac_cla
     ASTVarDecl *vd = (ASTVarDecl *)fd->params;
     vd->atype = ast_make_counted(ast_make_pointer(ast_make_type(cd->name)));
     char *method_name = ac_gen_method_name(cd->name, (char *)"__init__");
-    
+
     EagleFunctionType *ety = (EagleFunctionType *)cd->inittype;
     ety->params[0] = ett_pointer_type(ett_struct_type(cd->name));
     ((EaglePointerType *)ety->params[0])->counted = 1;
@@ -102,7 +110,7 @@ void ac_compile_class_init(ASTClassDecl *cd, CompilerBundle *cb)
         return;
 
     char *method_name = ac_gen_method_name(cd->name, (char *)"__init__");
-    
+
     LLVMValueRef func = LLVMGetNamedFunction(cb->module, method_name);
 
     free(method_name);
@@ -123,7 +131,7 @@ void ac_compile_class_destruct(ASTClassDecl *cd, CompilerBundle *cb)
     ASTVarDecl *vd = (ASTVarDecl *)fd->params;
     vd->atype = ast_make_counted(ast_make_pointer(ast_make_type(cd->name)));
     char *method_name = ac_gen_method_name(cd->name, (char *)"__destruct__");
-    
+
     EagleFunctionType *ety = (EagleFunctionType *)cd->destructtype;
     ety->params[0] = ett_pointer_type(ett_struct_type(cd->name));
     ((EaglePointerType *)ety->params[0])->counted = 1;
@@ -424,7 +432,7 @@ void ac_make_class_destructor(AST *ast, CompilerBundle *cb)
         {
             LLVMValueRef fc = ac_gen_struct_destructor_func(((EagleStructType *)t)->name, cb);
             LLVMValueRef params[2];
-            params[0] = LLVMBuildBitCast(cb->builder, LLVMBuildStructGEP(cb->builder, pos, i + 1, ""), 
+            params[0] = LLVMBuildBitCast(cb->builder, LLVMBuildStructGEP(cb->builder, pos, i + 1, ""),
                     LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), "");
             params[1] = LLVMConstInt(LLVMInt1TypeInContext(utl_get_current_context()), 0, 0);
             LLVMBuildCall(cb->builder, fc, params, 2, "");

@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2015-2016 Sam Horlbeck Olsen
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
 #include "ast_compiler.h"
 #include "core/utils.h"
 
@@ -239,14 +247,14 @@ LLVMValueRef ac_compile_closure(AST *ast, CompilerBundle *cb)
     LLVMValueRef func = LLVMAddFunction(cb->module, ccode, funcType);
     cloclo.funcType = funcType;
     LLVMSetLinkage(func, LLVMPrivateLinkage);
-    
+
     cloclo.function = func;
 
     cb->currentFunctionType = (EagleFunctionType *)ett_function_type(retType->etype, eparam_types, ct);
 
     LLVMBasicBlockRef entry = LLVMAppendBasicBlockInContext(utl_get_current_context(), func, "entry");
     LLVMPositionBuilderAtEnd(cb->builder, entry);
-    
+
     vs_push_closure(cb->varScope, ac_closure_callback, &cloclo);
     vs_push(cb->varScope);
 
@@ -338,7 +346,7 @@ void ac_compile_function_ex(AST *ast, CompilerBundle *cb, LLVMValueRef func, Eag
 
     if(!a->body) // This is an extern definition
         return;
-    
+
     int i;
     AST *p = a->params;
     for(i = 0; p; p = p->next, i++);
@@ -354,12 +362,12 @@ void ac_compile_function_ex(AST *ast, CompilerBundle *cb, LLVMValueRef func, Eag
 
     ASTTypeDecl *retType = (ASTTypeDecl *)a->retType;
 
-    
+
     cb->currentFunctionType = ft;
 
     LLVMBasicBlockRef entry = LLVMAppendBasicBlockInContext(utl_get_current_context(), func, "entry");
     LLVMPositionBuilderAtEnd(cb->builder, entry);
-    
+
     vs_push(cb->varScope);
 
     cb->currentFunctionEntry = entry;

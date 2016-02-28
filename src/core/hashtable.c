@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2015-2016 Sam Horlbeck Olsen
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
 #include <stdlib.h>
 #include <string.h>
 #include "hashtable.h"
@@ -48,7 +56,7 @@ hst_node *hst_make_node(long hash, void *key, void *val, char dup)
 void hst_resize(hashtable *ht)
 {
     int ns = ht->size > 1000 ? ht->size + 1000 : ht->size * 2;
-    hst_node **buckets = calloc(ns, sizeof(hst_node *));   
+    hst_node **buckets = calloc(ns, sizeof(hst_node *));
 
     int i;
     hst_node *n;
@@ -89,7 +97,7 @@ void hst_put(hashtable *ht, void *key, void *val, hst_hash_function hashfunc, hs
 #endif
 
     if(!hashfunc)
-        hashfunc = hst_djb2;    
+        hashfunc = hst_djb2;
 
     long hash = hashfunc(key, NULL);
     unsigned long mod = ((unsigned long)hash) % ht->size;
@@ -116,7 +124,7 @@ void hst_put(hashtable *ht, void *key, void *val, hst_hash_function hashfunc, hs
 
     ht->count++;
     prev->next = hst_make_node(hash, key, val, ht->duplicate_keys);
-} 
+}
 
 void *hst_get(hashtable *ht, void *key, hst_hash_function hashfunc, hst_equa_function equfunc)
 {
@@ -279,5 +287,3 @@ void hst_for_each(hashtable *ht, hst_each_function func, void *data)
         for(n = ht->buckets[i]; n; n = n->next)
             func(n->key, n->val, data);
 }
-
-

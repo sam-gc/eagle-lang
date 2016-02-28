@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2015-2016 Sam Horlbeck Olsen
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
 #include <stdio.h>
 #include "compiler/ast_compiler.h"
 #include "compiler/ast.h"
@@ -147,7 +155,7 @@ void fill_crate(ShippingCrate *crate, int argc, const char *argv[])
 
         if(SEQU(arg, "-o") || SEQU(arg, "--code") || SEQU(arg, "--threads"))
             skip = 1;
-        
+
         if(
             SEQU(arg, "-o") ||
             SEQU(arg, "-c") ||
@@ -159,7 +167,7 @@ void fill_crate(ShippingCrate *crate, int argc, const char *argv[])
             SEQU(arg, "--verbose") ||
             SEQU(arg, "--code") ||
             SEQU(arg, "--threads") ||
-            SEQU(arg, "--dump-code")) 
+            SEQU(arg, "--dump-code"))
             continue;
 
         if(strlen(arg) > 2 && arg[0] == '-' && arg[1] == 'l')
@@ -167,7 +175,7 @@ void fill_crate(ShippingCrate *crate, int argc, const char *argv[])
             arr_append(&crate->libs, (char *)arg);
             continue;
         }
-        
+
         if(SEQU(get_file_ext(arg), ".o"))
             arr_append(&crate->object_files, (char *)arg);
         else
@@ -179,7 +187,7 @@ LLVMModuleRef compile_generic(ShippingCrate *crate, int include_rc, char *file)
 {
     YY_BUFFER_STATE yybuf = yy_create_buffer(NULL, YY_BUF_SIZE);
     yy_switch_to_buffer(yybuf);
-    
+
     ty_prepare();
     first_pass();
 
@@ -316,6 +324,6 @@ int main(int argc, const char *argv[])
         shp_produce_executable(&crate);
 
     thr_teardown();
-    
+
     return 0;
 }

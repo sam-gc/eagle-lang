@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2015-2016 Sam Horlbeck Olsen
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
 #include "ast_compiler.h"
 #include "cpp/cpp.h"
 
@@ -34,13 +42,13 @@ LLVMValueRef ac_try_view_conversion(CompilerBundle *cb, LLVMValueRef val, EagleT
         return NULL;
 
     char *type_name = ett_unique_type_name(to);
-    
+
     if(!ty_method_lookup(st->name, type_name))
     {
         free(type_name);
         return NULL;
     }
-    
+
     char *method = ac_gen_method_name(st->name, type_name);
 
     LLVMValueRef func = LLVMGetNamedFunction(cb->module, method);

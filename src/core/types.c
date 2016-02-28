@@ -1,10 +1,10 @@
-//
-//  types.c
-//  Eagle
-//
-//  Created by Sam Olsen on 7/22/15.
-//  Copyright (c) 2015 Sam Olsen. All rights reserved.
-//
+/*
+ * Copyright (c) 2015-2016 Sam Horlbeck Olsen
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 
 #include <stdlib.h>
 #include <string.h>
@@ -152,7 +152,7 @@ EagleTypeType *et_parse_string(char *text)
         else
             return ett_struct_type(text);
     }
-    
+
     return NULL;
 }
 
@@ -164,7 +164,7 @@ EagleType et_promotion(EagleType left, EagleType right)
     return left > right ? left : right;
 }
 
-LLVMTypeRef ett_closure_type(EagleTypeType *type) { if(!ET_IS_CLOSURE(type)) return NULL; 
+LLVMTypeRef ett_closure_type(EagleTypeType *type) { if(!ET_IS_CLOSURE(type)) return NULL;
     EagleFunctionType *ft = (EagleFunctionType *)type;
 
     LLVMTypeRef *tys = malloc(sizeof(LLVMTypeRef) * (ft->pct + 1));
@@ -203,7 +203,7 @@ LLVMTypeRef ett_llvm_type(EagleTypeType *type)
             return LLVMInt64TypeInContext(utl_get_current_context());
         case ETGenerator:
         {
-            if(generator_type) 
+            if(generator_type)
                 return generator_type;
 
             LLVMTypeRef ptmp[2];
@@ -223,7 +223,7 @@ LLVMTypeRef ett_llvm_type(EagleTypeType *type)
                 return loaded;
 
             return NULL;
-           // LLVMTypeRef ty = LLVMStructTypeInContext(utl_get_current_context(), 
+           // LLVMTypeRef ty = LLVMStructTypeInContext(utl_get_current_context(),
         }
         case ETInterface:
         {
@@ -447,7 +447,7 @@ EagleTypeType *ett_enum_type(char *name)
     pool_add(&type_mempool, en);
 
     hst_put(&enum_named_table, name, en, NULL, NULL);
-    
+
     return (EagleTypeType *)en;
 }
 
@@ -524,7 +524,7 @@ int ett_are_same(EagleTypeType *left, EagleTypeType *right)
     {
         EagleStructType *sl = (EagleStructType *)left;
         EagleStructType *sr = (EagleStructType *)right;
-        
+
         return strcmp(sl->name, sr->name) == 0;
     }
 
@@ -576,7 +576,7 @@ char *ett_unique_type_name(EagleTypeType *t)
         NAME_BASIC(Int64);
         NAME_BASIC(Double);
         NAME_BASIC(CString);
-        
+
         case ETPointer:
         {
             EaglePointerType *pt = (EaglePointerType *)t;
@@ -858,7 +858,7 @@ void ty_register_typedef(char *name)
 void ty_set_typedef(char *name, EagleTypeType *type)
 {
     void *tag = hst_get(&typedef_table, name, NULL, NULL);
-    
+
     // If tag isn't found, we must have a redundant
     // typedef
     if(!tag)
@@ -1077,4 +1077,3 @@ LLVMTypeRef ty_get_counted(LLVMTypeRef in)
 
     return ref;
 }
-

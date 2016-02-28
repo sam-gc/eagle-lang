@@ -1,10 +1,10 @@
-//
-//  ast.c
-//  Eagle
-//
-//  Created by Sam Olsen on 7/22/15.
-//  Copyright (c) 2015 Sam Olsen. All rights reserved.
-//
+/*
+ * Copyright (c) 2015-2016 Sam Horlbeck Olsen
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -61,7 +61,7 @@ void *ast_malloc(size_t size)
     }
 
     pool_add(&ast_mempool, ast);
-    
+
     return ast;
 }
 
@@ -69,7 +69,7 @@ AST *ast_make()
 {
     AST *ast = ast_malloc(sizeof(AST));
     ast->type = ABASE;
-    
+
     return ast;
 }
 
@@ -90,11 +90,11 @@ AST *ast_make_binary(AST *left, AST *right, char op)
 {
     ASTBinary *ast = ast_malloc(sizeof(ASTBinary));
     ast->type = ABINARY;
-    
+
     ast->op = op;
     ast->left = left;
     ast->right = right;
-    
+
     return (AST *)ast;
 }
 
@@ -149,7 +149,7 @@ AST *ast_make_int32(char *text)
     ast->type = AVALUE;
     ast->etype = ETInt32;
     ast->value.i = atoi(text);
-    
+
     return (AST *)ast;
 }
 
@@ -169,7 +169,7 @@ AST *ast_make_double(char *text)
     ast->type = AVALUE;
     ast->etype = ETDouble;
     ast->value.d = atof(text);
-    
+
     return (AST *)ast;
 }
 
@@ -230,7 +230,7 @@ AST *ast_make_func_decl(AST *type, char *ident, AST *body, AST *params)
     ast->ident = ident ? ident : (char *)"close";
     ast->params = params;
     ast->vararg = 0;
-    
+
     return (AST *)ast;
 }
 
@@ -242,7 +242,7 @@ AST *ast_make_gen_decl(AST *type, char *ident, AST *body, AST *params)
     ast->body = body;
     ast->ident = ident ? ident : (char *)"close";
     ast->params = params;
-    
+
     return (AST *)ast;
 }
 
@@ -549,7 +549,7 @@ AST *ast_make_gen_type(AST *ytype)
     ast->type = ATYPE;
 
     ast->etype = ett_gen_type(((ASTTypeDecl *)ytype)->etype);
-    
+
     return (AST *)ast;
 }
 
@@ -608,7 +608,7 @@ AST *ast_make_composite(AST *orig, char *nw)
 
     if(a->etype->type != ETInterface || !ty_is_interface(nw))
         die(a->lineno, "Attempting to make composite type from non-interface componenents");
-    
+
     ett_composite_interface(a->etype, nw);
 
     return orig;
@@ -707,4 +707,3 @@ void ast_add_if(AST *ast, AST *next)
     for(; i->ifNext; i = (ASTIfBlock *)i->ifNext);
     i->ifNext = next;
 }
-

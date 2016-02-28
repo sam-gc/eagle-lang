@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2015-2016 Sam Horlbeck Olsen
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
 #include "ast_compiler.h"
 
 int ac_compile_block(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
@@ -15,7 +23,7 @@ int ac_compile_block(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
             ac_compile_yield(ast, block, cb);
             continue;
         }
-        
+
         if(ast->type == AUNARY && ((ASTUnary *)ast)->op == 'b') // Handle the special break case
         {
             LLVMBuildBr(cb->builder, cb->currentLoopExit);
@@ -27,7 +35,7 @@ int ac_compile_block(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
             LLVMBuildBr(cb->builder, cb->currentLoopEntry);
             return 1;
         }
-        
+
         ac_dispatch_statement(ast, cb);
     }
 
@@ -70,7 +78,7 @@ void ac_compile_return(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
             cb->loadedTransients = hst_create();
         }
     }
-    
+
     vs_run_callbacks_through(cb->varScope, cb->currentFunctionScope);
 
     if(val) LLVMBuildRet(cb->builder, val);
@@ -92,7 +100,7 @@ void ac_compile_yield(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
 
     if(cb->currentGenType->ytype->type == ETEnum)
         cb->enum_lookup = cb->currentGenType->ytype;
-    
+
     val = ac_dispatch_expression(ya->val, cb);
     cb->enum_lookup = NULL;
     EagleTypeType *t = ya->val->resultantType;
@@ -106,7 +114,7 @@ void ac_compile_yield(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
         ac_incr_val_pointer(cb, &val, o);
     }
 
-    LLVMValueRef ctx = LLVMBuildBitCast(cb->builder, LLVMGetParam(cb->currentFunction, 0), 
+    LLVMValueRef ctx = LLVMBuildBitCast(cb->builder, LLVMGetParam(cb->currentFunction, 0),
         LLVMPointerType(ett_llvm_type((EagleTypeType *)cb->currentGenType), 0), "");
 
     LLVMBuildStore(cb->builder, val, LLVMGetParam(cb->currentFunction, 1));

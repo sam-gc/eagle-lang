@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2015-2016 Sam Horlbeck Olsen
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
 #include "ast_compiler.h"
 
 LLVMValueRef ac_compile_value(AST *ast, CompilerBundle *cb)
@@ -236,7 +244,7 @@ LLVMValueRef ac_compile_struct_member(AST *ast, CompilerBundle *cb, int keepPoin
 LLVMValueRef ac_compile_type_lookup(AST *ast, CompilerBundle *cb)
 {
     ASTTypeLookup *a = (ASTTypeLookup *)ast;
-    
+
     if(!ty_is_enum(a->name))
         die(ALN, "Trying to lookup item of non-enum type %s.", a->name);
 
@@ -257,7 +265,7 @@ LLVMValueRef ac_compile_malloc_counted_raw(LLVMTypeRef rt, LLVMTypeRef *out, Com
     LLVMTypeRef ptmp[2];
     ptmp[0] = LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0);
     ptmp[1] = LLVMInt1TypeInContext(utl_get_current_context());
-    
+
     LLVMTypeRef tys[6];
     tys[0] = LLVMInt64TypeInContext(utl_get_current_context());
     tys[1] = LLVMInt16TypeInContext(utl_get_current_context());
@@ -267,7 +275,7 @@ LLVMValueRef ac_compile_malloc_counted_raw(LLVMTypeRef rt, LLVMTypeRef *out, Com
     tys[5] = rt;
     LLVMTypeRef tt = LLVMStructTypeInContext(utl_get_current_context(), tys, 6, 0);
     tt = ty_get_counted(tt);
-    
+
     LLVMValueRef mal = LLVMBuildMalloc(cb->builder, tt, "new");
 
     *out = tt;
@@ -282,7 +290,7 @@ LLVMValueRef ac_compile_malloc_counted(EagleTypeType *type, EagleTypeType **res,
     LLVMTypeRef ptmp[2];
     ptmp[0] = LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0);
     ptmp[1] = LLVMInt1TypeInContext(utl_get_current_context());
-    
+
     LLVMTypeRef tys[6];
     tys[0] = LLVMInt64TypeInContext(utl_get_current_context());
     tys[1] = LLVMInt16TypeInContext(utl_get_current_context());
@@ -301,7 +309,7 @@ LLVMValueRef ac_compile_malloc_counted(EagleTypeType *type, EagleTypeType **res,
         mal = EGLBuildMalloc(cb->builder, tt, ib, "new");
     else
         mal = LLVMBuildMalloc(cb->builder, tt, "new");
-   
+
     EaglePointerType *pt = (EaglePointerType *)ett_pointer_type(type);
     pt->counted = 1;
     EagleTypeType *resultantType = (EagleTypeType *)pt;
@@ -317,7 +325,7 @@ LLVMValueRef ac_compile_malloc_counted(EagleTypeType *type, EagleTypeType **res,
         EagleStructType *st = (EagleStructType *)type;
         LLVMBuildStore(cb->builder, ac_gen_struct_destructor_func(st->name, cb), pos);
     }
-    
+
     // We need to specially handle counted counted types
     if(ET_IS_COUNTED(type))
     {
@@ -340,7 +348,7 @@ LLVMValueRef ac_compile_new_decl(AST *ast, CompilerBundle *cb)
 {
     ASTBinary *a = (ASTBinary *)ast;
     ASTTypeDecl *type = (ASTTypeDecl *)a->left;
-    
+
     LLVMValueRef val = ac_compile_malloc_counted(type->etype, &ast->resultantType, NULL, cb);
     hst_put(&cb->transients, ast, val, ahhd, ahed);
 
@@ -516,7 +524,7 @@ LLVMValueRef ac_compile_logical_or(AST *ast, CompilerBundle *cb)
 
         hst_for_each(&cb->transients, ac_decr_transients, cb);
         hst_for_each(&cb->loadedTransients, ac_decr_loaded_transients, cb);
-        
+
         hst_free(&cb->transients);
         hst_free(&cb->loadedTransients);
 
@@ -533,7 +541,7 @@ LLVMValueRef ac_compile_logical_or(AST *ast, CompilerBundle *cb)
 
     hst_for_each(&cb->transients, ac_decr_transients, cb);
     hst_for_each(&cb->loadedTransients, ac_decr_loaded_transients, cb);
-    
+
     hst_free(&cb->transients);
     hst_free(&cb->loadedTransients);
 
@@ -586,7 +594,7 @@ LLVMValueRef ac_compile_logical_and(AST *ast, CompilerBundle *cb)
         // ==============================================================
         hst_for_each(&cb->transients, ac_decr_transients, cb);
         hst_for_each(&cb->loadedTransients, ac_decr_loaded_transients, cb);
-        
+
         hst_free(&cb->transients);
         hst_free(&cb->loadedTransients);
 
@@ -609,14 +617,14 @@ LLVMValueRef ac_compile_logical_and(AST *ast, CompilerBundle *cb)
     // ==============================================================
     hst_for_each(&cb->transients, ac_decr_transients, cb);
     hst_for_each(&cb->loadedTransients, ac_decr_loaded_transients, cb);
-    
+
     hst_free(&cb->transients);
     hst_free(&cb->loadedTransients);
 
     cb->transients = hst_create();
     cb->loadedTransients = hst_create();
     // ==============================================================
-        
+
     LLVMBuildBr(cb->builder, mergeBB);
 
     arr_append(&values, cmp);
@@ -674,7 +682,7 @@ LLVMValueRef ac_generic_binary(ASTBinary *a, LLVMValueRef l, LLVMValueRef r, cha
             die(a->lineno, "Pointer arithmetic is only valid with integer and non-any pointer types.");
         if(rt->type == ETPointer && !ET_IS_INT(lt->type))
             die(a->lineno, "Pointer arithmetic is only valid with integer and non-any pointer types.");
-        
+
         if(lt->type == ETPointer && ett_get_base_type(lt) == ETAny && ett_pointer_depth(lt) == 1)
             die(a->lineno, "Pointer arithmetic results in dereferencing any pointer.");
         if(rt->type == ETPointer && ett_get_base_type(rt) == ETAny && ett_pointer_depth(rt) == 1)
@@ -780,7 +788,7 @@ LLVMValueRef ac_compile_get_address(AST *of, CompilerBundle *cb)
 
             if(!b)
                 die(LN(of), "Undeclared identifier (%s)", o->value.id);
-            
+
             of->resultantType = b->type;
 
             return b->value;
@@ -850,7 +858,7 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
                     case ETFunction:
                     case ETArray:
                     case ETPointer:
-                        fmt = LLVMBuildGlobalStringPtr(cb->builder, 
+                        fmt = LLVMBuildGlobalStringPtr(cb->builder,
                                 (((EaglePointerType *)a->val->resultantType)->to->type == ETInt8 ? "%s\n" : "%p\n"), "prfPTR");
                         break;
                     default:
@@ -1075,7 +1083,7 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
         func = LLVMBuildStructGEP(cb->builder, func, 0, "");
         func = LLVMBuildLoad(cb->builder, func, "");
         func = LLVMBuildBitCast(cb->builder, func, LLVMPointerType(ett_closure_type((EagleTypeType *)ett), 0), "");
-        
+
         out = LLVMBuildCall(cb->builder, func, args, ct + 1, "");
     }
     else if(instanceOfClass)
@@ -1128,7 +1136,7 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update)
     else if(a->left->type == AUNARY && ((ASTUnary *)a->left)->op == '*')
     {
         ASTUnary *l = (ASTUnary *)a->left;
-        
+
         pos = ac_dispatch_expression(l->val, cb);
         if(l->val->resultantType->type != ETPointer)
         {
@@ -1174,7 +1182,7 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update)
     else
     {
         ASTVarDecl *l = (ASTVarDecl *)a->left;
-        
+
         ASTTypeDecl *type = (ASTTypeDecl *)l->atype;
         totype = type->etype;
         pos = ac_compile_var_decl(a->left, cb);
@@ -1244,7 +1252,7 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update)
     }
 
     LLVMBuildStore(cb->builder, r, pos);
-    
+
     if(ET_IS_COUNTED(a->resultantType) && !transient)
         ac_incr_pointer(cb, &ptrPos, totype);
     else if(a->resultantType->type == ETStruct && ty_needs_destructor(a->resultantType) && !transient)

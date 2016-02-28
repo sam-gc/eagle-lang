@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2015-2016 Sam Horlbeck Olsen
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -99,7 +107,7 @@ void shp_produce_binary(char *filename, char *assemblyname, char **outname)
     }
 
     sprintf(command, CC " -c %s -o %s -g -O0", assemblyname, outfile); //objectfile, rcfile, outfile);
-    
+
     system(command);
 
     *outname = outfile;
@@ -134,9 +142,8 @@ void shp_produce_executable(ShippingCrate *crate)
 
     //const char *rcfile = IN(global_args, "--no-rc") ? "" : "rc.o";
     sprintf(command, CC " %s -o %s %s", sbd.buffer, outfile, libb.buffer);
-    free(sbd.buffer); 
+    free(sbd.buffer);
     free(libb.buffer);
 
     system(command);
 }
-

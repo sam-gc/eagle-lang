@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2015-2016 Sam Horlbeck Olsen
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
 #include <stdlib.h>
 #include "variable_manager.h"
 
@@ -61,7 +69,7 @@ VarBundle *vs_get(VarScopeStack *vs, char *ident)
             {
                 VarBarrier *vb = (VarBarrier *)s;
                 vb->closedCallback(o, ident, vb->closedData);
-                
+
                 // We expect the callback to alter the scope stack so the
                 // following code doesn't recurse forever
                 return vs_get(vs, ident);
@@ -127,7 +135,7 @@ void vs_add_callback(VarScopeStack *vs, char *ident, LostScopeCallback callback,
     VarBundle *vb = hst_get(&s->table, ident, NULL, NULL);
     if(!vb)
         return;
-    
+
     vb->scopeCallback = callback;
     vb->scopeData = data;
 }
@@ -169,4 +177,3 @@ VarScope *vs_current(VarScopeStack *vs)
 {
     return vs->scope;
 }
-

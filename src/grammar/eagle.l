@@ -1,11 +1,19 @@
 %{
+/*
+ * Copyright (c) 2015-2016 Sam Horlbeck Olsen
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+ 
     #include <stdio.h>
     #include <string.h>
     #include "compiler/ast.h"
     #include "core/utils.h"
     #include "core/multibuffer.h"
     #include "eagle.tab.h"
-    
+
     #define SET(t) (yylval.token = t)
     #define SAVE_TOKEN yylval.string = strdup(yytext); utl_register_memory(yylval.string)
     #define DISCARD_NL (save_newline = 0)
@@ -126,7 +134,7 @@ charlit `[^`]`
 "nil"       SAVE_NL; return SET(TNIL);
 "var"       DISCARD_NL; return SET(TVAR);
 "bool"      SAVE_NL; SAVE_TOKEN; return TTYPE;
-"byte"      SAVE_NL; SAVE_TOKEN; return TTYPE; 
+"byte"      SAVE_NL; SAVE_TOKEN; return TTYPE;
 "short"     SAVE_NL; SAVE_TOKEN; return TTYPE;
 "int"       { SAVE_NL; SAVE_TOKEN; return TTYPE; }
 "long"      { SAVE_NL; SAVE_TOKEN; return TTYPE; }

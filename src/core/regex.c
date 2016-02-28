@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2015-2016 Sam Horlbeck Olsen
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
 // Tutorial on recursive descent parsing:   http://matt.might.net/articles/parsing-regex-with-recursive-descent/
 // Inspiration for code to build NFA:       https://swtch.com/~rsc/regexp/regexp1.html
 
@@ -685,7 +693,7 @@ rgx_result_wrapper rgx_wrapper_make()
 void rgx_wrapper_append(rgx_result_wrapper *w, int c)
 {
     if(w->ct == w->alloced)
-    { 
+    {
         w->alloced += 10;
         w->indices = realloc(w->indices, sizeof(int) * w->alloced);
     }

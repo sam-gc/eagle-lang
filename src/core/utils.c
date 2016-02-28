@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2015-2016 Sam Horlbeck Olsen
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
 #include "utils.h"
 #include "mempool.h"
 #include "compiler/ast_compiler.h"
@@ -53,7 +61,7 @@ char *utl_gen_escaped_string(char *inp, int lineno)
                 die(lineno, "Unknown escape character in string: \"%s\"", inp);
         }
 
-        n[j] = gen; 
+        n[j] = gen;
     }
 
     n[j] = 0;

@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2015-2016 Sam Horlbeck Olsen
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
 #include "multibuffer.h"
 #include <string.h>
 #include <stdlib.h>
@@ -87,7 +95,7 @@ void mb_add_file(multibuffer *buf, const char *filename)
 void mb_add_str(multibuffer *buf, const char *c)
 {
     mbnode *next = mb_create_node(MBSTR, c);
-    
+
     if(buf->head)
     {
         mb_add_reset(buf);
@@ -224,4 +232,3 @@ void mb_free(multibuffer *buf)
 
     free(buf);
 }
-

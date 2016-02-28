@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2015-2016 Sam Horlbeck Olsen
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
 #include "ast_compiler.h"
 
 void ac_scope_leave_callback(LLVMValueRef pos, EagleTypeType *ty, void *data)
@@ -68,9 +76,9 @@ void ac_incr_val_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *t
 
     LLVMValueRef tptr = *ptr;
     tptr = LLVMBuildBitCast(builder, tptr, LLVMPointerType(LLVMInt64TypeInContext(utl_get_current_context()), 0), "cast");
-    
+
     LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_incr_ptr");
-    LLVMBuildCall(builder, func, &tptr, 1, ""); 
+    LLVMBuildCall(builder, func, &tptr, 1, "");
 }
 
 void ac_incr_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty)
@@ -86,9 +94,9 @@ void ac_incr_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty)
 
     LLVMValueRef tptr = LLVMBuildLoad(builder, *ptr, "tptr");
     tptr = LLVMBuildBitCast(builder, tptr, LLVMPointerType(LLVMInt64TypeInContext(utl_get_current_context()), 0), "cast");
-    
+
     LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_incr_ptr");
-    LLVMBuildCall(builder, func, &tptr, 1, ""); 
+    LLVMBuildCall(builder, func, &tptr, 1, "");
 }
 
 void ac_check_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty)
@@ -146,9 +154,9 @@ void ac_decr_val_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *t
 
     LLVMValueRef tptr = *ptr;
     tptr = LLVMBuildBitCast(builder, tptr, LLVMPointerType(LLVMInt64TypeInContext(utl_get_current_context()), 0), "cast");
-    
+
     LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_decr_ptr");
-    LLVMBuildCall(builder, func, &tptr, 1, ""); 
+    LLVMBuildCall(builder, func, &tptr, 1, "");
 }
 
 void ac_decr_val_pointer_no_free(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty)
@@ -163,9 +171,9 @@ void ac_decr_val_pointer_no_free(CompilerBundle *cb, LLVMValueRef *ptr, EagleTyp
 
     LLVMValueRef tptr = *ptr;
     tptr = LLVMBuildBitCast(builder, tptr, LLVMPointerType(LLVMInt64TypeInContext(utl_get_current_context()), 0), "cast");
-    
+
     LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_decr_no_free");
-    LLVMBuildCall(builder, func, &tptr, 1, ""); 
+    LLVMBuildCall(builder, func, &tptr, 1, "");
 }
 
 void ac_nil_fill_array(CompilerBundle *cb, LLVMValueRef arr, int ct)
@@ -201,7 +209,7 @@ void ac_decr_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty)
 
     LLVMValueRef tptr = LLVMBuildLoad(builder, *ptr, "tptr");
     tptr = LLVMBuildBitCast(builder, tptr, LLVMPointerType(LLVMInt64TypeInContext(utl_get_current_context()), 0), "cast");
-    
+
     LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_decr_ptr");
-    LLVMBuildCall(builder, func, &tptr, 1, ""); 
+    LLVMBuildCall(builder, func, &tptr, 1, "");
 }

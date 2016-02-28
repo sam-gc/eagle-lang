@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2015-2016 Sam Horlbeck Olsen
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
 #include "ast_compiler.h"
 #include "core/utils.h"
 
@@ -165,7 +173,7 @@ void ac_compile_generator_code(AST *ast, CompilerBundle *cb)//, LLVMValueRef fun
     // the compilation here.
     if(!a->body)
         return;
-    
+
     int i;
     AST *p = a->params;
     for(i = 0; p; p = p->next, i++);
@@ -181,7 +189,7 @@ void ac_compile_generator_code(AST *ast, CompilerBundle *cb)//, LLVMValueRef fun
 
     LLVMBasicBlockRef entry = LLVMAppendBasicBlockInContext(utl_get_current_context(), func, "entry");
     LLVMPositionBuilderAtEnd(cb->builder, entry);
-    
+
     vs_push(cb->varScope);
 
     cb->currentFunctionEntry = entry;

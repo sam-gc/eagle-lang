@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2015-2016 Sam Horlbeck Olsen
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
 #define _GNU_SOURCE
 #include <clang-c/Index.h>
 #include <stdio.h>
@@ -211,7 +219,7 @@ void ch_handle_function_cursor(CXCursor cursor, HeaderBundle *hb)
         fputs(" : ", hb->output);
         ch_print_basic_type(hb, rett);
     }
-    
+
     fputs("\n", hb->output);
 }
 
@@ -220,7 +228,7 @@ char *ch_add_info_where_necessary(const char *info, const char *name)
     size_t infolen = strlen(info);
     size_t namelen = strlen(name);
     char buffer[infolen + 1];
-    
+
     if(infolen > namelen)
     {
         char *output = malloc(namelen + infolen + 5);
@@ -287,7 +295,7 @@ void ch_handle_struct_cursor(CXCursor cursor, HeaderBundle *hb)
         cursor = *((CXCursor *)list.items[i]);
         fputs("    ", hb->output);
         ch_print_basic_type(hb, CTYPE(cursor));
-        
+
         CXString name = CSPELL(cursor);
         fprintf(hb->output, " %s\n", CSTR(name));
         CXSTR(name);
@@ -437,4 +445,3 @@ int main(int argc, char *argv[])
 
     return 0;
 }
-

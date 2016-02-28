@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2015-2016 Sam Horlbeck Olsen
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
 #include "ast_compiler.h"
 #include "core/utils.h"
 
@@ -186,7 +194,7 @@ void ac_make_struct_destructor(AST *ast, CompilerBundle *cb)
         {
             LLVMValueRef fc = ac_gen_struct_destructor_func(((EagleStructType *)t)->name, cb);
             LLVMValueRef params[2];
-            params[0] = LLVMBuildBitCast(cb->builder, LLVMBuildStructGEP(cb->builder, pos, i, ""), 
+            params[0] = LLVMBuildBitCast(cb->builder, LLVMBuildStructGEP(cb->builder, pos, i, ""),
                     LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), "");
             params[1] = LLVMConstInt(LLVMInt1TypeInContext(utl_get_current_context()), 0, 0);
             LLVMBuildCall(cb->builder, fc, params, 2, "");
