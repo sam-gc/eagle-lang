@@ -34,7 +34,8 @@ void die_debug(int complineno, const char *file, int lineno, const char *fmt, ..
     fprintf(stderr, "\tCompiler: %s:%d\n", file, complineno);
     va_end(args);
 
-    exit(0);
+    int *i = NULL;
+    exit(*i);
 }
 #endif
 

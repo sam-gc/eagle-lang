@@ -13,42 +13,42 @@ class Trie
 
     init()
     {
-        self->root = new TrieNode
-        self->default = 0-1
+        self.root = new TrieNode
+        self.default = 0-1
     }
 
     func put(byte* key, int val)
     {
-        var n = self->root
+        var n = self.root
         for byte c = key^; c; (key += 1) && (c = key^)
         {
             c -= 97
-            if n->children[c]
+            if n.children[c]
             {
-                n = n->children[c]
+                n = n.children[c]
                 continue
             }
 
-            n->children[c] = new TrieNode
-            n = n->children[c]
-            n->val = self->default
+            n.children[c] = new TrieNode
+            n = n.children[c]
+            n.val = self.default
         }
 
-        n->val = val
+        n.val = val
     }
 
     func get(byte* key) : int
     {
-        var n = self->root
+        var n = self.root
         for byte c = key^; c; (key += 1) && (c = key^)
         {
             c -= 97
-            if !n->children[c]
+            if !n.children[c]
                 return 0-1
-            n = n->children[c]
+            n = n.children[c]
         }
 
-        return n->val
+        return n.val
     }
 }
 

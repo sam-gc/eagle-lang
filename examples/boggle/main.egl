@@ -21,9 +21,9 @@ func main(int argc, byte** argv) : int
 
     var solver = new Solver(text)
 
-    var found = solver->solve()
+    var found = solver.solve()
 
-    found->sort(func(any* a, any* b) : int {
+    found.sort(func(any* a, any* b) : int {
         int la = strlen(a)
         int lb = strlen(b)
 
@@ -40,7 +40,7 @@ func main(int argc, byte** argv) : int
         puts byte*@word
     }
 
-    printf('Found %d words from board "%s"\n', found->length, text)
+    printf('Found %d words from board "%s"\n', found.length, text)
 
     return 0
 }

@@ -21,27 +21,27 @@ class Solver
 
     init(byte* str)
     {
-        self->dict = new Dictionary('dict.txt')
+        self.dict = new Dictionary('dict.txt')
         int len = strlen(str)
 
         for int i = 0; i < 4; i += 1
         {
             for int j = 0; j < 4; j += 1
             {
-                var t = &self->tiles[i][j]
-                t->x = i
-                t->y = j
-                t->val = str[i*4 + j]
+                var t = &self.tiles[i][j]
+                t.x = i
+                t.y = j
+                t.val = str[i*4 + j]
             }
         }
     }
 
     func listContains(LinkedListRaw^ ll, Tile* t) : bool
     {
-        var n = ll->head
-        for n; n; n = n->next
+        var n = ll.head
+        for n; n; n = n.next
         {
-            if n->val == t
+            if n.val == t
                 return yes
         }
 
@@ -50,14 +50,14 @@ class Solver
 
     func listToString(LinkedListRaw^ ll, byte* buf)
     {
-        var n = ll->head
+        var n = ll.head
         int i
-        for i = 0; i < ll->length; i += 1
+        for i = 0; i < ll.length; i += 1
         {
-            Tile* t = n->val
-            buf[i] = t->val
+            Tile* t = n.val
+            buf[i] = t.val
 
-            n = n->next
+            n = n.next
         }
         buf[i] = 0
     }
@@ -67,39 +67,39 @@ class Solver
         LinkedList^ work = new LinkedList()
 
         var start = new LinkedListRaw()
-        start->add(t)
-        work->add(start)
+        start.add(t)
+        work.add(start)
 
         int[8][2] neighbors
         setNeighbors(neighbors)
 
-        for work->count()
+        for work.count()
         {
-            LinkedListRaw^ current = work->remove()
-            Tile* last = current->last()
+            LinkedListRaw^ current = work.remove()
+            Tile* last = current.last()
             for int i = 0; i < 8; i += 1
             {
-                int nX = last->x + neighbors[i][0]
-                int nY = last->y + neighbors[i][1]
+                int nX = last.x + neighbors[i][0]
+                int nY = last.y + neighbors[i][1]
 
                 if nX >= 0 && nX <= 3 && nY >= 0 && nY <= 3
                 {
 
-                    Tile* next = &self->tiles[nX][nY]
+                    Tile* next = &self.tiles[nX][nY]
 
-                    if self->listContains(current, next)
+                    if self.listContains(current, next)
                         continue
 
-                    var nxtWork = current->dup()
-                    nxtWork->add(next)
+                    var nxtWork = current.dup()
+                    nxtWork.add(next)
 
                     byte[20] buf
-                    self->listToString(nxtWork, buf)
-                    if self->dict->isWord(buf) && strlen(buf) > 3
-                        self->found->add(strdup(buf))
+                    self.listToString(nxtWork, buf)
+                    if self.dict.isWord(buf) && strlen(buf) > 3
+                        self.found.add(strdup(buf))
 
-                    if self->dict->isPrefix(buf)
-                        work->add(nxtWork)
+                    if self.dict.isPrefix(buf)
+                        work.add(nxtWork)
                 }
             }
         }
@@ -107,8 +107,8 @@ class Solver
 
     func solve() : LinkedListRaw^
     {
-        self->found = new LinkedListRaw()
-        self->found->onFree = func(any* a) {
+        self.found = new LinkedListRaw()
+        self.found.onFree = func(any* a) {
             free(a)
         }
 
@@ -117,10 +117,10 @@ class Solver
             int x = i % 4
             int y = i / 4
 
-            self->solveFrom(&self->tiles[x][y])
+            self.solveFrom(&self.tiles[x][y])
         }
 
-        return self->found
+        return self.found
     }
 }
 

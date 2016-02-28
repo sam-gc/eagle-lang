@@ -15,8 +15,8 @@ class Dictionary
 
     init(byte* filename)
     {
-        self->core = new Trie()
-        self->core->default = 50
+        self.core = new Trie()
+        self.core.default = 50
 
         var f = fopen(filename, 'r')
 
@@ -32,24 +32,24 @@ class Dictionary
         {
             buf[strlen(buf) - 1] = 0
 
-            self->addWord(buf)
+            self.addWord(buf)
         }
         fclose(f)
     }
 
     func addWord(byte* word)
     {
-        self->core->put(word, 100)
+        self.core.put(word, 100)
     }
 
     func isWord(byte* word) : bool
     {
-        return self->core->get(word) == 100
+        return self.core.get(word) == 100
     }
 
     func isPrefix(byte* prfx) : bool
     {
-        return self->core->get(prfx) > 0
+        return self.core.get(prfx) > 0
     }
 }
 

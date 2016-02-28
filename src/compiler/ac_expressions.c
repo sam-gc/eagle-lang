@@ -163,17 +163,30 @@ LLVMValueRef ac_compile_struct_member(AST *ast, CompilerBundle *cb, int keepPoin
 
     EagleTypeType *ty = a->left->resultantType;
 
-    if(ty->type != ETStruct && ty->type != ETClass && ty->type != ETInterface)
+    if(ty->type != ETPointer && ty->type != ETStruct && ty->type != ETClass && ty->type != ETInterface)
         die(ALN, "Attempting to access member of non-struct type (%s).", a->ident);
     if(ty->type == ETPointer && ((EaglePointerType *)ty)->to->type != ETStruct && ((EaglePointerType *)ty)->to->type != ETClass &&
        ((EaglePointerType *)ty)->to->type != ETInterface)
         die(ALN, "Attempting to access member of non-struct pointer type (%s).", a->ident);
 
+    LLVMValueRef lcw = a->left->type == AUNARY ? ((ASTUnary *)a->left)->savedWrapped : left;
+
+    // Code to automatically dereference pointers-----------------------
+    if(ty->type == ETPointer)
+    {
+        lcw = left;
+        ac_unwrap_pointer(cb, &left, ty, 0);
+
+        EaglePointerType *pt = (EaglePointerType *)ty;
+        ty = pt->to;
+    }
+    // -----------------------------------------------------------------
+
     if(ty->type == ETInterface)
     {
         char *interface = ty_interface_for_method(ty, a->ident);
 
-        a->leftCompiled = a->left->type == AUNARY ? ((ASTUnary *)a->left)->savedWrapped : left;
+        a->leftCompiled = lcw; // a->left->type == AUNARY ? ((ASTUnary *)a->left)->savedWrapped : left;
         a->leftCompiled = LLVMBuildBitCast(cb->builder, a->leftCompiled, LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), "");
         EagleTypeType *ut = ty_method_lookup(interface, a->ident);
         LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_lookup_method");
@@ -193,7 +206,7 @@ LLVMValueRef ac_compile_struct_member(AST *ast, CompilerBundle *cb, int keepPoin
     EagleTypeType *functionType = NULL;
     if((ty->type == ETClass || ty->type == ETStruct) && (functionType = ty_method_lookup(((EagleStructType *)ty)->name, a->ident)))
     {
-        a->leftCompiled = a->left->type == AUNARY ? ((ASTUnary *)a->left)->savedWrapped : left;
+        a->leftCompiled = lcw; // a->left->type == AUNARY ? ((ASTUnary *)a->left)->savedWrapped : left;
         char *name = ac_gen_method_name(((EagleStructType *)ty)->name, a->ident);
         LLVMValueRef func = LLVMGetNamedFunction(cb->module, name);
         if(!func) die(ALN, "Internal compiler error: unable to resolve method");

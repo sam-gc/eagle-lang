@@ -85,7 +85,22 @@ class Arraylist
                 return
         }
     }
+
+    -- view (gen : any^)^
+    -- {
+    --     return ll_iterator(self^.items, self^.count)
+    -- }
 }
+
+-* TODO: This leaks...
+gen ll_iterator(any** items, int count) : any^
+{
+    for var i = 0; i < count - 1; i += 1
+    {
+        any^ val = items[i]
+        yield val
+    }
+}*-
 
 func make_arraylist_and_fill() : Arraylist^
 {
@@ -111,5 +126,10 @@ func main()
         printf('%d: %d\n', i, num^)
         return num^ != 12
     })
+
+    -- for any^ i in list
+    -- {
+    --     puts (int^@i)^
+    -- }
 }
 

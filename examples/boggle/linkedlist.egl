@@ -15,43 +15,43 @@ class LinkedList(Queue)
 
     init()
     {
-        self->length = 0
+        self.length = 0
     }
 
     func add(any^ e)
     {
-        self->length += 1
+        self.length += 1
         var n = new LLNode
-        n->val = e
+        n.val = e
 
-        if !self->head
+        if !self.head
         {
-            self->head = n
-            self->tail = n
+            self.head = n
+            self.tail = n
             return
         }
 
-        self->tail->next = n
-        self->tail = n
+        self.tail.next = n
+        self.tail = n
     }
 
     func remove() : any^
     {
-        if !self->head
+        if !self.head
             return nil
 
-        var n = self->head
-        self->head = self->head->next
-        if !self->head
-            self->tail = nil
+        var n = self.head
+        self.head = self.head.next
+        if !self.head
+            self.tail = nil
 
-        self->length -= 1
-        return n->val
+        self.length -= 1
+        return n.val
     }
 
     func count() : int
     {
-        return self->length
+        return self.length
     }
 }
 
@@ -64,80 +64,80 @@ class LinkedListRaw
 
     init()
     {
-        self->length = 0
+        self.length = 0
     }
 
     destruct()
     {
-        if !self->onFree
+        if !self.onFree
             return
 
-        var n = self->head
-        for n; n; n = n->next
+        var n = self.head
+        for n; n; n = n.next
         {
-            self->onFree(n->val)
+            self.onFree(n.val)
         }
     }
 
     func add(any* e)
     {
-        self->length += 1
+        self.length += 1
         var n = new LLNodeRaw
-        n->val = e
+        n.val = e
 
-        if !self->head
+        if !self.head
         {
-            self->head = n
-            self->tail = n
+            self.head = n
+            self.tail = n
             return
         }
 
-        self->tail->next = n
-        self->tail = n
+        self.tail.next = n
+        self.tail = n
     }
 
     func remove() : any*
     {
-        if !self->head
+        if !self.head
             return nil
 
-        var n = self->head
-        self->head = self->head->next
-        if !self->head
-            self->tail = nil
+        var n = self.head
+        self.head = self.head.next
+        if !self.head
+            self.tail = nil
 
-        self->length -= 1
-        return n->val
+        self.length -= 1
+        return n.val
     }
 
     func get(int i) : any*
     {
-        var n = self->head
+        var n = self.head
         for int ct = 0; ct < i; ct += 1
         {
-            n = n->next
+            n = n.next
         }
 
-        return n->val
+        return n.val
     }
 
     func last() : any*
     {
-        return self->tail->val
+        return self.tail.val
     }
 
     func count() : int
     {
-        return self->length
+        return self.length
     }
 
     func dup() : LinkedListRaw^
     {
         var out = new LinkedListRaw()
-        var n = self->head
-        for n; n; n = n->next
+        var n = self.head
+        for n; n; n = n.next
         {
-            out->add(n->val)
+            out.add(n.val)
         }
 
         return out
@@ -148,7 +148,7 @@ class LinkedListRaw
         LLNodeRaw^ slow
         LLNodeRaw^ fast
 
-        if !head || !head->next
+        if !head || !head.next
         {
             front^ = head
             back^ = nil
@@ -156,23 +156,23 @@ class LinkedListRaw
         }
 
         slow = head
-        fast = head->next
+        fast = head.next
 
         for fast
         {
-            fast = fast->next
+            fast = fast.next
 
             if fast
             {
-                slow = slow->next
-                fast = fast->next
+                slow = slow.next
+                fast = fast.next
             }
         }
 
         front^ = head
-        back^ = slow->next
+        back^ = slow.next
 
-        slow->next = nil
+        slow.next = nil
     }
 
 
@@ -188,17 +188,17 @@ class LinkedListRaw
 
         for left && right
         {
-            int t = test(left->val, right->val)
+            int t = test(left.val, right.val)
             LLNodeRaw^ node
             if t <= 0
             {
                 node = left
-                left = left->next
+                left = left.next
             }
             else
             {
                 node = right
-                right = right->next
+                right = right.next
             }
 
             if !tail
@@ -208,15 +208,15 @@ class LinkedListRaw
             }
             else
             {
-                tail->next = node
+                tail.next = node
                 tail = node
             }
         }
 
         if left
-            tail->next = left
+            tail.next = left
         elif right
-            tail->next = right
+            tail.next = right
 
         return head
     }
@@ -226,44 +226,44 @@ class LinkedListRaw
         LLNodeRaw^ a
         LLNodeRaw^ b
 
-        if !head || !head->next
+        if !head || !head.next
         {
             return head
         }
 
-        self->split(head, &a, &b)
+        self.split(head, &a, &b)
 
-        a = self->mergeSort(test, a)
-        b = self->mergeSort(test, b)
+        a = self.mergeSort(test, a)
+        b = self.mergeSort(test, b)
 
-        var m = self->merge(test, a, b)
+        var m = self.merge(test, a, b)
         return m
     }
 
     func sort((any*, any* : int)^ test)
     {
-        self->head = self->mergeSort(test, self->head)
+        self.head = self.mergeSort(test, self.head)
     }
 
     func each((any * :)^ callback)
     {
-        for var n = self->head; n; n = n->next
+        for var n = self.head; n; n = n.next
         {
-            callback(n->val)
+            callback(n.val)
         }
     }
 
     view (gen : any*)^
     {
-        return list_raw_iter(self->head)
+        return list_raw_iter(self.head)
     }
 }
 
 gen list_raw_iter(LLNodeRaw^ head) : any*
 {
-    for head; head; head = head->next
+    for head; head; head = head.next
     {
-        yield head->val
+        yield head.val
     }
 }
 
