@@ -117,6 +117,7 @@ charlit `[^`]`
 "sizeof"    DISCARD_NL; return SET(TSIZEOF);
 "countof"   DISCARD_NL; return SET(TCOUNTOF);
 "counted"   DISCARD_NL; return SET(TCOUNTED);
+"static"    DISCARD_NL; return SET(TSTATIC);
 "..."       DISCARD_NL; return SET(TELLIPSES);
 "weak"      DISCARD_NL; return SET(TWEAK);
 "unwrap"    DISCARD_NL; return SET(TUNWRAP);

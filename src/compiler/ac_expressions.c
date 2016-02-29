@@ -1036,12 +1036,11 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
     for(p = a->params, i = start; p; p = p->next, i++);
     int ct = i;
 
-    // TODO: This code needs fixing; it does not take variadic functions
-    // into account
-    /*
-    if(ct != ett->pct && ett->)
+    // Make sure the number of parameters matches...
+    if(ct != ett->pct && !ett->variadic)
         die(ALN, "Function takes %d parameters, but %d provided", ett->pct, ct);
-    */
+    else if(ett->variadic && ct < ett->pct)
+        die(ALN, "Variadic function takes at least %d parameters, but %d provided", ett->pct, ct);
 
     LLVMValueRef args[ct + offset];
     for(p = a->params, i = start; p; p = p->next, i++)

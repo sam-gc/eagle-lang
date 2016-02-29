@@ -56,12 +56,20 @@ typedef enum {
     ETEnum
 } EagleType;
 
+typedef enum {
+    TLNone,
+    TLGlobal,
+    TLLocal
+} EagleLinkage;
+
 typedef struct {
     EagleType type;
+    EagleLinkage linkage;
 } EagleTypeType;
 
 typedef struct {
     EagleType type;
+    EagleLinkage linkage;
     EagleTypeType *to;
     int counted;
     int weak;
@@ -70,15 +78,18 @@ typedef struct {
 
 typedef struct {
     EagleType type;
+    EagleLinkage linkage;
     EagleTypeType *of;
     int ct;
 } EagleArrayType;
 
 typedef struct {
     EagleType type;
+    EagleLinkage linkage;
     EagleTypeType *retType;
     EagleTypeType **params;
     int pct;
+    int variadic;
 
     int closure;
     int gen;
@@ -86,11 +97,13 @@ typedef struct {
 
 typedef struct {
     EagleType type;
+    EagleLinkage linkage;
     EagleTypeType *ytype;
 } EagleGenType;
 
 typedef struct {
     EagleType type;
+    EagleLinkage linkage;
     arraylist types;
     arraylist names;
     arraylist interfaces;
@@ -99,11 +112,13 @@ typedef struct {
 
 typedef struct {
     EagleType type;
+    EagleLinkage linkage;
     arraylist names;
 } EagleInterfaceType;
 
 typedef struct {
     EagleType type;
+    EagleLinkage linkage;
     char *name;
 } EagleEnumType;
 

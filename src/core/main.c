@@ -189,8 +189,6 @@ LLVMModuleRef compile_generic(ShippingCrate *crate, int include_rc, char *file)
     yy_switch_to_buffer(yybuf);
 
     ty_prepare();
-    first_pass();
-
     if(IN(global_args, "--dump-code"))
     {
         printf("Dump of:\n%s\n=================================================\n", file);
@@ -199,6 +197,8 @@ LLVMModuleRef compile_generic(ShippingCrate *crate, int include_rc, char *file)
 
         return NULL;
     }
+
+    first_pass();
 
     //mb_add_file(ymultibuffer, argv[1]);
 

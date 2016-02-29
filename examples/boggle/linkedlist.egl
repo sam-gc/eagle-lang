@@ -257,7 +257,16 @@ class LinkedListRaw
     {
         return list_raw_iter(self.head)
     }
+
+    view int
+    {
+
+    }
 }
+
+-- [int, int : int]*
+-- (int, int : int)^
+-- (gen      : int)^
 
 gen list_raw_iter(LLNodeRaw^ head) : any*
 {

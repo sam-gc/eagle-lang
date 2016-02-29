@@ -199,7 +199,9 @@ void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
     if(strcmp(a->ident, "printf") == 0)
     {
         LLVMValueRef func = LLVMGetNamedFunction(cb->module, "printf");
-        vs_put(cb->varScope, a->ident, func, ett_function_type(retType->etype, eparam_types, ct));
+        EagleTypeType *ftype = ett_function_type(retType->etype, eparam_types, ct);
+        ((EagleFunctionType *)ftype)->variadic = 1;
+        vs_put(cb->varScope, a->ident, func, ftype);
         return;
     }
     if(strcmp(a->ident, "free") == 0)
@@ -218,7 +220,10 @@ void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
     if(retType->etype->type == ETStruct)
         die(ALN, "Returning struct by value not supported. (%s)\n", a->ident);
 
-    vs_put(cb->varScope, a->ident, func, ett_function_type(retType->etype, eparam_types, ct));
+    EagleTypeType *ftype = ett_function_type(retType->etype, eparam_types, ct);
+    ((EagleFunctionType *)ftype)->variadic = a->vararg;
+
+    vs_put(cb->varScope, a->ident, func, ftype);
 }
 
 LLVMValueRef ac_dispatch_expression(AST *ast, CompilerBundle *cb)

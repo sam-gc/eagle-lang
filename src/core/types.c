@@ -353,6 +353,7 @@ EagleTypeType *ett_function_type(EagleTypeType *retVal, EagleTypeType **params, 
     ett->params = malloc(sizeof(EagleTypeType *) * pct);
     memcpy(ett->params, params, sizeof(EagleTypeType *) * pct);
     ett->pct = pct;
+    ett->variadic = 0;
     ett->closure = NO_CLOSURE;
     ett->gen = 0;
 

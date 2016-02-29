@@ -176,6 +176,8 @@ multibuffer *imp_generate_imports(const char *filename)
     arr_append(&work, realpath(filename, NULL));
 
     char *cwd = getcwd(NULL, 0);
+    char *current_realpath = realpath(filename, NULL);
+    //printf("%s\n", realpath(filename, NULL));
 
     while(offset < work.count)
     {
@@ -199,7 +201,8 @@ multibuffer *imp_generate_imports(const char *filename)
                 char *nw = yytext + 7;
                 char *rp = realpath(nw, NULL);
 
-                if(IN(all_imports, rp))
+                // Ignore previously viewed files and the current file
+                if(IN(all_imports, rp) || !strcmp(rp, current_realpath))
                 {
                     free(rp);
                     continue;
@@ -220,8 +223,11 @@ multibuffer *imp_generate_imports(const char *filename)
         free(rp);
     }
 
+    // exit(0);
+
     chdir(cwd);
     free(cwd);
+    free(current_realpath);
 
     multibuffer *buf = mb_alloc();
     hst_for_each(&all_imports, imp_build_buffer, buf);

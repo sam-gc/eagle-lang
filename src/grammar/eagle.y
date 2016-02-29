@@ -32,7 +32,7 @@
 %token <token> TFUNC TRETURN TYIELD TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF TFOR TIN TWEAK TUNWRAP
 %token <token> TBREAK TCONTINUE TVAR TGEN  TELLIPSES TVIEW
 %token <token> TCOLON TSEMI TNEWLINE TCOMMA TDOT TAMP TAT TARROW T__DEC T__INC
-%token <token> TYES TNO TNIL TIMPORT TEXPORT TTYPEDEF TENUM
+%token <token> TYES TNO TNIL TIMPORT TEXPORT TTYPEDEF TENUM TSTATIC
 %type <node> program declarations declaration statements statement block funcdecl ifstatement
 %type <node> variabledecl vardecllist funccall calllist funcident funcsident externdecl typelist type interfacetypelist
 %type <node> elifstatement elifblock elsestatement singif structdecl structlist blockalt classlist classdecl interfacedecl interfacelist compositetype
@@ -75,6 +75,7 @@ declaration         : externdecl TSEMI { $$ = $1; }
                     | classdecl TSEMI { $$ = $1; }
                     | interfacedecl TSEMI { $$ = $1; }
                     | enumdecl TSEMI { $$ = $1; }
+                    | TSTATIC variabledecl TSEMI { }
                     | TIMPORT { $$ = NULL; }
                     | TEXPORT { $$ = NULL; }
                     | TTYPEDEF type TTYPE TSEMI { $$ = NULL; ty_set_typedef($3, ((ASTTypeDecl *)$2)->etype); }
