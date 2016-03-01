@@ -103,7 +103,10 @@ LLVMModuleRef ac_compile(AST *ast, int include_rc)
 
     AST *old = ast;
     for(; ast; ast = ast->next)
+    {
         ac_add_early_name_declaration(ast, &cb);
+        ac_add_global_variable_declarations(ast, &cb);
+    }
     ast = old;
     for(; ast; ast = ast->next)
         ac_add_early_declarations(ast, &cb);
@@ -188,6 +191,26 @@ void ac_add_early_name_declaration(AST *ast, CompilerBundle *cb)
         ac_add_class_declaration(ast, cb);
         return;
     }
+}
+
+void ac_add_global_variable_declarations(AST *ast, CompilerBundle *cb)
+{
+    if(ast->type != AVARDECL)
+        return;
+
+    ASTVarDecl *a = (ASTVarDecl *)ast;
+    ASTTypeDecl *t = (ASTTypeDecl *)a->atype;
+
+    EagleTypeType *et = t->etype;
+
+    LLVMValueRef glob = LLVMAddGlobal(cb->module, ett_llvm_type(et), a->ident); 
+    LLVMValueRef init = ett_default_value(et);
+
+    if(!init)
+        die(ALN, "Cannot declare global variable of the given type");
+    LLVMSetInitializer(glob, init);
+
+    vs_put(cb->varScope, a->ident, glob, et);
 }
 
 void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
@@ -366,6 +389,7 @@ void ac_dispatch_declaration(AST *ast, CompilerBundle *cb)
         case ACLASSDECL:
         case AIFCDECL:
         case AENUMDECL:
+        case AVARDECL:
             break;
         case AGENDECL:
             ac_compile_generator_code(ast, cb);

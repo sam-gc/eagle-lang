@@ -178,6 +178,25 @@ LLVMTypeRef ett_closure_type(EagleTypeType *type) { if(!ET_IS_CLOSURE(type)) ret
     return out;
 }
 
+LLVMValueRef ett_default_value(EagleTypeType *type)
+{
+    switch(type->type)
+    {
+        case ETInt1:
+        case ETInt8:
+        case ETInt16:
+        case ETInt32:
+        case ETInt64:
+            return LLVMConstInt(ett_llvm_type(type), 0, 0);
+        case ETDouble:
+            return LLVMConstReal(ett_llvm_type(type), 0.0);
+        case ETPointer:
+            return LLVMConstPointerNull(ett_llvm_type(type));
+        default:
+            return NULL;
+    }
+}
+
 LLVMTypeRef ett_llvm_type(EagleTypeType *type)
 {
     switch(type->type)
@@ -292,7 +311,7 @@ EagleType et_eagle_type(LLVMTypeRef ty)
     return ETNone;
 }
 
-#define TT(t) {ET ## t}
+#define TT(t) {ET ## t }
 static EagleTypeType base_types[] = {
     TT(None),
     TT(Any),

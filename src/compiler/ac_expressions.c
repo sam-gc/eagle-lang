@@ -157,6 +157,21 @@ LLVMValueRef ac_compile_var_decl(AST *ast, CompilerBundle *cb)
         return NULL;
     }
 
+    if(a->linkage == VLStatic)
+    {
+        EagleTypeType *et = type->etype;
+
+        LLVMValueRef glob = LLVMAddGlobal(cb->module, ett_llvm_type(et), a->ident); 
+        LLVMValueRef init = ett_default_value(et);
+
+        if(!init)
+            die(ALN, "Cannot declare global variable of the given type");
+        LLVMSetInitializer(glob, init);
+
+        vs_put(cb->varScope, a->ident, glob, et);
+        return glob;
+    }
+
     vs_put(cb->varScope, a->ident, NULL, type->etype);
     LLVMValueRef pos = ac_compile_var_decl_ext(type->etype, a->ident, cb, a->noSetNil);
 

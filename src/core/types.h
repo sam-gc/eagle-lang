@@ -56,20 +56,12 @@ typedef enum {
     ETEnum
 } EagleType;
 
-typedef enum {
-    TLNone,
-    TLGlobal,
-    TLLocal
-} EagleLinkage;
-
 typedef struct {
     EagleType type;
-    EagleLinkage linkage;
 } EagleTypeType;
 
 typedef struct {
     EagleType type;
-    EagleLinkage linkage;
     EagleTypeType *to;
     int counted;
     int weak;
@@ -78,14 +70,12 @@ typedef struct {
 
 typedef struct {
     EagleType type;
-    EagleLinkage linkage;
     EagleTypeType *of;
     int ct;
 } EagleArrayType;
 
 typedef struct {
     EagleType type;
-    EagleLinkage linkage;
     EagleTypeType *retType;
     EagleTypeType **params;
     int pct;
@@ -97,13 +87,11 @@ typedef struct {
 
 typedef struct {
     EagleType type;
-    EagleLinkage linkage;
     EagleTypeType *ytype;
 } EagleGenType;
 
 typedef struct {
     EagleType type;
-    EagleLinkage linkage;
     arraylist types;
     arraylist names;
     arraylist interfaces;
@@ -112,13 +100,11 @@ typedef struct {
 
 typedef struct {
     EagleType type;
-    EagleLinkage linkage;
     arraylist names;
 } EagleInterfaceType;
 
 typedef struct {
     EagleType type;
-    EagleLinkage linkage;
     char *name;
 } EagleEnumType;
 
@@ -141,6 +127,7 @@ LLVMTypeRef ett_closure_type(EagleTypeType *type);
 EagleType ett_get_base_type(EagleTypeType *type);
 EagleTypeType *ett_get_root_pointee(EagleTypeType *type);
 LLVMTypeRef ett_llvm_type(EagleTypeType *type);
+LLVMValueRef ett_default_value(EagleTypeType *type);
 int ett_are_same(EagleTypeType *left, EagleTypeType *right);
 int ett_pointer_depth(EagleTypeType *t);
 int ett_is_numeric(EagleTypeType *t);

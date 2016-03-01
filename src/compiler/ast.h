@@ -40,6 +40,13 @@ typedef enum {
     ATYPELOOKUP
 } ASTType;
 
+typedef enum {
+    VLExternal,
+    VLStatic,
+    VLLocal,
+    VLNone
+} VariableLinkage;
+
 typedef struct AST {
     ASTType type;
     EagleTypeType *resultantType; struct AST *next;
@@ -115,6 +122,7 @@ typedef struct {
     struct AST *atype;
     char *ident;
     struct AST *arrct;
+    VariableLinkage linkage;
 
     // This field is *only* used for generator calls
     // when we want to avoid setting a parameter in
@@ -276,6 +284,7 @@ void ast_class_add_interface(AST *ast, AST *interfaces);
 AST *ast_make_struct_get(AST *left, char *ident);
 void ast_set_counted(AST *ast);
 AST *ast_make_arr_decl(AST *type, char *ident, AST *expr);
+void ast_set_linkage(AST *ast, VariableLinkage linkage);
 AST *ast_make_type(char *type);
 AST *ast_make_closure_type(AST *tysList, AST *resType);
 AST *ast_make_function_type(AST *tysList, AST *resType);

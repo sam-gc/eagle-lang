@@ -75,7 +75,7 @@ declaration         : externdecl TSEMI { $$ = $1; }
                     | classdecl TSEMI { $$ = $1; }
                     | interfacedecl TSEMI { $$ = $1; }
                     | enumdecl TSEMI { $$ = $1; }
-                    | TSTATIC variabledecl TSEMI { }
+                    | TSTATIC variabledecl TSEMI { $$ = $2; ast_set_linkage($2, VLStatic); }
                     | TIMPORT { $$ = NULL; }
                     | TEXPORT { $$ = NULL; }
                     | TTYPEDEF type TTYPE TSEMI { $$ = NULL; ty_set_typedef($3, ((ASTTypeDecl *)$2)->etype); }
@@ -266,6 +266,7 @@ expr                : binexpr { $$ = $1; }
                     | unexpr { $$ = $1; }
                     | singexpr { $$ = $1; }
                     | variabledecl { $$ = $1; }
+                    | TSTATIC variabledecl { $$ = $2; ast_set_linkage($2, VLStatic); }
                     | TVAR TIDENTIFIER { $$ = ast_make_auto_decl($2); }
                     | type TAT ounexpr { $$ = ast_make_cast($1, $3); }
                     | TNEW type { $$ = ast_make_allocater('n', $2, NULL); }
