@@ -19,9 +19,12 @@ extern const char *rc_code;
 
 #ifdef RELEASE
 void die(int lineno, const char *fmt, ...);
+void warn(int lineno, const char *fmt, ...);
 #else
 #define die(...) die_debug(__LINE__, __FILE__, __VA_ARGS__)
+#define warn(...) warn_debug(__LINE__, __FILE__, __VA_ARGS__)
 void die_debug(int complineno, const char *file, int lineno, const char *fmt, ...);
+void warn_debug(int complineno, const char *file, int lineno, const char *fmt, ...);
 #endif
 
 #endif

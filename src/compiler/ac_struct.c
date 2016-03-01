@@ -8,6 +8,7 @@
 
 #include "ast_compiler.h"
 #include "core/utils.h"
+#include "core/config.h"
 
 void ac_scope_leave_struct_callback(LLVMValueRef pos, EagleTypeType *ty, void *data)
 {
@@ -231,6 +232,13 @@ void ac_make_struct_definitions(AST *ast, CompilerBundle *cb)
             tys[i] = ett_llvm_type(arr_get(&a->types, i));
 
         LLVMTypeRef loaded = LLVMGetTypeByName(cb->module, a->name);
+
+        if(!LLVMIsOpaqueStruct(loaded))
+        {
+            warn(ALN, "Attempting to redeclare struct %s", a->name);
+            free(tys);
+            continue;
+        }
         LLVMStructSetBody(loaded, tys, a->types.count, 0);
         free(tys);
 

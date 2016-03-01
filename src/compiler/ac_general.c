@@ -11,6 +11,7 @@
 #include <stdarg.h>
 #include "ast_compiler.h"
 #include "core/utils.h"
+#include "core/colors.h"
 
 extern hashtable global_args;
 extern char *current_file_name;
@@ -19,31 +20,56 @@ extern char *current_file_name;
 void die(int lineno, const char *fmt, ...)
 {
     size_t len = strlen(fmt);
-    char format[len + 9];
-    sprintf(format, "Error: %s\n", fmt);
+    char format[len + 15];
+    sprintf(format, LIGHT_RED "Error:" DEFAULT " %s\n", fmt);
     va_list args;
     va_start(args, fmt);
     vfprintf(stderr, format, args);
-    fprintf(stderr, "\t-> %s:%d\n", current_file_name, lineno);
+    fprintf(stderr, LIGHT_BLUE "\t->" DEFAULT " %s" LIGHT_BLUE ":" DEFAULT "%d\n", current_file_name, lineno);
     va_end(args);
 
     exit(0);
+}
+
+void warn(int lineno, const char *fmt, ...)
+{
+    size_t len = strlen(fmt);
+    char format[len + 30];
+    sprintf(format, LIGHT_YELLOW "Warning:" DEFAULT " %s\n", fmt);
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(stderr, format, args);
+    fprintf(stderr, LIGHT_BLUE "\t->" DEFAULT " %s" LIGHT_BLUE ":" DEFAULT "%d\n", current_file_name, lineno);
+    va_end(args);
 }
 #else
 void die_debug(int complineno, const char *file, int lineno, const char *fmt, ...)
 {
     size_t len = strlen(fmt);
-    char format[len + 9];
-    sprintf(format, "Error: %s\n", fmt);
+    char format[len + 15];
+    sprintf(format, LIGHT_RED "Error:" DEFAULT " %s\n", fmt);
     va_list args;
     va_start(args, fmt);
     vfprintf(stderr, format, args);
-    fprintf(stderr, "\t-> %s:%d\n", current_file_name, lineno);
-    fprintf(stderr, "\tCompiler: %s:%d\n", file, complineno);
+    fprintf(stderr, LIGHT_BLUE "\t->" DEFAULT " %s" LIGHT_BLUE ":" DEFAULT "%d\n", current_file_name, lineno);
+    fprintf(stderr, LIGHT_BLUE "\tCompiler:" DEFAULT " %s" LIGHT_BLUE ":" DEFAULT "%d\n", file, complineno);
     va_end(args);
 
     int *i = NULL;
     exit(*i);
+}
+
+void warn_debug(int complineno, const char *file, int lineno, const char *fmt, ...)
+{
+    size_t len = strlen(fmt);
+    char format[len + 30];
+    sprintf(format, LIGHT_YELLOW "Warning:" DEFAULT " %s\n", fmt);
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(stderr, format, args);
+    fprintf(stderr, LIGHT_BLUE "\t->" DEFAULT " %s" LIGHT_BLUE ":" DEFAULT "%d\n", current_file_name, lineno);
+    fprintf(stderr, LIGHT_BLUE "\tCompiler:" DEFAULT " %s" LIGHT_BLUE ":" DEFAULT "%d\n", file, complineno);
+    va_end(args);
 }
 #endif
 
