@@ -257,11 +257,6 @@ class LinkedListRaw
     {
         return list_raw_iter(self.head)
     }
-
-    view int
-    {
-
-    }
 }
 
 -- [int, int : int]*

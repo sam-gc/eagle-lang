@@ -1,4 +1,6 @@
 static int x
+static int z = 10
+static byte* text = 'Hello, world!'
 
 func inc() : int
 {
@@ -8,8 +10,10 @@ func inc() : int
 
 func inc2() : int
 {
-    static int y
+    static int y = -11
     y += 3
+
+    text = 'Nope'
 
     return y
 }
@@ -23,4 +27,8 @@ func main()
     puts inc2()
     puts inc2()
     puts inc2()
+
+    puts z
+
+    puts text
 }

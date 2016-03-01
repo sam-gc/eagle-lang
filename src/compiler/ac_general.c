@@ -204,7 +204,8 @@ void ac_add_global_variable_declarations(AST *ast, CompilerBundle *cb)
     EagleTypeType *et = t->etype;
 
     LLVMValueRef glob = LLVMAddGlobal(cb->module, ett_llvm_type(et), a->ident); 
-    LLVMValueRef init = ett_default_value(et);
+
+    LLVMValueRef init = a->staticInit ? ac_dispatch_constant(a->staticInit, cb) : ett_default_value(et);
 
     if(!init)
         die(ALN, "Cannot declare global variable of the given type");
@@ -273,6 +274,25 @@ void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
     ((EagleFunctionType *)ftype)->variadic = a->vararg;
 
     vs_put(cb->varScope, a->ident, func, ftype);
+}
+
+LLVMValueRef ac_dispatch_constant(AST *ast, CompilerBundle *cb)
+{
+    LLVMValueRef val = NULL;
+    switch(ast->type)
+    {
+        case AVALUE:
+            val = ac_const_value(ast, cb);
+            break;
+        default:
+            die(ALN, "Invalid constant type.");
+            return NULL;
+    }
+
+    if(!ast->resultantType)
+        die(ALN, "Internal Error. AST Resultant Type for expression not set.");
+
+    return val;
 }
 
 LLVMValueRef ac_dispatch_expression(AST *ast, CompilerBundle *cb)

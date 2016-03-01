@@ -37,7 +37,7 @@
 %type <node> variabledecl vardecllist funccall calllist funcident funcsident externdecl typelist type interfacetypelist
 %type <node> elifstatement elifblock elsestatement singif structdecl structlist blockalt classlist classdecl interfacedecl interfacelist compositetype
 %type <node> expr singexpr binexpr unexpr ounexpr forstatement clodecl genident gendecl initdecl viewdecl viewident
-%type <node> enumitem enumlist enumdecl
+%type <node> enumitem enumlist enumdecl globalvardecl constantexpr
 
 %nonassoc TTYPE;
 %nonassoc TNEW;
@@ -75,10 +75,14 @@ declaration         : externdecl TSEMI { $$ = $1; }
                     | classdecl TSEMI { $$ = $1; }
                     | interfacedecl TSEMI { $$ = $1; }
                     | enumdecl TSEMI { $$ = $1; }
-                    | TSTATIC variabledecl TSEMI { $$ = $2; ast_set_linkage($2, VLStatic); }
+                    | globalvardecl TSEMI { $$ = $1; }
                     | TIMPORT { $$ = NULL; }
                     | TEXPORT { $$ = NULL; }
                     | TTYPEDEF type TTYPE TSEMI { $$ = NULL; ty_set_typedef($3, ((ASTTypeDecl *)$2)->etype); }
+                    ;
+
+globalvardecl       : TSTATIC variabledecl { $$ = $2; ast_set_linkage($2, VLStatic); }
+                    | TSTATIC variabledecl TEQUALS constantexpr { $$ = $2; ast_set_linkage($2, VLStatic); ast_set_static_init($2, $4); }
                     ;
 
 type                : TTYPE { $$ = ast_make_type($1); }
@@ -310,18 +314,20 @@ ounexpr             : singexpr { $$ = $1; }
                     | unexpr { $$ = $1; }
                     ;
 
-singexpr            : TINT { $$ = ast_make_int32($1); }
-                    | TCHARLIT { $$ = ast_make_byte($1); }
-                    | TDOUBLE { $$ = ast_make_double($1); }
-                    | TCSTR { $$ = ast_make_cstr($1); }
-                    | clodecl { $$ = $1; }
-                    | TYES { $$ = ast_make_bool(1); }
-                    | TNO { $$ = ast_make_bool(0); }
-                    | TNIL { $$ = ast_make_nil(); }
+singexpr            : clodecl { $$ = $1; }
+                    | constantexpr { $$ = $1; }
                     | TIDENTIFIER { $$ = ast_make_identifier($1); }
                     | TLPAREN expr TRPAREN { $$ = $2; }
                     | funccall { $$ = $1; }
                     | TTYPE TDOT TIDENTIFIER { $$ = ast_make_type_lookup($1, $3); }
                     ;
+
+constantexpr        : TINT { $$ = ast_make_int32($1); }
+                    | TCHARLIT { $$ = ast_make_byte($1); }
+                    | TDOUBLE { $$ = ast_make_double($1); }
+                    | TCSTR { $$ = ast_make_cstr($1); }
+                    | TYES { $$ = ast_make_bool(1); }
+                    | TNO { $$ = ast_make_bool(0); }
+                    | TNIL { $$ = ast_make_nil(); }
 
 %%

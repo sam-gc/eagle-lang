@@ -489,6 +489,7 @@ AST *ast_make_arr_decl(AST *atype, char *ident, AST *expr)
     ast->arrct = expr;
     ast->noSetNil = 0;
     ast->linkage = VLNone;
+    ast->staticInit = NULL;
 
     return (AST *)ast;
 }
@@ -497,6 +498,12 @@ void ast_set_linkage(AST *ast, VariableLinkage linkage)
 {
     ASTVarDecl *a = (ASTVarDecl *)ast;
     a->linkage = linkage;
+}
+
+void ast_set_static_init(AST *ast, AST *staticInit)
+{
+    ASTVarDecl *a = (ASTVarDecl *)ast;
+    a->staticInit = staticInit;
 }
 
 AST *ast_make_type(char *type)

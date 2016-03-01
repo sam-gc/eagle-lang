@@ -1118,6 +1118,14 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
     return out;
 }
 
+void ac_set_static_initializer(int lineno, LLVMValueRef glob, LLVMValueRef init)
+{
+    if(!LLVMIsConstant(init))
+        die(lineno, "Attempting to initialize global variable with non-constant value");
+
+    LLVMSetInitializer(glob, init);
+}
+
 LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update)
 {
     ASTBinary *a = (ASTBinary *)ast;
@@ -1126,6 +1134,7 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update)
 
     VarBundle *storageBundle = NULL;
     char *storageIdent = NULL;
+    int staticInitializer = 0;
 
     if(a->left->type == AIDENT)
     {
@@ -1176,6 +1185,9 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update)
             storageIdent = ((ASTVarDecl *)a->left)->ident;
             storageBundle = vs_get(cb->varScope, storageIdent);
         }
+
+        if(((ASTVarDecl *)a->left)->linkage == VLStatic)
+            staticInitializer = 1;
     }
     else if(a->left->type == ABINARY && ((ASTBinary *)a->left)->op == '[')
     {
@@ -1265,7 +1277,12 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update)
         // r = ac_make_add(cur, r, cb->builder, totype->type);
     }
 
-    LLVMBuildStore(cb->builder, r, pos);
+    // We are dealing with a static initializer for a static variable declaration
+    // (a very specific case).
+    if(staticInitializer)
+        ac_set_static_initializer(a->lineno, pos, r);
+    else
+        LLVMBuildStore(cb->builder, r, pos);
 
     if(ET_IS_COUNTED(a->resultantType) && !transient)
         ac_incr_pointer(cb, &ptrPos, totype);
