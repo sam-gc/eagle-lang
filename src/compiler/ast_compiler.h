@@ -16,6 +16,7 @@
 #include "ast.h"
 #include "variable_manager.h"
 #include "cpp/cpp.h"
+#include "cpp/dwarf.h"
 #include "core/utils.h"
 
 #define IS_ANY_PTR(t) (t->type == ETPointer && ((EaglePointerType *)t)->to->type == ETAny)
@@ -45,6 +46,8 @@ typedef struct {
 
     int compilingMethod;
     EagleTypeType *enum_lookup;
+
+    DWBuilderRef dbg;
 } CompilerBundle;
 
 #include "ac_control_flow.h"

@@ -418,5 +418,7 @@ void ac_compile_function(AST *ast, CompilerBundle *cb)
     VarBundle *vb = vs_get(cb->varScope, a->ident);
     func = vb->value;
 
+    ast->resultantType = vb->type;
     ac_compile_function_ex(ast, cb, func, (EagleFunctionType *)vb->type);
+    DWAddFunction(cb->dbg, func, ast);
 }
