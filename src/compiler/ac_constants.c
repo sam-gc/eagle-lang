@@ -48,3 +48,50 @@ LLVMValueRef ac_const_value(AST *ast, CompilerBundle *cb)
     }
 }
 
+LLVMValueRef ac_convert_const(LLVMValueRef val, EagleTypeType *to, EagleTypeType *from)
+{
+    switch(from->type)
+    {
+        case ETInt1:
+        case ETInt8:
+        case ETInt16:
+        case ETInt32:
+        case ETInt64:
+        {
+            switch(to->type)
+            {
+                case ETInt1:
+                    return LLVMConstICmp(LLVMIntNE, val, LLVMConstInt(ett_llvm_type(from), 0, 0));
+                case ETInt8:
+                case ETInt16:
+                case ETInt32:
+                case ETInt64:
+                    return LLVMConstIntCast(val, ett_llvm_type(to), 1);
+                case ETDouble:
+                    return LLVMConstSIToFP(val, ett_llvm_type(to));
+                default:
+                    return NULL;
+            }
+        }
+        case ETDouble:
+        {
+            switch(to->type)
+            {
+                case ETDouble:
+                    return val;
+                case ETInt1:
+                    return LLVMConstFCmp(LLVMRealONE, val, LLVMConstReal(0, 0));
+                case ETInt8:
+                case ETInt16:
+                case ETInt32:
+                case ETInt64:
+                    return LLVMConstFPToSI(val, ett_llvm_type(to));
+                default:
+                    return NULL;
+            }
+        }
+        default:
+            return NULL;
+    }
+}
+

@@ -1,5 +1,5 @@
 static int x
-static int z = 10
+static int z = 10.0
 static byte* text = 'Hello, world!'
 
 func inc() : int
@@ -10,7 +10,7 @@ func inc() : int
 
 func inc2() : int
 {
-    static int y = -11
+    static int y = -11.5
     y += 3
 
     text = 'Nope'

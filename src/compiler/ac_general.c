@@ -205,10 +205,24 @@ void ac_add_global_variable_declarations(AST *ast, CompilerBundle *cb)
 
     LLVMValueRef glob = LLVMAddGlobal(cb->module, ett_llvm_type(et), a->ident); 
 
-    LLVMValueRef init = a->staticInit ? ac_dispatch_constant(a->staticInit, cb) : ett_default_value(et);
+    LLVMValueRef init = NULL;
+    if(a->staticInit)
+    {
+        init = ac_dispatch_constant(a->staticInit, cb);
+        EagleTypeType *f = a->staticInit->resultantType;
+        if(!ett_are_same(f, et))
+        {
+            init = ac_convert_const(init, et, f);
+            if(!init)
+                die(ALN, "Invalid implicit constant conversion");
+        }
+    }
+    else
+        init = ett_default_value(et);
 
     if(!init)
         die(ALN, "Cannot declare global variable of the given type");
+
     LLVMSetInitializer(glob, init);
 
     vs_put(cb->varScope, a->ident, glob, et);

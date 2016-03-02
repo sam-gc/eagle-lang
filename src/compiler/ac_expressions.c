@@ -1239,7 +1239,13 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update)
 
     a->resultantType = totype;
 
-    if(!ett_are_same(fromtype, totype) && (!update || (update && totype->type != ETPointer)))
+    if(!ett_are_same(fromtype, totype) && staticInitializer)
+    {
+        r = ac_convert_const(r, totype, fromtype);
+        if(!r)
+            die(ALN, "Invalid implicit conversion in constant initializer");
+    }
+    else if(!ett_are_same(fromtype, totype) && (!update || (update && totype->type != ETPointer)))
         r = ac_build_conversion(cb, r, fromtype, totype, LOOSE_CONVERSION);
 
     int transient = 0;

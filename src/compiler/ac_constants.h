@@ -10,6 +10,7 @@
 #define AC_CONSTANTS_H
 
 LLVMValueRef ac_const_value(AST *ast, CompilerBundle *cb);
+LLVMValueRef ac_convert_const(LLVMValueRef val, EagleTypeType *to, EagleTypeType *from);
 
 #endif
 
