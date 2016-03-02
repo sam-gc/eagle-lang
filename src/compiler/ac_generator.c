@@ -205,7 +205,7 @@ void ac_compile_generator_code(AST *ast, CompilerBundle *cb)//, LLVMValueRef fun
         AST *p = a->params;
         for(i = 0; p; p = p->next, i++)
         {
-            EagleTypeType *ty = eparam_types[i];
+            // EagleTypeType *ty = eparam_types[i];
             ((ASTVarDecl *)p)->noSetNil = 1;
             LLVMValueRef pos = ac_compile_var_decl(p, cb);
 
