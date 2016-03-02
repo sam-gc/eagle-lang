@@ -78,7 +78,6 @@ LLVMModuleRef ac_compile(AST *ast, int include_rc)
     CompilerBundle cb;
     cb.module = LLVMModuleCreateWithNameInContext("main-module", utl_get_current_context());
     cb.builder = LLVMCreateBuilderInContext(utl_get_current_context());
-    cb.dbg = NULL; //DWInit(cb.module, current_file_name);
     cb.transients = hst_create();
     cb.loadedTransients = hst_create();
 

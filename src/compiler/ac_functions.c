@@ -420,5 +420,4 @@ void ac_compile_function(AST *ast, CompilerBundle *cb)
 
     ast->resultantType = vb->type;
     ac_compile_function_ex(ast, cb, func, (EagleFunctionType *)vb->type);
-    DWAddFunction(cb->dbg, func, ast);
 }
