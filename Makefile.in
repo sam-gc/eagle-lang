@@ -27,12 +27,14 @@ LD=@CXX@
 LEX=@LEX@
 YACC=@YACC@
 
-eagle: guts htoegl
+eagle: guts
 	touch src/core/versioning.c
 	@$(MAKE) glory
 
 htoegl: $(HTOEGL_OBJ_FILES)
 	$(LD) -o htoegl $^ $(HTOEGL_LDFLAGS)
+
+all: eagle htoegl
 
 guts: src/grammar/eagle.l src/grammar/eagle.y
 	$(YACC) -d -o src/grammar/eagle.tab.c src/grammar/eagle.y -v
