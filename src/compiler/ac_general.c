@@ -111,7 +111,7 @@ LLVMModuleRef ac_compile(AST *ast, int include_rc)
     for(; ast; ast = ast->next)
         ac_add_early_declarations(ast, &cb);
 
-    vs_put(cb.varScope, (char *)"__egl_millis", LLVMGetNamedFunction(cb.module, "__egl_millis"), ett_function_type(ett_base_type(ETInt64), NULL, 0));
+    vs_put(cb.varScope, (char *)"__egl_millis", LLVMGetNamedFunction(cb.module, "__egl_millis"), ett_function_type(ett_base_type(ETInt64), NULL, 0), -1);
 
     ast = old;
 
@@ -225,7 +225,7 @@ void ac_add_global_variable_declarations(AST *ast, CompilerBundle *cb)
 
     LLVMSetInitializer(glob, init);
 
-    vs_put(cb->varScope, a->ident, glob, et);
+    vs_put(cb->varScope, a->ident, glob, et, ALN);
 }
 
 void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
@@ -265,7 +265,7 @@ void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
         LLVMValueRef func = LLVMGetNamedFunction(cb->module, "printf");
         EagleTypeType *ftype = ett_function_type(retType->etype, eparam_types, ct);
         ((EagleFunctionType *)ftype)->variadic = 1;
-        vs_put(cb->varScope, a->ident, func, ftype);
+        vs_put(cb->varScope, a->ident, func, ftype, -1);
         return;
     }
     if(strcmp(a->ident, "free") == 0)
@@ -273,7 +273,7 @@ void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
         LLVMValueRef func = LLVMGetNamedFunction(cb->module, "free");
         if(func)
         {
-            vs_put(cb->varScope, a->ident, func, ett_function_type(retType->etype, eparam_types, ct));
+            vs_put(cb->varScope, a->ident, func, ett_function_type(retType->etype, eparam_types, ct), -1);
             return;
         }
     }
@@ -287,7 +287,7 @@ void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
     EagleTypeType *ftype = ett_function_type(retType->etype, eparam_types, ct);
     ((EagleFunctionType *)ftype)->variadic = a->vararg;
 
-    vs_put(cb->varScope, a->ident, func, ftype);
+    vs_put(cb->varScope, a->ident, func, ftype, -1);
 }
 
 LLVMValueRef ac_dispatch_constant(AST *ast, CompilerBundle *cb)

@@ -22,7 +22,6 @@ class Solver
     init(byte* str)
     {
         self.dict = new Dictionary('dict.txt')
-        int len = strlen(str)
 
         for int i = 0; i < 4; i += 1
         {

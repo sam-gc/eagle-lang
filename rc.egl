@@ -85,6 +85,7 @@ func __egl_decr_ptr(__egl_ptr* ptr)
 
 func __egl_counted_destructor(__egl_ptr_ptr* ptr, int i)
 {
+    i -- Silence unused variable warning
     __egl_decr_ptr(ptr->to)
 }
 

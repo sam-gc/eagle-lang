@@ -21,6 +21,11 @@ typedef struct {
     EagleTypeType *type;
     LostScopeCallback scopeCallback;
     void *scopeData;
+
+    unsigned wasused : 1;
+    unsigned wasassigned : 1;
+
+    int lineno;
 } VarBundle;
 
 typedef void(*ClosedCallback)(VarBundle *, char *, void *);
@@ -43,13 +48,14 @@ typedef struct {
     mempool pool;
     VarScope *scope;
     hashtable globals;
+
+    unsigned warnunused : 1;
 } VarScopeStack;
 
 VarScopeStack vs_make();
 void vs_free(VarScopeStack *vs);
 VarBundle *vs_get(VarScopeStack *vs, char *ident);
-VarBundle *vs_put(VarScopeStack *vs, char *ident, LLVMValueRef val, EagleTypeType *type);
-void vs_put_global(VarScopeStack *vs, char *ident, LLVMValueRef val, EagleTypeType *type);
+VarBundle *vs_put(VarScopeStack *vs, char *ident, LLVMValueRef val, EagleTypeType *type, int lineno);
 VarBundle *vs_get_global(VarScopeStack *vs, char *ident);
 void vs_push_closure(VarScopeStack *vs, ClosedCallback cb, void *data);
 void vs_push(VarScopeStack *vs);

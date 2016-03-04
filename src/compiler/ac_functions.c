@@ -178,7 +178,7 @@ void ac_closure_callback(VarBundle *vb, char *ident, void *data)
 
     if(ET_IS_RAW_FUNCTION(vb->type))
     {
-        vs_put(cb->varScope, ident, vb->value, vb->type);
+        vs_put(cb->varScope, ident, vb->value, vb->type, vb->lineno);
         return;
     }
 
@@ -195,7 +195,7 @@ void ac_closure_callback(VarBundle *vb, char *ident, void *data)
     LLVMPositionBuilderAtEnd(cb->builder, bun->entry);
 
     LLVMValueRef temp = LLVMBuildAlloca(cb->builder, ett_llvm_type(vb->type), "TEMP___TEMP");
-    vs_put(cb->varScope, ident, temp, vb->type);
+    vs_put(cb->varScope, ident, temp, vb->type, vb->lineno);
     arr_append(bun->contextVals, temp);
 
     LLVMPositionBuilderAtEnd(cb->builder, curPos);
@@ -292,7 +292,7 @@ LLVMValueRef ac_compile_closure(AST *ast, CompilerBundle *cb)
     conv = LLVMBuildBitCast(cb->builder, LLVMGetParam(func, 0), LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), "");
     LLVMBuildStore(cb->builder, conv, posb);
 
-    vs_put(cb->varScope, (char *)"recur", pos, penultEType);
+    vs_put(cb->varScope, (char *)"recur", pos, penultEType, -1);
 
     if(!ac_compile_block(a->body, entry, cb) && retType->etype->type != ETVoid)
         die(ALN, "Function must return a value.");
@@ -384,8 +384,14 @@ void ac_compile_function_ex(AST *ast, CompilerBundle *cb, LLVMValueRef func, Eag
             LLVMValueRef pos = ac_compile_var_decl(p, cb);
             LLVMBuildStore(cb->builder, LLVMGetParam(func, i), pos);
 
+            // We don't want to increment self pointers,
+            // and we want to make sure the implicit variable
+            // is treated as used
             if(i == 0 && cb->compilingMethod)
+            {
+                vs_get(cb->varScope, (char *)"self")->lineno = -1;
                 continue;
+            }
 
             if(ET_IS_COUNTED(ty))
                 ac_incr_pointer(cb, &pos, eparam_types[i]);

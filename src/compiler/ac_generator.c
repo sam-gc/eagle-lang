@@ -418,7 +418,7 @@ void ac_add_gen_declaration(AST *ast, CompilerBundle *cb)
     LLVMTypeRef func_type = LLVMFunctionType(ett_llvm_type(ty), param_types, ct, a->vararg);
     LLVMValueRef func = LLVMAddFunction(cb->module, a->ident, func_type);
 
-    vs_put(cb->varScope, a->ident, func, ett_function_type(ty, eparam_types, ct));
+    vs_put(cb->varScope, a->ident, func, ett_function_type(ty, eparam_types, ct), -1);
 }
 
 // void ac_compile_generator(AST *ast, CompilerBundle *cb)

@@ -67,6 +67,8 @@ LLVMValueRef ac_compile_identifier(AST *ast, CompilerBundle *cb)
     if(b->type->type == ETAuto)
         die(ALN, "Trying to read variable of unknown type (%s)", a->value.id);
 
+    b->wasused = 1;
+
     if(b->type->type == ETFunction)
     {
         a->resultantType = b->type;
@@ -153,7 +155,7 @@ LLVMValueRef ac_compile_var_decl(AST *ast, CompilerBundle *cb)
 
     if(type->etype->type == ETAuto)
     {
-        vs_put(cb->varScope, a->ident, NULL, type->etype);
+        vs_put(cb->varScope, a->ident, NULL, type->etype, ALN);
         return NULL;
     }
 
@@ -168,11 +170,11 @@ LLVMValueRef ac_compile_var_decl(AST *ast, CompilerBundle *cb)
             die(ALN, "Cannot declare global variable of the given type");
         LLVMSetInitializer(glob, init);
 
-        vs_put(cb->varScope, a->ident, glob, et);
+        vs_put(cb->varScope, a->ident, glob, et, ALN);
         return glob;
     }
 
-    vs_put(cb->varScope, a->ident, NULL, type->etype);
+    vs_put(cb->varScope, a->ident, NULL, type->etype, ALN);
     LLVMValueRef pos = ac_compile_var_decl_ext(type->etype, a->ident, cb, a->noSetNil);
 
     return pos;
@@ -1238,6 +1240,9 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update)
         pos = ac_compile_var_decl_ext(totype, storageIdent, cb, 0);
         storageBundle->type = totype;
     }
+
+    if(storageBundle)
+        storageBundle->wasassigned = 1;
 
     a->resultantType = totype;
 

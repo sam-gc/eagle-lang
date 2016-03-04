@@ -8,6 +8,7 @@
 
 #include <stdlib.h>
 #include "variable_manager.h"
+#include "core/config.h"
 
 #define SCOPE 1
 #define BARRIER 2
@@ -19,6 +20,7 @@ VarScopeStack vs_make()
     vs.scope = NULL;
     vs.globals = hst_create();
     vs.globals.duplicate_keys = 1;
+    vs.warnunused = 1;
 
     return vs;
 }
@@ -41,6 +43,20 @@ void vs_push(VarScopeStack *vs)
     vs->scope = scope;
 }
 
+void vs_run_warnings(void *key, void *val, void *data)
+{
+    char *ident = key;
+    VarBundle *bun = val;
+
+    if(bun->lineno < 0)
+        return;
+
+    if(!bun->wasused && !bun->wasassigned)
+        warn(bun->lineno, "Unused variable %s", ident);
+    else if(!bun->wasused)
+        warn(bun->lineno, "Variable %s assigned but never used", ident);
+}
+
 void vs_pop(VarScopeStack *vs)
 {
     VarScope *s = vs->scope;
@@ -50,7 +66,11 @@ void vs_pop(VarScopeStack *vs)
     vs->scope = s->next;
 
     if(s->scope == SCOPE)
+    {
+        if(vs->warnunused)
+            hst_for_each(&s->table, vs_run_warnings, NULL);
         hst_free(&s->table);
+    }
     free(s);
 }
 
@@ -98,7 +118,7 @@ void vs_push_closure(VarScopeStack *vs, ClosedCallback cb, void *data)
     vs->scope = (VarScope *)barrier;
 }
 
-void vs_put_global(VarScopeStack *vs, char *ident, LLVMValueRef val, EagleTypeType *type)
+/*void vs_put_global(VarScopeStack *vs, char *ident, LLVMValueRef val, EagleTypeType *type)
 {
     VarBundle *vb = malloc(sizeof(VarBundle));
     vb->type = type;
@@ -107,19 +127,22 @@ void vs_put_global(VarScopeStack *vs, char *ident, LLVMValueRef val, EagleTypeTy
     hst_put(&vs->globals, ident, vb, NULL, NULL);
     pool_add(&vs->pool, vb);
 }
+*/
 
 VarBundle *vs_get_global(VarScopeStack *vs, char *ident)
 {
     return hst_get(&vs->globals, ident, NULL, NULL);
 }
 
-VarBundle *vs_put(VarScopeStack *vs, char *ident, LLVMValueRef val, EagleTypeType *type)
+VarBundle *vs_put(VarScopeStack *vs, char *ident, LLVMValueRef val, EagleTypeType *type, int lineno)
 {
     VarBundle *vb = malloc(sizeof(VarBundle));
     vb->type = type;
     vb->value = val;
     vb->scopeCallback = NULL;
     vb->scopeData = NULL;
+    vb->wasused = vb->wasassigned = 0;
+    vb->lineno = lineno;
 
     VarScope *s = vs->scope;
 
