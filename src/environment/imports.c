@@ -20,6 +20,7 @@
 #include "core/hashtable.h"
 #include "core/shipping.h"
 #include "core/regex.h"
+#include "core/config.h"
 
 #define YY_BUF_SIZE 32768
 #define PYES ((void *)(uintptr_t)1)
@@ -38,6 +39,7 @@ extern void yypop_buffer_state();
 
 static hashtable all_imports;
 static hashtable imports_exports;
+extern char *current_file_name;
 
 char *imp_scan_file(const char *filename)
 {
@@ -175,6 +177,13 @@ multibuffer *imp_generate_imports(const char *filename)
     int offset = 0;
     arr_append(&work, realpath(filename, NULL));
 
+    current_file_name = (char *)"Executable Argument";
+
+    if(!arr_get(&work, 0))
+        die(-1, "Unknown code file: %s", filename);
+
+    current_file_name = (char *)filename;
+
     char *cwd = getcwd(NULL, 0);
     char *current_realpath = realpath(filename, NULL);
     //printf("%s\n", realpath(filename, NULL));
@@ -186,6 +195,7 @@ multibuffer *imp_generate_imports(const char *filename)
         export_control *ec = ec_alloc();
 
         FILE *f = fopen(filename, "r");
+
         YY_BUFFER_STATE buf = yy_create_buffer(f, YY_BUF_SIZE);
         yypush_buffer_state(buf);
 
@@ -200,6 +210,9 @@ multibuffer *imp_generate_imports(const char *filename)
             {
                 char *nw = yytext + 7;
                 char *rp = realpath(nw, NULL);
+
+                if(!rp)
+                    die(-1, "Imported file (%s) does not exist", nw);
 
                 // Ignore previously viewed files and the current file
                 if(IN(all_imports, rp) || !strcmp(rp, current_realpath))

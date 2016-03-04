@@ -47,11 +47,6 @@ void arr_append(arraylist *list, void *item)
 
     list->items[count++] = item;
 
-    if(count > 0 && !list->items[0])
-    {
-        printf("WTF\n");
-    }
-
     list->count = count;
 }
 

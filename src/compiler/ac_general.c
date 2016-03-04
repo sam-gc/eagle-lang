@@ -25,7 +25,12 @@ void die(int lineno, const char *fmt, ...)
     va_list args;
     va_start(args, fmt);
     vfprintf(stderr, format, args);
-    fprintf(stderr, LIGHT_BLUE "\t->" DEFAULT " %s" LIGHT_BLUE ":" DEFAULT "%d\n", current_file_name, lineno);
+
+    if(lineno < 0)
+        fprintf(stderr, LIGHT_BLUE "\tin" DEFAULT " %s\n", current_file_name);
+    else
+        fprintf(stderr, LIGHT_BLUE "\tat" DEFAULT " %s" LIGHT_BLUE ":" DEFAULT "%d\n", current_file_name, lineno);
+
     va_end(args);
 
     exit(0);
@@ -39,7 +44,12 @@ void warn(int lineno, const char *fmt, ...)
     va_list args;
     va_start(args, fmt);
     vfprintf(stderr, format, args);
-    fprintf(stderr, LIGHT_BLUE "\t->" DEFAULT " %s" LIGHT_BLUE ":" DEFAULT "%d\n", current_file_name, lineno);
+
+    if(lineno < 0)
+        fprintf(stderr, LIGHT_BLUE "\tin" DEFAULT " %s\n", current_file_name);
+    else
+        fprintf(stderr, LIGHT_BLUE "\tat" DEFAULT " %s" LIGHT_BLUE ":" DEFAULT "%d\n", current_file_name, lineno);
+
     va_end(args);
 }
 #else
@@ -51,7 +61,12 @@ void die_debug(int complineno, const char *file, int lineno, const char *fmt, ..
     va_list args;
     va_start(args, fmt);
     vfprintf(stderr, format, args);
-    fprintf(stderr, LIGHT_BLUE "\t->" DEFAULT " %s" LIGHT_BLUE ":" DEFAULT "%d\n", current_file_name, lineno);
+
+    if(lineno < 0)
+        fprintf(stderr, LIGHT_BLUE "\tin" DEFAULT " %s\n", current_file_name);
+    else
+        fprintf(stderr, LIGHT_BLUE "\tat" DEFAULT " %s" LIGHT_BLUE ":" DEFAULT "%d\n", current_file_name, lineno);
+
     fprintf(stderr, LIGHT_BLUE "\tCompiler:" DEFAULT " %s" LIGHT_BLUE ":" DEFAULT "%d\n", file, complineno);
     va_end(args);
 
@@ -67,7 +82,12 @@ void warn_debug(int complineno, const char *file, int lineno, const char *fmt, .
     va_list args;
     va_start(args, fmt);
     vfprintf(stderr, format, args);
-    fprintf(stderr, LIGHT_BLUE "\t->" DEFAULT " %s" LIGHT_BLUE ":" DEFAULT "%d\n", current_file_name, lineno);
+
+    if(lineno < 0)
+        fprintf(stderr, LIGHT_BLUE "\tin" DEFAULT " %s\n", current_file_name);
+    else
+        fprintf(stderr, LIGHT_BLUE "\tat" DEFAULT " %s" LIGHT_BLUE ":" DEFAULT "%d\n", current_file_name, lineno);
+
     fprintf(stderr, LIGHT_BLUE "\tCompiler:" DEFAULT " %s" LIGHT_BLUE ":" DEFAULT "%d\n", file, complineno);
     va_end(args);
 }
