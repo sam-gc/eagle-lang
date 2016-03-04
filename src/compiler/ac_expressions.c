@@ -680,18 +680,20 @@ LLVMValueRef ac_generic_binary(ASTBinary *a, LLVMValueRef l, LLVMValueRef r, cha
     (save_left && totype->type == ETPointer)
     )
     {
-        if(a->op == 'e')
+        if(a->op == 'e' || a->op == 'n')
         {
             l = LLVMBuildPtrToInt(cb->builder, l, LLVMInt64TypeInContext(utl_get_current_context()), "");
             r = LLVMBuildPtrToInt(cb->builder, r, LLVMInt64TypeInContext(utl_get_current_context()), "");
 
             a->resultantType = ett_base_type(ETInt1);
-            return LLVMBuildICmp(cb->builder, LLVMIntEQ, l, r, "");
+
+            LLVMIntPredicate p = a->op == 'e' ? LLVMIntEQ : LLVMIntNE;
+            return LLVMBuildICmp(cb->builder, p, l, r, "");
         }
 
         EagleTypeType *lt = totype;
         EagleTypeType *rt = fromtype;
-        if(a->op != '+' && a->op != '-' && a->op != 'e' && a->op !='P')
+        if(a->op != '+' && a->op != '-' && a->op != 'e' && a->op !='P' && a->op != 'n')
             die(a->lineno, "Operation '%c' not valid for pointer types.", a->op);
         if(lt->type == ETPointer && !ET_IS_INT(rt->type))
             die(a->lineno, "Pointer arithmetic is only valid with integer and non-any pointer types.");
