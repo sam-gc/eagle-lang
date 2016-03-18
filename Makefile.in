@@ -14,7 +14,7 @@ HTOEGL_OBJ_FILES=$(addprefix obj/htoegl/,$(notdir $(HTOEGL_SOURCES:.c=.o)))
 EXAMPLE_EXECUTABLES=$(addprefix builtex/,$(notdir $(EXAMPLE_SOURCES:.egl=.e)))
 CPP_OBJ_FILES=$(addprefix obj/cpp/,$(notdir $(CPP_SOURCES:.cpp=.o)))
 
-CFLAGS=-Isrc -std=c99 -Wall -Wextra -pedantic -Wno-unused-parameter `@llvmconfig@ --cflags` @targ@
+CFLAGS=-Isrc -std=c99 -Wall -Wextra -pedantic -Wno-unused-parameter -fno-strict-aliasing `@llvmconfig@ --cflags` @targ@
 CXXFLAGS=-Isrc -std=c++11 -fno-rtti -Wall -Wextra -pedantic -Wno-unused-parameter `@llvmconfig@ --cxxflags` @targ@
 LDFLAGS=`@llvmconfig@ --ldflags --libs --libs core support analysis native transformutils bitwriter asmprinter asmparser target all-targets` -ldl -lpthread -lm -lcurses -lz
 HTOEGL_CFLAGS=-Isrc -std=c99 -Wall -Wextra -pedantic -Wno-unused-parameter

@@ -1,0 +1,206 @@
+extern func strdup(byte*) : byte*
+extern func free(any*)
+extern func calloc(long, long) : any*
+extern func strcmp(byte*, byte*) : int
+extern func labs(long) : long
+
+func strequ(byte* a, byte* b) : bool
+{
+    return strcmp(a, b) == 0
+}
+
+func hst_djb2(byte* key) : long
+{
+    int hash = 5381
+    for byte c = key[0]; c; key += 1
+    {
+        hash = hash * 32 + hash + c
+        c = key[0]
+    }
+
+    long hlong = hash
+    return labs(hlong)
+}
+
+func main()
+{
+    var table = new HashTable()
+    table.put('Hello', new String('World'))
+
+    String^ message = table.get('Hello')
+    puts message
+}
+
+class String
+{
+    byte* buf
+
+    init(byte* start)
+    {
+        self.buf = strdup(start)
+    }
+
+    destruct()
+    {
+        free(self.buf)
+    }
+
+    view byte*
+    {
+        return self.buf
+    }
+}
+
+class TableNode
+{
+    TableNode^ next
+
+    byte* key
+    any^ val
+    long hash
+
+    init(byte* key, any^ val, long hash)
+    {
+        self.key = strdup(key)
+        self.val = val
+        self.hash = hash
+
+        __inc self
+    }
+
+    destruct()
+    {
+        free(self.key)
+    }
+
+    func append(TableNode^ n)
+    {
+        if !self.next
+        {
+            self.next = n
+            return
+        }
+
+        self.next.append(n)
+    }
+}
+
+class HashTable
+{
+    any** buckets
+    int bcount
+    int count
+
+    init()
+    {
+        self.buckets = calloc(8, sizeof(any*))
+        self.bcount = 8
+        self.count = 0
+    }
+
+    destruct()
+    {
+        for int i = 0; i < self.bcount; i += 1
+        {
+            for var b = self.gb(i); b; 0
+            {
+                var n = b.next
+                __dec b
+                b = n
+            }
+        }
+
+        free(self.buckets)
+    }
+
+    func gb(int i) : TableNode^
+    {
+        any* e = self.buckets[i]
+        return TableNode^@e
+    }
+
+    func resize()
+    {
+        int ns
+        if self.bcount > 1000
+            ns = self.bcount + 1000
+        else
+            ns = self.bcount * 2
+
+        any** buckets = calloc(ns, sizeof(any *))
+
+        for int i = 0; i < self.bcount; i += 1
+        {
+            TableNode^ n = self.gb(i)
+            TableNode^ p
+            for n
+            {
+                p = n.next
+                var mod = n.hash % ns
+                if !buckets[mod]
+                {
+                    buckets[mod] = any*@n
+                }
+                else
+                {
+                    var x = TableNode^@buckets[mod]
+                    x.append(n)
+                }
+                n.next = nil
+                n = p
+            }
+        }
+
+        free(self.buckets)
+        self.buckets = buckets
+        self.bcount = ns
+    }
+
+    func put(byte* key, any^ val)
+    {
+        if self.count + 1 > self.bcount * 0.66
+            self.resize()
+
+        long hash = hst_djb2(key)
+        long mod = hash % self.bcount
+
+        if(!self.buckets[mod])
+        {
+            self.buckets[mod] = any*@(new TableNode(key, val, hash))
+            self.count += 1
+            return
+        }
+
+        var last = self.gb(mod)
+        TableNode^ prev = nil
+
+        for last; last; last = last.next
+        {
+            if strequ(last.key, key)
+            {
+                last.val = val
+                return
+            }
+
+            prev = last
+        }
+
+        self.count += 1
+        prev.next = new TableNode(key, val, hash)
+    }
+
+    func get(byte* key) : any^
+    {
+        long hash = hst_djb2(key)
+        long mod = hash % self.bcount
+
+        for var n = self.gb(mod); n; n = n.next
+        {
+            if strequ(n.key, key)
+                return n.val
+        }
+
+        return nil
+    }
+}
+

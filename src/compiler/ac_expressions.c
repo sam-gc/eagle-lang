@@ -877,8 +877,20 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
                     case ETFunction:
                     case ETArray:
                     case ETPointer:
-                        fmt = LLVMBuildGlobalStringPtr(cb->builder,
-                                (((EaglePointerType *)a->val->resultantType)->to->type == ETInt8 ? "%s\n" : "%p\n"), "prfPTR");
+                        {
+                            EaglePointerType *pt = (EaglePointerType *)a->val->resultantType;
+                            EaglePointerType *bytet = (EaglePointerType *)ett_pointer_type(ett_base_type(ETInt8));
+                            LLVMValueRef cv = ac_try_view_conversion(cb, v, (EagleTypeType *)pt, (EagleTypeType *)bytet);
+
+                            // We have a successful view conversion
+                            if(cv)
+                            {
+                                v = cv;
+                                pt = bytet;
+                            }
+
+                            fmt = LLVMBuildGlobalStringPtr(cb->builder, (pt->to->type == ETInt8 ? "%s\n" : "%p\n"), "prfPTR");
+                        }
                         break;
                     default:
                         die(ALN, "The requested type may not be printed.");
