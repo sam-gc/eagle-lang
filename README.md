@@ -69,7 +69,7 @@ func main()
 ### Project Status
 
 | Working | Incomplete | Buggy | Not Working |
-| ------- | ----------- |
+| ------- | ----------- |----|----|
 | Code compilation | 32-bit code generation | Reference counting in class contexts | Nested geneerators |
 | Basic reference counting | Static variables | Counted variables in loops | Reference counting in generators |
 | Multiple file compilation | Imports and exports | | Debug information |
