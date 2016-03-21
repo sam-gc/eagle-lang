@@ -136,14 +136,14 @@ the `eagle` executable exists in the main project directory.
 ### Command Line switches
 | Argument | Action |
 |---------|--------|
-| [filename].egl | File will be compiled |
-| -o [output name] | Specify binary output |
-| -c | Generate object files from inputs |
-| -S | Generate assembly code from inputs |
-| -O[0-3] | Specify optimization level (default 2) |
-| --no-rc | Do not include reference counting headers |
-| --code [extra eagle code] | Specify extra code to compile from command line |
-| -l[libname] | Link external library |
-| --llvm | Dump llvm bitcode |
-| --verbose | Provide details of compilation process |
-| --threads [thread-count] | Specify number of threads to use during code generation |
+| `[filename].egl` | File will be compiled |
+| `-o [output name]` | Specify binary output |
+| `-c` | Generate object files from inputs |
+| `-S` | Generate assembly code from inputs |
+| `-O[0-3]` | Specify optimization level (default 2) |
+| `--no-rc` | Do not include reference counting headers |
+| `--code [extra eagle code]` | Specify extra code to compile from command line |
+| `-l[libname]` | Link external library |
+| `--llvm` | Dump llvm bitcode |
+| `--verbose` | Provide details of compilation process |
+| `--threads` [thread-count] | Specify number of threads to use during code generation |
