@@ -10,5 +10,6 @@
 #define VERSIONING_H
 
 void print_version_info();
+void print_help_info(const char *progname);
 
 #endif

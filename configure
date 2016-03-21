@@ -623,6 +623,7 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+helpopts
 configcode
 llvmvsn
 debug
@@ -3863,6 +3864,12 @@ fi
 awk -vRS="\n" -vORS="\\\n" '1' rc.egl > rc.egl.out
 configcode=`cat rc.egl.out`
 
+
+awk -vRS="\n" -vORS="\\\n" '1' options.txt > options.txt.out
+helpopts=`cat options.txt.out`
+
+
+rm -rf rc.egl.out options.txt.out
 
 ac_config_files="$ac_config_files Makefile"
 

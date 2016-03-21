@@ -16,3 +16,9 @@ void print_version_info()
         EGL_VERSION "\n");
     printf("Compiled:\t" __DATE__ " at " __TIME__ "\n");
 }
+
+void print_help_info(const char *progname)
+{
+    printf("Usage: %s [options] code-file(s)\nOptions:\n%s", progname, help_options);
+}
+

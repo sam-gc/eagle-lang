@@ -1,0 +1,13 @@
+  --help		Display command information
+  --version		Display version number and copyright information
+  --llvm		Dump llvm IR code to stderr
+  --no-rc		Do not include reference counting symbols in module
+  --verbose     	Display verbose output during compilation
+  --code <eagle code>	Provide extra code to compile
+  --threads <count>	Optimize and compile on <count> threads (default 4)
+  --dump-code		Dump the pre-processed code from imports
+  -o <filename>		Output executable name
+  -c			Output object file
+  -S			Output assembly file
+  -O<0-3>		Specify optimization level (default 2)
+  -l<libname>		Link with library

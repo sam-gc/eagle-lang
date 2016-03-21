@@ -284,7 +284,7 @@ int main(int argc, const char *argv[])
 
     if(argc < 2)
     {
-        printf("Usage: %s <file> [args]\n", argv[0]);
+        printf("Usage: %s [options] code-file(s)\n", argv[0]);
         return 0;
     }
 
@@ -296,6 +296,12 @@ int main(int argc, const char *argv[])
     if(IN(global_args, "--version") || IN(global_args, "-v"))
     {
         print_version_info();
+        return 0;
+    }
+
+    if(IN(global_args, "--help"))
+    {
+        print_help_info(argv[0]);
         return 0;
     }
 

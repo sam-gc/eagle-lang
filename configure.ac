@@ -56,6 +56,11 @@ fi
 awk -vRS="\n" -vORS="\\\n" '1' rc.egl > rc.egl.out
 AC_SUBST(configcode, `cat rc.egl.out`)
 
+awk -vRS="\n" -vORS="\\\n" '1' options.txt > options.txt.out
+AC_SUBST(helpopts, `cat options.txt.out`)
+
+rm -rf rc.egl.out options.txt.out
+
 AC_OUTPUT(Makefile)
 AC_OUTPUT(src/core/config.h)
 AC_OUTPUT(src/core/config.c)
