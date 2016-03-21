@@ -70,8 +70,7 @@ void die_debug(int complineno, const char *file, int lineno, const char *fmt, ..
     fprintf(stderr, LIGHT_BLUE "\tCompiler:" DEFAULT " %s" LIGHT_BLUE ":" DEFAULT "%d\n", file, complineno);
     va_end(args);
 
-    int *i = NULL;
-    exit(*i);
+    exit(0);
 }
 
 void warn_debug(int complineno, const char *file, int lineno, const char *fmt, ...)

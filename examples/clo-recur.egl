@@ -1,11 +1,9 @@
 func main() : int
 {
-    int^ bias = new int
-    bias^ = 10
     (int:int)^ factorial = func(int i) : int
     {
-        if i == 0
-            return bias^
+        if i == 1
+            return i
         return recur(i - 1) * i
     }
 

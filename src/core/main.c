@@ -199,6 +199,7 @@ LLVMModuleRef compile_generic(ShippingCrate *crate, int include_rc, char *file)
     }
 
     first_pass();
+    current_file_name = file;
 
     //mb_add_file(ymultibuffer, argv[1]);
 
@@ -207,7 +208,6 @@ LLVMModuleRef compile_generic(ShippingCrate *crate, int include_rc, char *file)
     mb_free(ymultibuffer);
     yy_delete_buffer(yybuf);
 
-    current_file_name = file;
     LLVMModuleRef module = ac_compile(ast_root, include_rc);
 
     ty_teardown();

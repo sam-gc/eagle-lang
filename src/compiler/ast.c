@@ -40,7 +40,8 @@ extern int yylineno;
 extern char *yytext;
 int yyerror(const char *text)
 {
-    fprintf(stderr, "%d: Error: %s\n>>> %s\n", yylineno, text, yytext);
+    const char *format = strlen(yytext) == 0 ? "%s%s" : "%s (%s)";
+    die(yylineno, format, text, yytext);
     return -1;
 }
 
