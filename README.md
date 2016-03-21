@@ -146,4 +146,4 @@ the `eagle` executable exists in the main project directory.
 | `-l[libname]` | Link external library |
 | `--llvm` | Dump llvm bitcode |
 | `--verbose` | Provide details of compilation process |
-| `--threads` [thread-count] | Specify number of threads to use during code generation |
+| `--threads [thread-count]` | Specify number of threads to use during code generation |
