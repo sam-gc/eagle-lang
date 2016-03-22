@@ -6,6 +6,15 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "config.h"
+#ifndef ARGUMENTS_H
+#define ARGUMENTS_H
 
-const char *rc_code = "@configcode@";
+#include "hashtable.h"
+#include "shipping.h"
+
+void args_setup(ShippingCrate *crate);
+void args_run(const char *argv[]);
+void args_teardown();
+
+#endif
+

@@ -18,6 +18,7 @@
 #include "config.h"
 #include "cpp/cpp.h"
 #include "threading.h"
+#include "arguments.h"
 
 #define YY_BUF_SIZE 32768
 #define SEQU(a, b) strcmp((a), (b)) == 0
@@ -111,76 +112,13 @@ void first_pass()
     yylineno = 0;
 }
 
-char *get_file_ext(const char *filename)
-{
-    int p = -1;
-    char c;
-    const char *iter = filename;
-    int i;
-
-    for(c = iter[0], i = 0; c; c = *(++iter), i++)
-        if(c == '.') p = i;
-
-    if(p < 0)
-        return (char *)"";
-
-    return (char *)(filename + p);
-}
-
-void fill_crate(ShippingCrate *crate, int argc, const char *argv[])
+void init_crate(ShippingCrate *crate)
 {
     crate->source_files = arr_create(5);
     crate->object_files = arr_create(5);
     crate->extra_code = arr_create(2);
     crate->work = arr_create(10);
     crate->libs = arr_create(5);
-
-    int skip = 0;
-    int i;
-    for(i = 1; i < argc; i++)
-    {
-        if(skip)
-        {
-            skip = 0;
-            continue;
-        }
-        const char *arg = argv[i];
-
-        if(SEQU(arg, "--code"))
-        {
-            if(i == argc - 1)
-                die(-1, "--code switch specified but no extra code defined.");
-            arr_append(&crate->extra_code, (void *)argv[i + 1]);
-        }
-
-        if(SEQU(arg, "-o") || SEQU(arg, "--code") || SEQU(arg, "--threads"))
-            skip = 1;
-
-        if(
-            SEQU(arg, "-o") ||
-            SEQU(arg, "-c") ||
-            SEQU(arg, "-S") ||
-            SEQU(arg, "-h") ||
-            SEQU(arg, "-O0") || SEQU(arg, "-O1") || SEQU(arg, "-O2") || SEQU(arg, "-O3") ||
-            SEQU(arg, "--llvm") ||
-            SEQU(arg, "--no-rc") ||
-            SEQU(arg, "--verbose") ||
-            SEQU(arg, "--code") ||
-            SEQU(arg, "--threads") ||
-            SEQU(arg, "--dump-code"))
-            continue;
-
-        if(strlen(arg) > 2 && arg[0] == '-' && arg[1] == 'l')
-        {
-            arr_append(&crate->libs, (char *)arg);
-            continue;
-        }
-
-        if(SEQU(get_file_ext(arg), ".o"))
-            arr_append(&crate->object_files, (char *)arg);
-        else
-            arr_append(&crate->source_files, (char *)arg);
-    }
 }
 
 LLVMModuleRef compile_generic(ShippingCrate *crate, int include_rc, char *file)
@@ -282,36 +220,31 @@ int main(int argc, const char *argv[])
 {
     global_args = hst_create();
 
+    ShippingCrate crate;
+    init_crate(&crate);
+
+    current_file_name = (char *)"program arguments";
+
+    args_setup(&crate);
+
     if(argc < 2)
     {
         printf("Usage: %s [options] code-file(s)\n", argv[0]);
         return 0;
     }
 
-    int i;
-    for(i = 0; i < argc - 1; i++)
-        hst_put(&global_args, (char *)argv[i], (void *)argv[i + 1], NULL, NULL);
-    hst_put(&global_args, (char *)argv[i], (void *)1, NULL, NULL);
+    args_run(argv);
 
-    if(IN(global_args, "--version") || IN(global_args, "-v"))
+    if(!crate.source_files.count && !crate.object_files.count && !crate.extra_code.count)
     {
-        print_version_info();
-        return 0;
-    }
-
-    if(IN(global_args, "--help"))
-    {
-        print_help_info(argv[0]);
-        return 0;
+        die(-1, "No valid operands provided.");
     }
 
     thr_init();
     LLVMInitializeNativeTarget();
     LLVMInitializeNativeAsmPrinter();
 
-    ShippingCrate crate;
-    fill_crate(&crate, argc, argv);
-
+    int i;
     for(i = 0; i < crate.source_files.count; i++)
         compile_file(crate.source_files.items[i], &crate);
 

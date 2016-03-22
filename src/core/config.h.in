@@ -16,7 +16,6 @@
 #define @debug@
 
 extern const char *rc_code;
-extern const char *help_options;
 
 #ifdef RELEASE
 void die(int lineno, const char *fmt, ...);
