@@ -37,7 +37,7 @@
 %type <node> variabledecl vardecllist funccall calllist funcident funcsident externdecl typelist type interfacetypelist
 %type <node> elifstatement elifblock elsestatement singif structdecl structlist blockalt classlist classdecl interfacedecl interfacelist compositetype
 %type <node> expr singexpr binexpr unexpr ounexpr forstatement clodecl genident gendecl initdecl viewdecl viewident
-%type <node> enumitem enumlist enumdecl globalvardecl constantexpr
+%type <node> enumitem enumlist enumdecl globalvardecl constantexpr structlitlist structlit
 
 %nonassoc TTYPE;
 %nonassoc TNEW;
@@ -206,6 +206,14 @@ funcsident          : TFUNC TIDENTIFIER TLPAREN typelist TRPAREN TCOLON type { $
                     | TFUNC TIDENTIFIER TLPAREN typelist TRPAREN { $$ = ast_make_func_decl(ast_make_type((char *)"void"), $2, NULL, $4); }
                     ;
 
+structlit           : TTYPE TLBRACE structlitlist TRBRACE { $$ = ast_make_struct_lit($1, $3); }
+                    | TTYPE TLBRACE structlitlist TSEMI TRBRACE { $$ = ast_make_struct_lit($1, $3); }
+                    ;
+
+structlitlist       : structlitlist TCOMMA TDOT TIDENTIFIER TEQUALS expr { $$ = $1; ast_struct_lit_add($1, $4, $6); }
+                    | TDOT TIDENTIFIER TEQUALS expr { $$ = ast_make_struct_lit_dict(); ast_struct_lit_add($$, $2, $4); }
+                    ;
+
 typelist            : type { $$ = ast_make_var_decl($1, NULL); }
                     | type TCOMMA typelist { AST *a = ast_make_var_decl($1, NULL); a->next = $3; $$ = a; };
 
@@ -320,6 +328,7 @@ singexpr            : clodecl { $$ = $1; }
                     | TLPAREN expr TRPAREN { $$ = $2; }
                     | funccall { $$ = $1; }
                     | TTYPE TDOT TIDENTIFIER { $$ = ast_make_type_lookup($1, $3); }
+                    | structlit { $$ = $1; }
                     ;
 
 constantexpr        : TINT { $$ = ast_make_int32($1); }
@@ -329,5 +338,6 @@ constantexpr        : TINT { $$ = ast_make_int32($1); }
                     | TYES { $$ = ast_make_bool(1); }
                     | TNO { $$ = ast_make_bool(0); }
                     | TNIL { $$ = ast_make_nil(); }
+                    ;
 
 %%

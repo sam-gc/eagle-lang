@@ -24,6 +24,8 @@ TermArgs *ta_new(hashtable *argdump, void *data)
     TermArgs *ta = malloc(sizeof(*ta));
     ta->rules = hst_create();
     ta->extra_help = hst_create();
+    ta->rule_order = arr_create(10);
+
     ta->argdump = argdump;
     ta->data = data;
     ta->seive = NULL;
@@ -54,6 +56,8 @@ void ta_rule(TermArgs *args, const char *rule, const char *fmt, ta_rule_callback
         size_t len = strlen(fmt);
         if(len > args->maxlen)
             args->maxlen = len;
+
+        arr_append(&args->rule_order, (void *)rule);
     }
     else
         args->seive = callback;
@@ -65,6 +69,7 @@ void ta_extra(TermArgs *args, const char *fmt, const char *help)
     size_t len = strlen(fmt);
     if(len > args->maxlen)
         args->maxlen = len;
+    arr_append(&args->rule_order, (void *)fmt);
 }
 
 void ta_run(TermArgs *args, const char *argv[])
@@ -92,7 +97,7 @@ void ta_run(TermArgs *args, const char *argv[])
     }
 }
 
-void ta_print_spaces(int ct)
+static void ta_print_spaces(int ct)
 {
     char buf[ct + 1];
     memset(buf, ' ', ct);
@@ -101,28 +106,12 @@ void ta_print_spaces(int ct)
     printf("%s", buf);
 }
 
-void ta_extra_help_each(void *key, void *val, void *data)
+static void ta_print_help(const char *arg, const char *help, size_t maxlen)
 {
-    char *arg = key;
-    char *help = val;
-
-    TermArgs *args = data;
-
-    if(!arg)
-        return;
-
     size_t alen = strlen(arg);
     printf("  %s", arg);
-    ta_print_spaces((args->maxlen - alen) + 3);
+    ta_print_spaces((maxlen - alen) + 3);
     printf("%s\n", help);
-}
-
-void ta_help_each(void *key, void *val, void *data)
-{
-    TermBundle *bun = val;
-    char *arg = (char *)bun->fmt;
-
-    ta_extra_help_each(arg, (char *)bun->help, data);
 }
 
 void ta_free_each(void *key, void *val, void *data)
@@ -132,8 +121,22 @@ void ta_free_each(void *key, void *val, void *data)
 
 void ta_help(TermArgs *args)
 {
-    hst_for_each(&args->rules, ta_help_each, args);
-    hst_for_each(&args->extra_help, ta_extra_help_each, args);
+    for(int i = 0; i < args->rule_order.count; i++)
+    {
+        char *arg = args->rule_order.items[i];
+        char *help = hst_get(&args->extra_help, arg, NULL, NULL);
+        if(help)
+        {
+            ta_print_help(arg, help, args->maxlen);
+            continue;
+        }
+
+        TermBundle *bun = hst_get(&args->rules, arg, NULL, NULL);
+        if(!bun)
+            continue;
+
+        ta_print_help(bun->fmt, bun->help, args->maxlen);
+    }
 }
 
 void ta_free(TermArgs *args)
@@ -141,6 +144,7 @@ void ta_free(TermArgs *args)
     hst_for_each(&args->rules, ta_free_each, NULL);
     hst_free(&args->rules);
     hst_free(&args->extra_help);
+    arr_free(&args->rule_order);
     free(args);
 }
 

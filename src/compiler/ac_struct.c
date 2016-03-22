@@ -304,3 +304,76 @@ void ac_call_destructor(CompilerBundle *cb, LLVMValueRef pos, EagleTypeType *ty)
     params[1] = LLVMConstInt(LLVMInt1TypeInContext(utl_get_current_context()), 0, 0);
     LLVMBuildCall(cb->builder, func, params, 2, "");
 }
+
+typedef struct {
+    CompilerBundle *cb;
+    ASTStructLit *a;
+    EagleStructType *st;
+    LLVMValueRef strct;
+} LiteralHelper;
+
+static void ac_struct_lit_each(void *key, void *val, void *data)
+{
+    LiteralHelper *lh = data;
+    
+    // Unpack the data
+    CompilerBundle *cb = lh->cb;
+    ASTStructLit *a    = lh->a;
+    EagleStructType *st  = lh->st;
+    LLVMValueRef strct = lh->strct;
+
+    char *member = key;
+    AST *exp = val;
+
+    int index;
+    EagleTypeType *memtype;
+    ty_struct_member_index((EagleTypeType *)st, member, &index, &memtype);
+
+    if(index < 0)
+        die(a->lineno, "struct %s has no member %s", st->name, member);
+
+    LLVMValueRef value = ac_dispatch_expression(exp, cb);
+    if(!ett_are_same(exp->resultantType, memtype))
+        value = ac_build_conversion(cb, value, exp->resultantType, memtype, LOOSE_CONVERSION);
+
+    LLVMBuildInsertValue(cb->builder, strct, value, index, "");
+}
+
+LLVMValueRef ac_compile_struct_lit(AST *ast, CompilerBundle *cb)
+{
+    ASTStructLit *a = (ASTStructLit *)ast;
+    EagleStructType *st = (EagleStructType *)ett_struct_type(a->name);
+
+    hashtable *dict = &a->exprs;
+
+    LLVMValueRef strct = LLVMBuildAlloca(cb->builder, ett_llvm_type((EagleTypeType *)st), "lit");
+
+    LiteralHelper lh = {
+        .cb = cb,
+        .st = st,
+        .a = a,
+        .strct = strct
+    };
+
+    hst_for_each(dict, &ac_struct_lit_each, &lh);
+
+    /*
+    for(int i = 0; i < st->types.count; i++)
+    {
+        char *name = st->names.items[i];
+        AST *exp = hst_get(dict, name, NULL, NULL);
+
+        printf("%s\n", name);
+
+        if(!exp)
+            continue;
+
+        LLVMValueRef val = ac_dispatch_expression(exp, cb);
+        LLVMBuildInsertValue(cb->builder, strct, val, i, "");
+    }
+    */
+
+    a->resultantType = (EagleTypeType *)st;
+    return strct;
+}
+

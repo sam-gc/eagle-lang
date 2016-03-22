@@ -1,0 +1,18 @@
+struct Person
+{
+    byte* first_name
+    byte* last_name
+    int age
+}
+
+func main()
+{
+    var person = Person {
+        .first_name = 'Sam',
+        .last_name  = 'Olsen',
+        .age        = 21
+    }
+
+    puts person.first_name
+}
+

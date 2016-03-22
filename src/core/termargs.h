@@ -11,6 +11,7 @@
 
 #include <stdlib.h>
 #include "hashtable.h"
+#include "arraylist.h"
 
 typedef void (*ta_rule_callback)(char *arg, char *next, int *skip, void *data);
 
@@ -18,6 +19,8 @@ typedef struct
 {
     hashtable rules;
     hashtable extra_help;
+    arraylist rule_order;
+
     hashtable *argdump;
     void *data;
 

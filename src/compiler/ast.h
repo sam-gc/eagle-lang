@@ -26,6 +26,7 @@ typedef enum {
     AVARDECL,
     ASTRUCTDECL,
     ASTRUCTMEMBER,
+    ASTRUCTLIT,
     ACLASSDECL,
     ACLASSMEMBER,
     AIFCDECL,
@@ -205,6 +206,16 @@ typedef struct {
     struct AST *next;
     long lineno;
 
+    hashtable exprs;
+    char *name;
+} ASTStructLit;
+
+typedef struct {
+    ASTType type;
+    EagleTypeType *resultantType;
+    struct AST *next;
+    long lineno;
+
     char *name;
     arraylist types;
     arraylist names;
@@ -276,6 +287,9 @@ AST *ast_make_struct_decl();
 AST *ast_struct_add(AST *ast, AST *var);
 AST *ast_struct_name(AST *ast, char *name);
 void ast_struct_set_extern(AST *ast);
+AST *ast_make_struct_lit_dict();
+void ast_struct_lit_add(void *dict, char *ident, AST *expr);
+AST *ast_make_struct_lit(char *name, AST *dict);
 AST *ast_make_class_decl();
 AST *ast_make_interface_decl();
 AST *ast_class_set_init(AST *cls, AST *init);

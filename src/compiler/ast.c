@@ -315,6 +315,32 @@ void ast_struct_set_extern(AST *ast)
     a->ext = 1;
 }
 
+AST *ast_make_struct_lit_dict()
+{
+    hashtable *hst = malloc(sizeof(*hst));
+    *hst = hst_create();
+
+    // Pretend this is a tree node even though it is not
+    return (AST *)hst;
+}
+
+void ast_struct_lit_add(void *dict, char *ident, AST *expr)
+{
+    hst_put(dict, ident, expr, NULL, NULL);
+}
+
+AST *ast_make_struct_lit(char *name, AST *dict)
+{
+    ASTStructLit *ast = ast_malloc(sizeof(ASTStructLit));
+    ast->type = ASTRUCTLIT;
+
+    hashtable *hst = (hashtable *)dict;
+    ast->exprs = *hst;
+    ast->name = name;
+
+    return (AST *)ast;
+}
+
 AST *ast_make_interface_decl()
 {
     AST *ast = ast_make_class_decl();
