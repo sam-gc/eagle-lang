@@ -114,7 +114,6 @@ void ac_make_struct_constructor(AST *ast, CompilerBundle *cb)
     LLVMValueRef in = LLVMGetParam(func, 0);
     LLVMValueRef strct = LLVMBuildBitCast(cb->builder, in, ett_llvm_type(ett), "");
 
-
     arraylist *types = &a->types;
     int i;
     for(i = 0; i < types->count; i++)
@@ -310,6 +309,7 @@ typedef struct {
     ASTStructLit *a;
     EagleStructType *st;
     LLVMValueRef strct;
+    hashtable *set;
 } LiteralHelper;
 
 static void ac_struct_lit_each(void *key, void *val, void *data)
@@ -333,13 +333,26 @@ static void ac_struct_lit_each(void *key, void *val, void *data)
     if(index < 0)
         die(a->lineno, "struct %s has no member %s", st->name, member);
 
+    hst_put(lh->set, member, (void *)1, NULL, NULL);
+
     LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, strct, index, "");
     LLVMValueRef value = NULL;
     
+    // Enable nested structure literals
     if(exp->type == ASTRUCTLIT)
+    {
+        if(memtype->type != ETStruct)
+            die(exp->lineno, "Attempting to assign struct literal to non-struct member %s", member);
+
+        ASTStructLit *asl = (ASTStructLit *)exp;
+        if(!asl->name)
+            asl->name = ((EagleStructType *)memtype)->name;
         value = ac_compile_struct_lit(exp, cb, pos);
+    }
     else
+    {
         value = ac_dispatch_expression(exp, cb);
+    }
 
     fromtype = exp->resultantType;
 
@@ -357,20 +370,45 @@ static void ac_struct_lit_each(void *key, void *val, void *data)
 LLVMValueRef ac_compile_struct_lit(AST *ast, CompilerBundle *cb, LLVMValueRef strct)
 {
     ASTStructLit *a = (ASTStructLit *)ast;
+
+    if(!a->name)
+        die(ALN, "Unable to infer type of struct literal from context.");
+
     EagleStructType *st = (EagleStructType *)ett_struct_type(a->name);
 
     hashtable *dict = &a->exprs;
+    hashtable visible = hst_create();
 
     LiteralHelper lh = {
         .cb = cb,
         .st = st,
         .a = a,
-        .strct = strct
+        .strct = strct,
+        .set = &visible
     };
 
     hst_for_each(dict, &ac_struct_lit_each, &lh);
 
+    arraylist *snames;
+    arraylist *stypes;
+
+    // Set the members that are not set explicitly by the programmer
+    ty_struct_get_members((EagleTypeType *)st, &snames, &stypes);
+
+    for(int i = 0; i < stypes->count; i++)
+    {
+        if(hst_get(&visible, snames->items[i], NULL, NULL))
+            continue;
+
+        LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, strct, i, snames->items[i]);
+        LLVMValueRef val = ett_default_value(stypes->items[i]);
+
+        ac_safe_store(NULL, cb, pos, val, stypes->items[i], 0, 1);
+    }
+
     a->resultantType = (EagleTypeType *)st;
+
+    hst_free(&visible);
     return strct;
 }
 

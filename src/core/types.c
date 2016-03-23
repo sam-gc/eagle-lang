@@ -192,6 +192,27 @@ LLVMValueRef ett_default_value(EagleTypeType *type)
             return LLVMConstReal(ett_llvm_type(type), 0.0);
         case ETPointer:
             return LLVMConstPointerNull(ett_llvm_type(type));
+        case ETStruct:
+        {
+            arraylist *types;
+
+            ty_struct_get_members(type, NULL, &types);
+            LLVMValueRef vals[types->count];
+            for(int i = 0; i < types->count; i++)
+                vals[i] = ett_default_value(types->items[i]);
+
+            return LLVMConstNamedStruct(ett_llvm_type(type), vals, types->count);
+        }
+        case ETArray:
+        {
+            EagleArrayType *at = (EagleArrayType *)type;
+            LLVMValueRef val = ett_default_value(at->of);
+            LLVMValueRef vals[at->ct];
+            for(int i = 0; i < at->ct; i++)
+                vals[i] = val;
+
+            return LLVMConstArray(ett_llvm_type(at->of), vals, at->ct);
+        }
         default:
             return NULL;
     }
@@ -1055,6 +1076,17 @@ void ty_struct_member_index(EagleTypeType *ett, char *member, int *index, EagleT
     *index = -1;
 }
 
+void ty_struct_get_members(EagleTypeType *ett, arraylist **names, arraylist **types)
+{
+    EagleStructType *st = (EagleStructType *)ett;
+
+    if(names)
+        *names = hst_get(&struct_table, st->name, NULL, NULL);
+
+    if(types)
+        *types = hst_get(&types_table, st->name, NULL, NULL);
+}
+
 int ty_needs_destructor(EagleTypeType *ett)
 {
     EagleStructType *st = (EagleStructType *)ett;
@@ -1070,7 +1102,10 @@ int ty_needs_destructor(EagleTypeType *ett)
         if(ET_IS_COUNTED(ty) || ET_IS_WEAK(ty))
             return 1;
         if(ty->type == ETStruct)
-            return ty_needs_destructor(ty);
+        {
+            if(ty_needs_destructor(ty))
+                return 1;
+        }
         if(ty->type == ETArray && ett_array_has_counted(ty))
             return 1;
     }

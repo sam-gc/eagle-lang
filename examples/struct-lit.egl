@@ -19,7 +19,7 @@ struct Pet
 
 func update_name(Person* p, byte* fname, byte* lname)
 {
-    p.name = Name {
+    p.name = {
         .first = fname
         .last  = lname
     }
@@ -27,8 +27,8 @@ func update_name(Person* p, byte* fname, byte* lname)
 
 func set_owner_name(Pet* pet, Person* p)
 {
-    pet.owner^ = Person {
-        .name = Name {
+    pet.owner^ = {
+        .name = {
             .first = p.name.first
             .last  = p.name.last
         }
@@ -38,7 +38,7 @@ func set_owner_name(Pet* pet, Person* p)
 func main()
 {
     var person = Person {
-        .name = Name {
+        .name = {
             .first = 'Sam'
             .last  = 'Olsen'
         }
@@ -51,7 +51,7 @@ func main()
 
     Person mokisOwner
     var moki = Pet {
-        .name = Name {
+        .name = {
             .first = 'Moki'
         }
         .age  = 13

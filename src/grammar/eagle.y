@@ -207,6 +207,7 @@ funcsident          : TFUNC TIDENTIFIER TLPAREN typelist TRPAREN TCOLON type { $
                     ;
 
 structlit           : TTYPE TLBRACE structlitlist TRBRACE { $$ = ast_make_struct_lit($1, $3); }
+                    | TLBRACE structlitlist TRBRACE { $$ = ast_make_struct_lit(NULL, $2); }
                     ;
 
 structlitlist       : structlitlist TDOT TIDENTIFIER TEQUALS expr TSEMI { $$ = $1; ast_struct_lit_add($1, $3, $5); }

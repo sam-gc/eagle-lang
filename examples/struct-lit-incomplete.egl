@@ -1,0 +1,30 @@
+struct Name
+{
+    byte* first
+    byte* last
+}
+
+struct Person
+{
+    Name name
+    int^ age
+}
+
+func main()
+{
+    var person = Person {
+        .age = new int(10)
+        .name = Name {
+            .last = 'Olsen'
+        }
+    }
+
+    person = Person {
+        .name = Name {
+            .last = 'Olsen'
+        }
+    }
+
+    puts any*@person.name.first
+}
+

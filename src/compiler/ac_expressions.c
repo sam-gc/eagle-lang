@@ -1235,11 +1235,13 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update)
     // Deal with structure literals
     if(a->right->type == ASTRUCTLIT)
     {
-        if(totype->type != ETStruct && totype->type != ETAuto)
-            die(ALN, "Attempting to assign structure literal to non-struct object");
+        ASTStructLit *asl = (ASTStructLit *)a->right;
+
         if(totype->type == ETAuto)
         {
-            ASTStructLit *asl = (ASTStructLit *)a->right;
+            if(!asl->name)
+                die(ALN, "Unable to infer type of struct literal from context.");
+
             totype = ett_struct_type(asl->name);
             if(!storageBundle || !storageIdent)
                 die(ALN, "Internal compiler error!");
@@ -1247,6 +1249,13 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update)
             pos = ac_compile_var_decl_ext(totype, storageIdent, cb, 0);
             storageBundle->type = totype;
         }
+        else if(totype->type == ETStruct)
+        {
+            if(!asl->name)
+                asl->name = ((EagleStructType *)totype)->name;
+        }
+        else
+            die(ALN, "Attempting to assign structure literal to non-struct object");
 
         ac_compile_struct_lit(a->right, cb, pos);
         return pos;
@@ -1311,9 +1320,13 @@ void ac_safe_store(AST *expr, CompilerBundle *cb, LLVMValueRef pos, LLVMValueRef
 
         /*if(hst_remove_key(&cb->transients, a->right, ahhd, ahed))
             transient = 1;*/
-        hst_remove_key(&cb->transients, expr, ahhd, ahed);
-        if(hst_remove_key(&cb->loadedTransients, expr, ahhd, ahed))
-            transient = 1;
+
+        if(expr)
+        {
+            hst_remove_key(&cb->transients, expr, ahhd, ahed);
+            if(hst_remove_key(&cb->loadedTransients, expr, ahhd, ahed))
+                transient = 1;
+        }
         //ac_unwrap_pointer(cb, &pos, totype, 1);
     }
     else if(ET_IS_WEAK(totype))
@@ -1325,7 +1338,7 @@ void ac_safe_store(AST *expr, CompilerBundle *cb, LLVMValueRef pos, LLVMValueRef
     {
         ac_call_destructor(cb, pos, totype);
         // val = LLVMBuildLoad(cb->builder, val, "");
-        if(hst_remove_key(&cb->loadedTransients, expr, ahhd, ahed))
+        if(expr && hst_remove_key(&cb->loadedTransients, expr, ahhd, ahed))
             transient = 1;
         //ac_call_constr(cb, r, a->resultantType);
     }
