@@ -370,9 +370,25 @@ LLVMValueRef ac_compile_new_decl(AST *ast, CompilerBundle *cb)
     hst_put(&cb->transients, ast, val, ahhd, ahed);
 
     EagleTypeType *to = ((EaglePointerType *)ast->resultantType)->to;
-    if(a->right && to->type != ETStruct && to->type != ETClass)
+    if(a->right && to->type != ETClass)
     {
+        // Do we have a structure literal?
+        if(a->right->type == ASTRUCTLIT)
+        {
+            if(to->type != ETStruct)
+                die(ALN, "Attempting to initialize non-struct pointer type with struct literal");
+
+            ASTStructLit *asl = (ASTStructLit *)a->right;
+            if(!asl->name)
+                asl->name = ((EagleStructType *)to)->name;
+
+            LLVMValueRef strct = LLVMBuildStructGEP(cb->builder, val, 5, "");
+            ac_compile_struct_lit(a->right, cb, strct);
+            return val;
+        }
+
         LLVMValueRef init = ac_dispatch_expression(a->right, cb);
+        
         if(!ett_are_same(a->right->resultantType, type->etype))
             init = ac_build_conversion(cb, init, a->right->resultantType, type->etype, LOOSE_CONVERSION);
         LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, val, 5, "");
