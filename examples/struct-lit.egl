@@ -10,22 +10,56 @@ struct Person
     int age
 }
 
+struct Pet
+{
+    Name name
+    int age
+    Person* owner -- Can be nil
+}
+
 func update_name(Person* p, byte* fname, byte* lname)
 {
     p.name = Name {
-        .first = fname,
+        .first = fname
         .last  = lname
+    }
+}
+
+func set_owner_name(Pet* pet, Person* p)
+{
+    pet.owner^ = Person {
+        .name = Name {
+            .first = p.name.first
+            .last  = p.name.last
+        }
     }
 }
 
 func main()
 {
     var person = Person {
+        .name = Name {
+            .first = 'Sam'
+            .last  = 'Olsen'
+        }
         .age  = 21
     }
 
+    puts person.name.first
     update_name(&person, 'Sam', 'Horlbeck Olsen')
-
     puts person.name.last
+
+    Person mokisOwner
+    var moki = Pet {
+        .name = Name {
+            .first = 'Moki'
+        }
+        .age  = 13
+        .owner = &mokisOwner
+    }
+
+    set_owner_name(&moki, &person)
+
+    puts moki.owner.name.first
 }
 

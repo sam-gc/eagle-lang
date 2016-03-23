@@ -327,17 +327,31 @@ static void ac_struct_lit_each(void *key, void *val, void *data)
 
     int index;
     EagleTypeType *memtype;
+    EagleTypeType *fromtype;
     ty_struct_member_index((EagleTypeType *)st, member, &index, &memtype);
 
     if(index < 0)
         die(a->lineno, "struct %s has no member %s", st->name, member);
 
-    LLVMValueRef value = ac_dispatch_expression(exp, cb);
-    if(!ett_are_same(exp->resultantType, memtype))
-        value = ac_build_conversion(cb, value, exp->resultantType, memtype, LOOSE_CONVERSION);
-
     LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, strct, index, "");
-    LLVMBuildStore(cb->builder, value, pos);
+    LLVMValueRef value = NULL;
+    
+    if(exp->type == ASTRUCTLIT)
+        value = ac_compile_struct_lit(exp, cb, pos);
+    else
+        value = ac_dispatch_expression(exp, cb);
+
+    fromtype = exp->resultantType;
+
+    if(!ett_are_same(fromtype, memtype))
+        value = ac_build_conversion(cb, value, fromtype, memtype, LOOSE_CONVERSION);
+
+    // We need to make sure to load the other structure if necessary
+    if(fromtype->type == ETStruct && LLVMTypeOf(value) == ett_llvm_type(ett_pointer_type(fromtype)))
+        value = LLVMBuildLoad(cb->builder, value, "");
+
+    // Use utility function to ensure counted pointers are handled properly
+    ac_safe_store(exp, cb, pos, value, memtype, 0, exp->type != ASTRUCTLIT);
 }
 
 LLVMValueRef ac_compile_struct_lit(AST *ast, CompilerBundle *cb, LLVMValueRef strct)
@@ -355,22 +369,6 @@ LLVMValueRef ac_compile_struct_lit(AST *ast, CompilerBundle *cb, LLVMValueRef st
     };
 
     hst_for_each(dict, &ac_struct_lit_each, &lh);
-
-    /*
-    for(int i = 0; i < st->types.count; i++)
-    {
-        char *name = st->names.items[i];
-        AST *exp = hst_get(dict, name, NULL, NULL);
-
-        printf("%s\n", name);
-
-        if(!exp)
-            continue;
-
-        LLVMValueRef val = ac_dispatch_expression(exp, cb);
-        LLVMBuildInsertValue(cb->builder, strct, val, i, "");
-    }
-    */
 
     a->resultantType = (EagleTypeType *)st;
     return strct;

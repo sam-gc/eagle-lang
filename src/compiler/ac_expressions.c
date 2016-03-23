@@ -1287,34 +1287,6 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update)
     else if(!ett_are_same(fromtype, totype) && (!update || (update && totype->type != ETPointer)))
         r = ac_build_conversion(cb, r, fromtype, totype, LOOSE_CONVERSION);
 
-    int transient = 0;
-    LLVMValueRef ptrPos = NULL;
-    if(ET_IS_COUNTED(a->resultantType))
-    {
-        ptrPos = pos;
-        ac_decr_pointer(cb, &pos, totype);
-
-        /*if(hst_remove_key(&cb->transients, a->right, ahhd, ahed))
-            transient = 1;*/
-        hst_remove_key(&cb->transients, a->right, ahhd, ahed);
-        if(hst_remove_key(&cb->loadedTransients, a->right, ahhd, ahed))
-            transient = 1;
-        //ac_unwrap_pointer(cb, &pos, totype, 1);
-    }
-    else if(ET_IS_WEAK(a->resultantType))
-    {
-        ac_remove_weak_pointer(cb, pos, totype);
-        ac_add_weak_pointer(cb, r, pos, totype);
-    }
-    else if(a->resultantType->type == ETStruct && ty_needs_destructor(a->resultantType))
-    {
-        ac_call_destructor(cb, pos, a->resultantType);
-        r = LLVMBuildLoad(cb->builder, r, "");
-        if(hst_remove_key(&cb->loadedTransients, a->right, ahhd, ahed))
-            transient = 1;
-        //ac_call_constr(cb, r, a->resultantType);
-    }
-
     if(update)
     {
         LLVMValueRef cur = LLVMBuildLoad(cb->builder, pos, "");
@@ -1322,17 +1294,52 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update)
         // r = ac_make_add(cur, r, cb->builder, totype->type);
     }
 
-    // We are dealing with a static initializer for a static variable declaration
-    // (a very specific case).
-    if(staticInitializer)
-        ac_set_static_initializer(a->lineno, pos, r);
-    else
-        LLVMBuildStore(cb->builder, r, pos);
-
-    if(ET_IS_COUNTED(a->resultantType) && !transient)
-        ac_incr_pointer(cb, &ptrPos, totype);
-    else if(a->resultantType->type == ETStruct && ty_needs_destructor(a->resultantType) && !transient)
-        ac_call_copy_constructor(cb, pos, a->resultantType);
+    ac_safe_store(a->right, cb, pos, r, totype, staticInitializer, 1);
 
     return LLVMBuildLoad(cb->builder, pos, "loadtmp");
 }
+
+void ac_safe_store(AST *expr, CompilerBundle *cb, LLVMValueRef pos, LLVMValueRef val, EagleTypeType *totype, int staticInitializer, int deStruct)
+{
+    int transient = 0;
+    LLVMValueRef ptrPos = NULL;
+    if(ET_IS_COUNTED(totype))
+    {
+        ptrPos = pos;
+        ac_decr_pointer(cb, &pos, totype);
+
+        /*if(hst_remove_key(&cb->transients, a->right, ahhd, ahed))
+            transient = 1;*/
+        hst_remove_key(&cb->transients, expr, ahhd, ahed);
+        if(hst_remove_key(&cb->loadedTransients, expr, ahhd, ahed))
+            transient = 1;
+        //ac_unwrap_pointer(cb, &pos, totype, 1);
+    }
+    else if(ET_IS_WEAK(totype))
+    {
+        ac_remove_weak_pointer(cb, pos, totype);
+        ac_add_weak_pointer(cb, val, pos, totype);
+    }
+    else if(totype->type == ETStruct && ty_needs_destructor(totype) && deStruct)
+    {
+        ac_call_destructor(cb, pos, totype);
+        // val = LLVMBuildLoad(cb->builder, val, "");
+        if(hst_remove_key(&cb->loadedTransients, expr, ahhd, ahed))
+            transient = 1;
+        //ac_call_constr(cb, r, a->resultantType);
+    }
+
+    // We are dealing with a static initializer for a static variable declaration
+    // (a very specific case).
+    if(staticInitializer)
+        ac_set_static_initializer(expr->lineno, pos, val);
+    else
+        LLVMBuildStore(cb->builder, val, pos);
+
+
+    if(ET_IS_COUNTED(totype) && !transient)
+        ac_incr_pointer(cb, &ptrPos, totype);
+    else if(totype->type == ETStruct && ty_needs_destructor(totype) && !transient && deStruct)
+        ac_call_copy_constructor(cb, pos, totype);
+}
+

@@ -28,4 +28,15 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb);
 LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update);
 LLVMValueRef ac_generic_unary(ASTUnary *a, LLVMValueRef val, CompilerBundle *cb);
 
+/*
+ * AST *expr                : The syntax tree that generates the "right hand side" of the assignment"
+ * CompilerBundle *cb       : The compiler bundle for the current module
+ * LLVMValueRef pos         : The position to which to store
+ * LLVMValueRef val         : The value to store
+ * EagleTypeType *totype    : The type of the storage position
+ * int staticInitializer    : Are we dealing with a static initializer or a normal storage container?
+ * int deStruct             : Are we dealing with a struct literal or an actual struct assignment? (Should we run constructors/destructors?)
+ */
+void ac_safe_store(AST *expr, CompilerBundle *cb, LLVMValueRef pos, LLVMValueRef val, EagleTypeType *totype, int staticInitializer, int deStruct);
+
 #endif
