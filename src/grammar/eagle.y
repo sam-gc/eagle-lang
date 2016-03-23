@@ -212,6 +212,7 @@ structlit           : TTYPE TLBRACE structlitlist TRBRACE { $$ = ast_make_struct
 
 structlitlist       : structlitlist TDOT TIDENTIFIER TEQUALS expr TSEMI { $$ = $1; ast_struct_lit_add($1, $3, $5); }
                     | TDOT TIDENTIFIER TEQUALS expr TSEMI { $$ = ast_make_struct_lit_dict(); ast_struct_lit_add($$, $2, $4); }
+                    | TDOT { $$ = ast_make_struct_lit_dict(); }
                     ;
 
 typelist            : type { $$ = ast_make_var_decl($1, NULL); }
