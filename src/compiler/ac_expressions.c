@@ -809,6 +809,7 @@ LLVMValueRef ac_compile_get_address(AST *of, CompilerBundle *cb)
                 die(LN(of), "Undeclared identifier (%s)", o->value.id);
 
             of->resultantType = b->type;
+            b->wasused = 1;
 
             return b->value;
         }
