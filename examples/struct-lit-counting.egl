@@ -1,0 +1,31 @@
+struct Test
+{
+    Blah b
+}
+
+struct Blah
+{
+    int j
+    int^ i
+}
+
+func main()
+{
+    var b = Blah {
+        .i = new int(35)
+    }
+
+    var u = Test {
+        .b = b
+    }
+
+    var t = Test {
+        .b = Blah {
+            .i = new int(15)
+        }
+    }
+
+    puts t.b.i^
+    puts u.b.i^
+}
+
