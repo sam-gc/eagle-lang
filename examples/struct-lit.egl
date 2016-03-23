@@ -1,18 +1,31 @@
+struct Name
+{
+    byte* first
+    byte* last
+}
+
 struct Person
 {
-    byte* first_name
-    byte* last_name
+    Name name
     int age
+}
+
+func update_name(Person* p, byte* fname, byte* lname)
+{
+    p.name = Name {
+        .first = fname,
+        .last  = lname
+    }
 }
 
 func main()
 {
     var person = Person {
-        .first_name = 'Sam',
-        .last_name  = 'Olsen',
-        .age        = 21
+        .age  = 21
     }
 
-    puts person.first_name
+    update_name(&person, 'Sam', 'Horlbeck Olsen')
+
+    puts person.name.last
 }
 

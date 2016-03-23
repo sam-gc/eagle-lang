@@ -367,9 +367,6 @@ LLVMValueRef ac_dispatch_expression(AST *ast, CompilerBundle *cb)
         case ATYPELOOKUP:
             val = ac_compile_type_lookup(ast, cb);
             break;
-        case ASTRUCTLIT:
-            val = ac_compile_struct_lit(ast, cb);
-            break;
         default:
             die(ALN, "Invalid expression type.");
             return NULL;
@@ -417,9 +414,6 @@ void ac_dispatch_statement(AST *ast, CompilerBundle *cb)
             break;
         case AFUNCDECL:
             ac_compile_closure(ast, cb);
-            break;
-        case ASTRUCTLIT:
-            ac_compile_struct_lit(ast, cb);
             break;
         case ATYPELOOKUP:
             ac_compile_type_lookup(ast, cb);

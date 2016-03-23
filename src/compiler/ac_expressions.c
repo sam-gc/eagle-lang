@@ -1231,6 +1231,26 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update)
     }
     */
 
+    // Deal with structure literals
+    if(a->right->type == ASTRUCTLIT)
+    {
+        if(totype->type != ETStruct && totype->type != ETAuto)
+            die(ALN, "Attempting to assign structure literal to non-struct object");
+        if(totype->type == ETAuto)
+        {
+            ASTStructLit *asl = (ASTStructLit *)a->right;
+            totype = ett_struct_type(asl->name);
+            if(!storageBundle || !storageIdent)
+                die(ALN, "Internal compiler error!");
+
+            pos = ac_compile_var_decl_ext(totype, storageIdent, cb, 0);
+            storageBundle->type = totype;
+        }
+
+        ac_compile_struct_lit(a->right, cb, pos);
+        return pos;
+    }
+
     if(totype && totype->type == ETEnum)
         cb->enum_lookup = totype;
     LLVMValueRef r = ac_dispatch_expression(a->right, cb);

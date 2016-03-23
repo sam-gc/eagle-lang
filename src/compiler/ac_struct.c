@@ -336,17 +336,16 @@ static void ac_struct_lit_each(void *key, void *val, void *data)
     if(!ett_are_same(exp->resultantType, memtype))
         value = ac_build_conversion(cb, value, exp->resultantType, memtype, LOOSE_CONVERSION);
 
-    LLVMBuildInsertValue(cb->builder, strct, value, index, "");
+    LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, strct, index, "");
+    LLVMBuildStore(cb->builder, value, pos);
 }
 
-LLVMValueRef ac_compile_struct_lit(AST *ast, CompilerBundle *cb)
+LLVMValueRef ac_compile_struct_lit(AST *ast, CompilerBundle *cb, LLVMValueRef strct)
 {
     ASTStructLit *a = (ASTStructLit *)ast;
     EagleStructType *st = (EagleStructType *)ett_struct_type(a->name);
 
     hashtable *dict = &a->exprs;
-
-    LLVMValueRef strct = LLVMBuildAlloca(cb->builder, ett_llvm_type((EagleTypeType *)st), "lit");
 
     LiteralHelper lh = {
         .cb = cb,

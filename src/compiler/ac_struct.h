@@ -20,6 +20,6 @@ void ac_make_struct_definitions(AST *ast, CompilerBundle *cb);
 void ac_call_destructor(CompilerBundle *cb, LLVMValueRef pos, EagleTypeType *ty);
 void ac_call_constructor(CompilerBundle *cb, LLVMValueRef pos, EagleTypeType *ty);
 void ac_call_copy_constructor(CompilerBundle *cb, LLVMValueRef pos, EagleTypeType *ty);
-LLVMValueRef ac_compile_struct_lit(AST *ast, CompilerBundle *cb);
+LLVMValueRef ac_compile_struct_lit(AST *ast, CompilerBundle *cb, LLVMValueRef strct);
 
 #endif
