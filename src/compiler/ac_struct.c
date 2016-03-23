@@ -351,7 +351,12 @@ static void ac_struct_lit_each(void *key, void *val, void *data)
     }
     else
     {
+        if(memtype->type == ETEnum)
+            cb->enum_lookup = memtype;
+
         value = ac_dispatch_expression(exp, cb);
+
+        cb->enum_lookup = NULL;
     }
 
     fromtype = exp->resultantType;

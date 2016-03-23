@@ -12,36 +12,37 @@ class LinkedList
 
     func append(int val)
     {
-        var n = new Node
-        n->value = val
+        var n = new Node({
+            .value = val
+        })
 
-        if !self->head
+        if !self.head
         {
-            self->head = n
-            self->tail = n
+            self.head = n
+            self.tail = n
             return
         }
 
-        n->prev = self->tail
-        self->tail->next = n
-        self->tail = n
+        n.prev = self.tail
+        self.tail.next = n
+        self.tail = n
     }
 
     func remove(int val)
     {
-        for var n = self->head; n; n = n->next
+        for var n = self.head; n; n = n.next
         {
-            if n->value != val
+            if n.value != val
                 continue
-            if !n->prev
-                self->head = n->next
+            if !n.prev
+                self.head = n.next
             else
-                n->prev->next = n->next
+                n.prev.next = n.next
 
-            if !n->next
-                self->tail = n->prev
+            if !n.next
+                self.tail = n.prev
             else
-                n->next->prev = n->prev
+                n.next.prev = n.prev
         }
     }
 
@@ -50,10 +51,10 @@ class LinkedList
         if !callback
             return
 
-        Node^ n = self->head
-        for n; n; n = n->next
+        Node^ n = self.head
+        for n; n; n = n.next
         {
-            callback(n->value)
+            callback(n.value)
         }
     }
 
@@ -62,24 +63,24 @@ class LinkedList
         if !mapper
             return
 
-        Node^ n = self->head
-        for n; n; n = n->next
+        Node^ n = self.head
+        for n; n; n = n.next
         {
-            n->value = mapper(n->value)
+            n.value = mapper(n.value)
         }
     }
 
     func reverse()
     {
-        var head = self->head
-        self->head = self->tail
-        self->tail = head
+        var head = self.head
+        self.head = self.tail
+        self.tail = head
 
-        for var n = self->head; n; n = n->next
+        for var n = self.head; n; n = n.next
         {
-            var next = n->next
-            n->next = n->prev
-            n->prev = next
+            var next = n.next
+            n.next = n.prev
+            n.prev = next
         }
     }
 }
@@ -87,34 +88,34 @@ class LinkedList
 func main()
 {
     var ll = new LinkedList()
-    ll->append(11)
-    ll->append(22)
-    ll->append(33)
-    ll->append(68)
-    ll->append(44)
-    ll->append(55)
+    ll.append(11)
+    ll.append(22)
+    ll.append(33)
+    ll.append(68)
+    ll.append(44)
+    ll.append(55)
 
     var mm = new LinkedList()
-    mm->append(32)
+    mm.append(32)
 
     var printer = func(int num) { puts num; }
 
-    ll->forEach(printer)
+    ll.forEach(printer)
 
-    mm->forEach(func(int num) {
+    mm.forEach(func(int num) {
         puts num * 2
     })
 
     puts '--------------------------'
 
-    ll->remove(68)
+    ll.remove(68)
 
-    ll->map(func(int num) : int {
+    ll.map(func(int num) : int {
         return num / 11
     })
 
-    ll->forEach(printer)
-    ll->reverse()
-    ll->forEach(printer)
+    ll.forEach(printer)
+    ll.reverse()
+    ll.forEach(printer)
 }
 

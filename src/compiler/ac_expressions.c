@@ -1237,16 +1237,6 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update)
         die(ALN, "Left hand side may not be assigned to.");
         return NULL;
     }
-    /*
-    else
-    {
-        ASTVarDecl *l = (ASTVarDecl *)a->left;
-
-        ASTTypeDecl *type = (ASTTypeDecl *)l->atype;
-        totype = type->etype;
-        pos = ac_compile_var_decl(a->left, cb);
-    }
-    */
 
     // Deal with structure literals
     if(a->right->type == ASTRUCTLIT)
@@ -1334,16 +1324,12 @@ void ac_safe_store(AST *expr, CompilerBundle *cb, LLVMValueRef pos, LLVMValueRef
         ptrPos = pos;
         ac_decr_pointer(cb, &pos, totype);
 
-        /*if(hst_remove_key(&cb->transients, a->right, ahhd, ahed))
-            transient = 1;*/
-
         if(expr)
         {
             hst_remove_key(&cb->transients, expr, ahhd, ahed);
             if(hst_remove_key(&cb->loadedTransients, expr, ahhd, ahed))
                 transient = 1;
         }
-        //ac_unwrap_pointer(cb, &pos, totype, 1);
     }
     else if(ET_IS_WEAK(totype))
     {
@@ -1353,10 +1339,8 @@ void ac_safe_store(AST *expr, CompilerBundle *cb, LLVMValueRef pos, LLVMValueRef
     else if(totype->type == ETStruct && ty_needs_destructor(totype) && deStruct)
     {
         ac_call_destructor(cb, pos, totype);
-        // val = LLVMBuildLoad(cb->builder, val, "");
         if(expr && hst_remove_key(&cb->loadedTransients, expr, ahhd, ahed))
             transient = 1;
-        //ac_call_constr(cb, r, a->resultantType);
     }
 
     // We are dealing with a static initializer for a static variable declaration

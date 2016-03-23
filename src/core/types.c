@@ -187,6 +187,7 @@ LLVMValueRef ett_default_value(EagleTypeType *type)
         case ETInt16:
         case ETInt32:
         case ETInt64:
+        case ETEnum:
             return LLVMConstInt(ett_llvm_type(type), 0, 0);
         case ETDouble:
             return LLVMConstReal(ett_llvm_type(type), 0.0);
