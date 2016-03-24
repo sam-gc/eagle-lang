@@ -1318,18 +1318,21 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update)
 void ac_safe_store(AST *expr, CompilerBundle *cb, LLVMValueRef pos, LLVMValueRef val, EagleTypeType *totype, int staticInitializer, int deStruct)
 {
     int transient = 0;
-    LLVMValueRef ptrPos = NULL;
     if(ET_IS_COUNTED(totype))
     {
-        ptrPos = pos;
-        ac_decr_pointer(cb, &pos, totype);
-
         if(expr)
         {
             hst_remove_key(&cb->transients, expr, ahhd, ahed);
             if(hst_remove_key(&cb->loadedTransients, expr, ahhd, ahed))
                 transient = 1;
         }
+
+        // Make sure we increment the new value before
+        // the old value is decremented
+        if(!transient)
+            ac_incr_val_pointer(cb, &val, totype);
+
+        ac_decr_pointer(cb, &pos, totype);
     }
     else if(ET_IS_WEAK(totype))
     {
@@ -1350,10 +1353,7 @@ void ac_safe_store(AST *expr, CompilerBundle *cb, LLVMValueRef pos, LLVMValueRef
     else
         LLVMBuildStore(cb->builder, val, pos);
 
-
-    if(ET_IS_COUNTED(totype) && !transient)
-        ac_incr_pointer(cb, &ptrPos, totype);
-    else if(totype->type == ETStruct && ty_needs_destructor(totype) && !transient && deStruct)
+    if(totype->type == ETStruct && ty_needs_destructor(totype) && !transient && deStruct)
         ac_call_copy_constructor(cb, pos, totype);
 }
 
