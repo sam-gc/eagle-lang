@@ -270,6 +270,8 @@ AST *ast_make_auto_decl(char *ident)
     ast->atype = ast_make_type((char *)"auto");
     ast->ident = ident;
     ast->arrct = NULL;
+    ast->linkage = VLNone;
+    ast->staticInit = NULL;
 
     return (AST *)ast;
 }
