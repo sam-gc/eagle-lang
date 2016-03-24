@@ -16,6 +16,7 @@
 #include "config.h"
 #include "mempool.h"
 #include "hashtable.h"
+#include "colors.h"
 
 extern hashtable global_args;
 
@@ -176,8 +177,8 @@ void *thr_work_proc(void *data)
         ct += 1;
     }
 
-    if(IN(global_args, "--verbose"))
-        printf("Thread (%d) complete; compiled %d modules\n", pd->thread_num, ct);
+    if(crate->verbose)
+        printf(BLUE "Thread (%d) complete" DEFAULT " -- compiled %d modules\n", pd->thread_num, ct);
 
     free(pd);
     return NULL;
@@ -187,10 +188,13 @@ void thr_produce_machine_code(ShippingCrate *crate)
 {
     crate->widex = 0;
 
-    int thrct = IN(global_args, "--threads") ? atoi(hst_get(&global_args, (char *)"--threads", NULL, NULL)) : threadct();
+    int thrct = crate->threadct ? crate->threadct : threadct();
 
-    if(IN(global_args, "--verbose"))
-        printf("Generating machine code (%d threads)\n", thrct);
+    if(thrct > crate->work.count)
+        thrct = crate->work.count;
+
+    if(crate->verbose)
+        printf(BOLD "Generating machine code" DEFAULT " (%d threads)\n", thrct);
 
     th_thread threads[thrct];
     char *outputfiles[crate->work.count];

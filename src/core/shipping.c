@@ -72,8 +72,6 @@ char *shp_switch_file_ext(char *orig, const char *n)
 
 void shp_produce_assembly(LLVMModuleRef module, char *filename, char **outname)
 {
-    // EGLGenerateAssembly(module, "/tmp/egl_out.s");
-
     char *ofn = NULL;
 
     if(IN(global_args, "-S"))
@@ -83,7 +81,11 @@ void shp_produce_assembly(LLVMModuleRef module, char *filename, char **outname)
 
     LLVMTargetRef targ;
     LLVMGetTargetFromTriple(LLVMGetDefaultTargetTriple(), &targ, NULL);
-    LLVMTargetMachineRef tm = LLVMCreateTargetMachine(targ, LLVMGetDefaultTargetTriple(), "", "", LLVMCodeGenLevelNone, LLVMRelocDefault, LLVMCodeModelDefault);
+    LLVMTargetMachineRef tm =
+        LLVMCreateTargetMachine(targ, LLVMGetDefaultTargetTriple(),
+                                "", "", LLVMCodeGenLevelNone,
+                                LLVMRelocDefault, LLVMCodeModelDefault);
+
     LLVMTargetMachineEmitToFile(tm, module, ofn, LLVMAssemblyFile, NULL);
 
     *outname = ofn;
@@ -106,12 +108,11 @@ void shp_produce_binary(char *filename, char *assemblyname, char **outname)
         outfile = shp_switch_file_ext(filename, "o");
     }
 
-    sprintf(command, CC " -c %s -o %s -g -O0", assemblyname, outfile); //objectfile, rcfile, outfile);
+    sprintf(command, CC " -c %s -o %s -g -O0", assemblyname, outfile);
 
     system(command);
 
     *outname = outfile;
-    // arr_append(&crate->object_files, outfile);
 }
 
 void shp_produce_executable(ShippingCrate *crate)
@@ -140,10 +141,10 @@ void shp_produce_executable(ShippingCrate *crate)
 
     char command[500 + strlen(outfile) + strlen(sbd.buffer) + strlen(libb.buffer)];
 
-    //const char *rcfile = IN(global_args, "--no-rc") ? "" : "rc.o";
     sprintf(command, CC " %s -o %s %s", sbd.buffer, outfile, libb.buffer);
     free(sbd.buffer);
     free(libb.buffer);
 
     system(command);
 }
+

@@ -64,6 +64,22 @@ static void rule_help(char *arg, char *next, int *skip, void *data)
     exit(0);
 }
 
+static void rule_threads(char *arg, char *next, int *skip, void *data)
+{
+    *skip = 1;
+    ShippingCrate *crate = data;
+    crate->threadct = atoi(next);
+
+    if(!crate->threadct)
+        warn(-1, "Invalid thread count");
+}
+
+static void rule_verbose(char *arg, char *next, int *skip, void *data)
+{
+    ShippingCrate *crate = data;
+    crate->verbose = 1;
+}
+
 static void rule_skip(char *arg, char *next, int *skip, void *data)
 {
     *skip = 1;
@@ -109,9 +125,9 @@ void args_setup(ShippingCrate *crate)
     ta_rule(targs, "--version", "--version", &rule_version, "Display version number and copyright information");
     ta_rule(targs, "--llvm", "--llvm", &rule_ignore, "Dump LLVM IR code to stderr");
     ta_rule(targs, "--no-rc", "--no-rc", &rule_ignore, "Do not include reference counting symbols in module");
-    ta_rule(targs, "--verbose", "--verbose", &rule_ignore, "Display verbose output during compilation");
+    ta_rule(targs, "--verbose", "--verbose", &rule_verbose, "Display verbose output during compilation");
     ta_rule(targs, "--code", "--code <eagle code>", &rule_code, "Provide extra code to compile");
-    ta_rule(targs, "--threads", "--threads <count>", &rule_skip, "Optimize and compile on <count> threads (default 4)");
+    ta_rule(targs, "--threads", "--threads <count>", &rule_threads, "Optimize and compile on <count> threads (default 4)");
     ta_rule(targs, "--dump-code", "--dump-code", &rule_ignore, "Dump the pre-processed code from imports");
     ta_rule(targs, "-o", "-o <filename>", &rule_skip, "Output executable name");
     ta_rule(targs, "-c", "-c", &rule_ignore, "Output object file");

@@ -22,5 +22,6 @@
 #define LIGHT_PURPLE   "\033[1;35m"
 #define LIGHT_YELLOW   "\033[1;33m"
 #define WHITE          "\033[1;37m"
+#define BOLD           "\033[1m"
 #define DEFAULT		   "\033[0m"
  

@@ -15,6 +15,8 @@
 #define IN(x, chr) (hst_get(&x, (char *)chr, NULL, NULL))
 
 typedef struct {
+    unsigned verbose : 1;
+
     arraylist source_files;
     arraylist object_files;
     arraylist extra_code;
@@ -22,6 +24,8 @@ typedef struct {
     arraylist libs;
 
     int widex;
+
+    int threadct;
 } ShippingCrate;
 
 void shp_optimize(LLVMModuleRef module);

@@ -7,6 +7,7 @@
  */
 
 #include <stdio.h>
+#include <sys/time.h>
 #include "compiler/ast_compiler.h"
 #include "compiler/ast.h"
 #include "grammar/eagle.tab.h"
@@ -19,6 +20,7 @@
 #include "cpp/cpp.h"
 #include "threading.h"
 #include "arguments.h"
+#include "colors.h"
 
 #define YY_BUF_SIZE 32768
 #define SEQU(a, b) strcmp((a), (b)) == 0
@@ -42,7 +44,7 @@ extern void yy_delete_buffer(YY_BUFFER_STATE buf);
 
 char *current_file_name = NULL;
 
-void register_typedef()
+static void register_typedef()
 {
     char *prev = NULL;
     int token;
@@ -66,7 +68,7 @@ void register_typedef()
     free(prev);
 }
 
-void first_pass()
+static void first_pass()
 {
     int token;
     int saveNextStruct = 0;
@@ -112,16 +114,19 @@ void first_pass()
     yylineno = 0;
 }
 
-void init_crate(ShippingCrate *crate)
+static void init_crate(ShippingCrate *crate)
 {
     crate->source_files = arr_create(5);
     crate->object_files = arr_create(5);
     crate->extra_code = arr_create(2);
     crate->work = arr_create(10);
     crate->libs = arr_create(5);
+
+    crate->verbose = 0;
+    crate->threadct = 0; // Let the compiler choose later
 }
 
-LLVMModuleRef compile_generic(ShippingCrate *crate, int include_rc, char *file)
+static LLVMModuleRef compile_generic(ShippingCrate *crate, int include_rc, char *file)
 {
     YY_BUFFER_STATE yybuf = yy_create_buffer(NULL, YY_BUF_SIZE);
     yy_switch_to_buffer(yybuf);
@@ -159,7 +164,7 @@ LLVMModuleRef compile_generic(ShippingCrate *crate, int include_rc, char *file)
     return module;
 }
 
-char *make_argcode_name()
+static char *make_argcode_name()
 {
     static int argcode_counter = 0;
     char *text = malloc(100);
@@ -167,7 +172,7 @@ char *make_argcode_name()
     return text;
 }
 
-void compile_string(char *str, ShippingCrate *crate)
+static void compile_string(char *str, ShippingCrate *crate)
 {
     char *file = make_argcode_name();
     ymultibuffer = mb_alloc();
@@ -176,8 +181,8 @@ void compile_string(char *str, ShippingCrate *crate)
     // crate->current_file = make_argcode_name();
     utl_set_current_context(LLVMContextCreate());
 
-    if(IN(global_args, "--verbose"))
-        printf("Compiling extra code {{\n%s\n}}\n", str);
+    if(crate->verbose)
+        printf(BLUE "Compiling extra code" DEFAULT ": {{\n%s\n}}\n", str);
 
     LLVMModuleRef module = compile_generic(crate, !IN(global_args, "--no-rc"), file);
 
@@ -186,7 +191,7 @@ void compile_string(char *str, ShippingCrate *crate)
     // free(crate->current_file);
 }
 
-void compile_rc(ShippingCrate *crate)
+static void compile_rc(ShippingCrate *crate)
 {
     ymultibuffer = mb_alloc();
     mb_add_str(ymultibuffer, rc_code);
@@ -194,14 +199,14 @@ void compile_rc(ShippingCrate *crate)
     // crate->current_file = (char *)"__egl_rc_str.egl";
     utl_set_current_context(LLVMContextCreate());
 
-    if(IN(global_args, "--verbose"))
-        printf("Compiling runtime...\n");
+    if(crate->verbose)
+        printf(BLUE "Compiling runtime\n" DEFAULT);
 
     LLVMModuleRef module = compile_generic(crate, 0, (char *)"__egl_rc_str.egl");
     arr_append(&crate->work, thr_create_bundle(module, utl_get_current_context(), (char *)"__egl_rc_str.egl"));
 }
 
-void compile_file(char *file, ShippingCrate *crate)
+static void compile_file(char *file, ShippingCrate *crate)
 {
     ymultibuffer = imp_generate_imports(file);
     mb_add_file(ymultibuffer, file);
@@ -209,11 +214,30 @@ void compile_file(char *file, ShippingCrate *crate)
 
     utl_set_current_context(LLVMContextCreate());
 
-    if(IN(global_args, "--verbose"))
-        printf("Compiling file (%s)...\n", file);
+    if(crate->verbose)
+        printf(BLUE "Compiling file" DEFAULT " -- %s\n", file);
 
     LLVMModuleRef module = compile_generic(crate, !IN(global_args, "--no-rc"), file);
     arr_append(&crate->work, thr_create_bundle(module, utl_get_current_context(), file));
+}
+
+static long getms()
+{
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return tv.tv_sec * 1000 + tv.tv_usec / 1000;
+}
+
+static void pretty_print_time(long ms, char *buf)
+{
+    if(ms > 1500)
+    {
+        double frac = ms / 1000.0;
+        sprintf(buf, "%lf s", frac);
+        return;
+    }
+
+    sprintf(buf, "%ld ms", ms);
 }
 
 int main(int argc, const char *argv[])
@@ -240,6 +264,11 @@ int main(int argc, const char *argv[])
         die(-1, "No valid operands provided.");
     }
 
+    if(crate.verbose)
+        printf(BOLD "Starting build phase\n" DEFAULT);
+
+    long start_time = getms();
+
     thr_init();
     LLVMInitializeNativeTarget();
     LLVMInitializeNativeAsmPrinter();
@@ -260,9 +289,23 @@ int main(int argc, const char *argv[])
 
     if(!IN(global_args, "-c") && !IN(global_args, "--llvm") && !IN(global_args, "-h") &&
        !IN(global_args, "--dump-code") && !IN(global_args, "-S"))
+    {
+        if(crate.verbose)
+            printf(BOLD "Linking\n" DEFAULT);
         shp_produce_executable(&crate);
+    }
 
     thr_teardown();
 
+    long end_time = getms();
+
+    if(crate.verbose)
+    {
+        char time[50];
+        pretty_print_time(end_time - start_time, time);
+        printf(BOLD "Build complete" DEFAULT " (finished in %s)\n", time);
+    }
+
     return 0;
 }
+
