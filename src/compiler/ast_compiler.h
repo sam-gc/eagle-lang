@@ -17,6 +17,7 @@
 #include "variable_manager.h"
 #include "cpp/cpp.h"
 #include "core/utils.h"
+#include "environment/exports.h"
 
 #define IS_ANY_PTR(t) (t->type == ETPointer && ((EaglePointerType *)t)->to->type == ETAny)
 #define ALN (ast->lineno)
@@ -46,6 +47,7 @@ typedef struct {
     int compilingMethod;
     EagleTypeType *enum_lookup;
 
+    export_control *exports;
 } CompilerBundle;
 
 #include "ac_control_flow.h"

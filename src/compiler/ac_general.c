@@ -93,6 +93,22 @@ void warn_debug(int complineno, const char *file, int lineno, const char *fmt, .
 }
 #endif
 
+export_control *ac_get_exports(AST *ast)
+{
+    export_control *ec = ec_alloc();
+
+    for(; ast; ast = ast->next)
+    {
+        if(ast->type != AEXPORT)
+            continue;
+
+        ASTExportSymbol *aex = (ASTExportSymbol *)ast;
+        ec_add_wcard(ec, aex->fmt);
+    }
+
+    return ec;
+}
+
 LLVMModuleRef ac_compile(AST *ast, int include_rc)
 {
     CompilerBundle cb;
@@ -110,6 +126,8 @@ LLVMModuleRef ac_compile(AST *ast, int include_rc)
     VarScopeStack vs = vs_make();
     cb.varScope = &vs;
     cb.enum_lookup = NULL;
+
+    cb.exports = ac_get_exports(ast);
 
     vs_push(cb.varScope);
 
@@ -153,6 +171,8 @@ LLVMModuleRef ac_compile(AST *ast, int include_rc)
 
     hst_free(&cb.transients);
     hst_free(&cb.loadedTransients);
+
+    ec_free(cb.exports);
 
     return cb.module;
 }
@@ -301,6 +321,11 @@ void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
     LLVMTypeRef func_type = LLVMFunctionType(ett_llvm_type(retType->etype), param_types, ct, a->vararg);
     LLVMValueRef func = LLVMAddFunction(cb->module, a->ident, func_type);
 
+    if(!ec_allow(cb->exports, a->ident) && a->body && strcmp(a->ident, "main"))
+    {
+        LLVMSetLinkage(func, LLVMPrivateLinkage);
+    }
+
     if(retType->etype->type == ETStruct)
         die(ALN, "Returning struct by value not supported. (%s)\n", a->ident);
 
@@ -444,6 +469,7 @@ void ac_dispatch_declaration(AST *ast, CompilerBundle *cb)
         case AIFCDECL:
         case AENUMDECL:
         case AVARDECL:
+        case AEXPORT:
             break;
         case AGENDECL:
             ac_compile_generator_code(ast, cb);

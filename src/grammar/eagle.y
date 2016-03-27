@@ -25,14 +25,14 @@
     AST *node;
 }
 
-%token <string> TIDENTIFIER TINT TDOUBLE TCHARLIT TTYPE TCOUNTED TNEW TSTRUCT TCLASS TTOUCH TCSTR TINTERFACE
+%token <string> TIDENTIFIER TINT TDOUBLE TCHARLIT TTYPE TCOUNTED TNEW TSTRUCT TCLASS TTOUCH TCSTR TEXPORT
 %token <token> TPLUS TMINUS TEQUALS TMUL TDIV TGT TLT TEQ TNE TGTE TLTE TNOT TPOW TLOGAND TLOGOR TMOD
 %token <token> TPLUSE TMINUSE TMULE TDIVE TOR
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TLBRACKET TRBRACKET
 %token <token> TFUNC TRETURN TYIELD TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF TFOR TIN TWEAK TUNWRAP
 %token <token> TBREAK TCONTINUE TVAR TGEN  TELLIPSES TVIEW
 %token <token> TCOLON TSEMI TNEWLINE TCOMMA TDOT TAMP TAT TARROW T__DEC T__INC
-%token <token> TYES TNO TNIL TIMPORT TEXPORT TTYPEDEF TENUM TSTATIC
+%token <token> TYES TNO TNIL TIMPORT TTYPEDEF TENUM TSTATIC TINTERFACE
 %type <node> program declarations declaration statements statement block funcdecl ifstatement
 %type <node> variabledecl vardecllist funccall calllist funcident funcsident externdecl typelist type interfacetypelist
 %type <node> elifstatement elifblock elsestatement singif structdecl structlist blockalt classlist classdecl interfacedecl interfacelist compositetype
@@ -77,7 +77,7 @@ declaration         : externdecl TSEMI { $$ = $1; }
                     | enumdecl TSEMI { $$ = $1; }
                     | globalvardecl TSEMI { $$ = $1; }
                     | TIMPORT { $$ = NULL; }
-                    | TEXPORT { $$ = NULL; }
+                    | TEXPORT { $$ = ast_make_export($1); }
                     | TTYPEDEF type TTYPE TSEMI { $$ = NULL; ty_set_typedef($3, ((ASTTypeDecl *)$2)->etype); }
                     ;
 

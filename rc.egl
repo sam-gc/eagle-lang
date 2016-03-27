@@ -1,3 +1,5 @@
+export *
+
 extern func memset(any*, int, long) : any*
 extern func free(any*)
 extern func realloc(any*, long) : any*

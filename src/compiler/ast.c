@@ -744,9 +744,20 @@ AST *ast_make_type_lookup(char *type, char *item)
     return (AST *)ast;
 }
 
+AST *ast_make_export(char *text)
+{
+    ASTExportSymbol *ast = ast_malloc(sizeof(ASTExportSymbol));
+    ast->type = AEXPORT;
+
+    ast->fmt = text + 7;
+
+    return (AST *)ast;
+}
+
 void ast_add_if(AST *ast, AST *next)
 {
     ASTIfBlock *i = (ASTIfBlock *)ast;
     for(; i->ifNext; i = (ASTIfBlock *)i->ifNext);
     i->ifNext = next;
 }
+
