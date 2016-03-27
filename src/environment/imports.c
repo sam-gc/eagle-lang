@@ -24,6 +24,7 @@
 
 #define YY_BUF_SIZE 32768
 #define PYES ((void *)(uintptr_t)1)
+#define IS_ID_AND_EQ(tok, text, targ) ((tok) == TIDENTIFIER && strcmp((text), (targ)) == 0)
 
 typedef void* YY_BUFFER_STATE;
 
@@ -41,114 +42,265 @@ static hashtable all_imports;
 static hashtable imports_exports;
 extern char *current_file_name;
 
+typedef struct {
+    char *full_text;
+    char *symbol;
+} ImportUnit;
+
+static void imp_iufree(ImportUnit *iu)
+{
+    free(iu->full_text);
+    free(iu->symbol);
+}
+
+static void imp_consume_body(Strbuilder *string)
+{
+    int bracket_depth = 1;
+    int token;
+    while(bracket_depth)
+    {
+        token = yylex();
+        if(token == TLBRACE)
+            bracket_depth++;
+        else if(token == TRBRACE)
+            bracket_depth--;
+
+        if(string)
+        {
+            sb_append(string, yytext);
+            sb_append(string, " ");
+        }
+    }
+}
+
+static ImportUnit imp_parse_function(int inclass, char *intext, int extdecl)
+{
+    ImportUnit iu = {NULL, NULL};
+
+    Strbuilder string;
+    sb_init(&string);
+
+    if(!inclass)
+        sb_append(&string, "extern ");
+
+    sb_append(&string, intext);
+    sb_append(&string, " ");
+
+    int token = yylex();
+
+    /*
+    if(token != TIDENTIFIER)
+        die(yylineno, "%s name not properly defined", intext);
+    */
+
+    iu.symbol = strdup(yytext);
+
+    int terminal = extdecl ? TSEMI : TLBRACE;
+
+    do 
+    {
+        sb_append(&string, yytext);
+        sb_append(&string, " ");
+    }
+    while((token = yylex()) != terminal);
+
+    if(!extdecl)
+        imp_consume_body(NULL);
+
+    iu.full_text = string.buffer;
+
+    return iu;
+}
+
+static ImportUnit imp_parse_typedef()
+{
+    ImportUnit iu = {NULL, NULL};
+
+    Strbuilder string;
+    sb_init(&string);
+
+    sb_append(&string, "typedef ");
+
+    char *last = NULL;
+
+    int token;
+    while((token = yylex()) != TSEMI)
+    {
+        sb_append(&string, yytext);
+        sb_append(&string, " ");
+        if(last)
+            free(last);
+        last = strdup(yytext);
+    }
+
+    iu.full_text = string.buffer;
+    iu.symbol = last;
+
+    return iu;
+}
+
+static ImportUnit imp_parse_bracketed(int declext, const char *what)
+{
+    ImportUnit iu = {NULL, NULL};
+
+    Strbuilder string;
+    sb_init(&string);
+
+    if(declext)
+        sb_append(&string, "extern ");
+
+    sb_append(&string, what);
+    sb_append(&string, " ");
+
+    int token = yylex();
+    if(token != TIDENTIFIER)
+        die(yylineno, "%s name not properly defined", what);
+
+    iu.symbol = strdup(yytext);
+
+    sb_append(&string, yytext);
+    sb_append(&string, " ");
+
+    while((token = yylex()) != TRBRACE)
+    {
+        sb_append(&string, yytext);
+        sb_append(&string, " ");
+    }
+
+    sb_append(&string, "}");
+
+    iu.full_text = string.buffer;
+
+    return iu;
+}
+
+static ImportUnit imp_parse_interface()
+{
+    return imp_parse_bracketed(0, "interface");
+}
+
+static ImportUnit imp_parse_enum()
+{
+    return imp_parse_bracketed(0, "enum");
+}
+
+static ImportUnit imp_parse_struct()
+{
+    return imp_parse_bracketed(1, "struct");
+}
+
+static ImportUnit imp_parse_class(int extdecl)
+{
+    ImportUnit iu = {NULL, NULL};
+
+    Strbuilder string;
+    sb_init(&string);
+
+    sb_append(&string, "extern class ");
+
+    int token = yylex();
+    if(token != TIDENTIFIER)
+        die(yylineno, "class name not properly defined");
+
+    iu.symbol = strdup(yytext);
+
+    do
+    {
+        sb_append(&string, yytext);
+        sb_append(&string, " ");
+    }
+    while((token = yylex()) != TLBRACE);
+
+    sb_append(&string, "\n{\n");
+    if(extdecl)
+    {
+        imp_consume_body(&string);
+        iu.full_text = string.buffer;
+        return iu;
+    }
+
+    while((token = yylex()) != TRBRACE)
+    {
+        if(token == TFUNC || token == TVIEW ||
+           IS_ID_AND_EQ(token, yytext, "init") ||
+           IS_ID_AND_EQ(token, yytext, "destruct"))
+        {
+            ImportUnit u = imp_parse_function(1, yytext, 0);
+            sb_append(&string, u.full_text);
+
+            imp_iufree(&u);
+            continue;
+        }
+
+        sb_append(&string, yytext);
+        sb_append(&string, " ");
+    }
+
+    sb_append(&string, "\n}\n");
+
+    iu.full_text = string.buffer;
+
+    return iu;
+}
+
 char *imp_scan_file(const char *filename)
 {
-    Strbuilder strb;
-    Strbuilder stmp;
-    sb_init(&strb);
-    sb_init(&stmp);
+    Strbuilder string;
+    sb_init(&string);
 
     FILE *f = fopen(filename, "r");
     YY_BUFFER_STATE buf = yy_create_buffer(f, YY_BUF_SIZE);
     yypush_buffer_state(buf);
-    int token;
+    int token, is_extern = 0;
+    ImportUnit iu;
 
     export_control *ec = hst_get(&imports_exports, (char *)filename, NULL, NULL);
 
-    int bracket_depth = 0;
-    int in_class = 0;
-    int save_next = 0;
-    char *identifier = NULL;
-    int first_time = 1;
     while((token = yylex()) != 0)
     {
-        if(token == TTYPEDEF)
+        switch(token)
         {
-            do
-            {
-                sb_append(&stmp, yytext);
-                sb_append(&stmp, " ");
-            } while((token = yylex()) != TSEMI);
+            case TEXTERN:
+                is_extern = 1;
+            case TEXPORT:
+            case TIMPORT:
+            case TSEMI:
+                continue;
 
-            sb_append(&stmp, "\n");
-        }
-        else if(token == TENUM)
-        {
-            do
-            {
-                if(token == TSEMI)
-                    sb_append(&stmp, "\n");
-                sb_append(&stmp, yytext);
-                sb_append(&stmp, " ");
-            } while((token = yylex()) != TRBRACE);
-            sb_append(&stmp, "}\n");
-            continue;
-        }
-
-        if(token == TLBRACE)
-            bracket_depth++;
-        if(token == TRBRACE)
-        {
-            bracket_depth--;
-            if(bracket_depth == 0 && in_class)
-            {
-                in_class = 0;
-                sb_append(&stmp, "} ");
-            }
+            case TFUNC:
+            case TGEN:
+                iu = imp_parse_function(0, yytext, is_extern);
+                break;
+            case TSTRUCT:
+                iu = imp_parse_struct();
+                break;
+            case TCLASS:
+                iu = imp_parse_class(is_extern);
+                break;
+            case TTYPEDEF:
+                iu = imp_parse_typedef();
+                break;
+            case TENUM:
+                iu = imp_parse_enum();
+                break;
+            case TINTERFACE:
+                iu = imp_parse_interface();
+                break;
+            default:
+                die(yylineno, "Unknown top-level symbol");
         }
 
-        if(token == TCLASS || token == TSTRUCT || token == TINTERFACE)
+        is_extern = 0;
+        if(ec_allow(ec, iu.symbol))
         {
-            in_class = 1;
+            sb_append(&string, iu.full_text);
+            sb_append(&string, "\n");
         }
 
-        if(bracket_depth > (in_class ? 1 : 0) || token == TRBRACE || token == TEXTERN || token == TIMPORT || token == TEXPORT)
-            continue;
-
-        if(save_next)
-        {
-            save_next = 0;
-            identifier = strdup(yytext);
-        }
-
-        if(token == TCLASS || token == TSTRUCT || token == TINTERFACE || token == TFUNC || token == TGEN)
-            save_next = 1;
-
-        if(((token == TFUNC || token == TGEN) && !in_class) || token == TCLASS || token == TSTRUCT)
-            sb_append(&stmp, "extern ");
-
-        sb_append(&stmp, yytext);
-        sb_append(&stmp, " ");
-
-        if(token == TFUNC || token == TCLASS || token == TSTRUCT || token == TEXTERN || token == TINTERFACE || token == TGEN)
-        {
-            if(identifier || first_time)
-            {
-                if(first_time || ec_allow(ec, identifier))
-                    sb_append(&strb, stmp.buffer);
-
-                free(stmp.buffer);
-                free(identifier);
-            }
-            first_time = 0;
-            sb_init(&stmp);
-            identifier = NULL;
-        }
+        imp_iufree(&iu);
     }
 
-     if(identifier || first_time)
-     {
-         if(first_time || ec_allow(ec, identifier))
-             sb_append(&strb, stmp.buffer);
-
-         free(stmp.buffer);
-         free(identifier);
-     }
-
-    yypop_buffer_state();
-    fclose(f);
-
-    return strb.buffer;
+    return string.buffer;
 }
 
 void imp_build_buffer(void *k, void *v, void *data)

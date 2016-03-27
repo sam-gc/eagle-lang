@@ -182,6 +182,8 @@ void ac_closure_callback(VarBundle *vb, char *ident, void *data)
         return;
     }
 
+    vb->wasused = 1;
+
     if(!ET_IS_CLOSED(vb->type))
         ac_replace_with_counted(cb, vb);
 
