@@ -43,10 +43,11 @@ typedef enum {
 } ASTType;
 
 typedef enum {
+    VLNone,
     VLExternal,
     VLStatic,
     VLLocal,
-    VLNone
+    VLExport
 } VariableLinkage;
 
 typedef struct AST {

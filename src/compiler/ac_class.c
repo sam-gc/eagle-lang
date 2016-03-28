@@ -15,7 +15,6 @@ void ac_add_class_declaration(AST *ast, CompilerBundle *cb)
 {
     ASTClassDecl *a = (ASTClassDecl *)ast;
     LLVMStructCreateNamed(utl_get_current_context(), a->name);
-
 }
 
 char *ac_gen_method_name(char *class_name, char *method)
@@ -73,7 +72,11 @@ void ac_prepare_methods_each(void *key, void *val, void *data)
     ety->params[0] = ett_pointer_type(ett_struct_type(cd->name));
     ((EaglePointerType *)ety->params[0])->counted = 1;
     LLVMTypeRef ft = ett_llvm_type((EagleTypeType *)ety);
-    LLVMAddFunction(h->cb->module, method_name, ft);
+
+    LLVMValueRef func = LLVMAddFunction(h->cb->module, method_name, ft);
+
+    if(h->linkage == VLLocal && !cd->ext)
+        LLVMSetLinkage(func, LLVMPrivateLinkage);
 
     ty_add_method(cd->name, fd->ident, (EagleTypeType *)ety);
 
@@ -95,7 +98,9 @@ void ac_class_add_early_definitions(ASTClassDecl *cd, CompilerBundle *cb, ac_cla
     ety->params[0] = ett_pointer_type(ett_struct_type(cd->name));
     ((EaglePointerType *)ety->params[0])->counted = 1;
     LLVMTypeRef ft = ett_llvm_type((EagleTypeType *)ety);
-    LLVMAddFunction(cb->module, method_name, ft);
+    LLVMValueRef func = LLVMAddFunction(cb->module, method_name, ft);
+    if(h->linkage == VLLocal && !cd->ext)
+        LLVMSetLinkage(func, LLVMPrivateLinkage);
 
     //ty_add_method(cd->name, fd->ident, (EagleTypeType *)ety);
     ty_add_init(cd->name, (EagleTypeType *)ety);
@@ -137,6 +142,9 @@ void ac_compile_class_destruct(ASTClassDecl *cd, CompilerBundle *cb)
     ((EaglePointerType *)ety->params[0])->counted = 1;
     LLVMTypeRef ft = ett_llvm_type((EagleTypeType *)ety);
     LLVMValueRef func = LLVMAddFunction(cb->module, method_name, ft);
+
+    if(cd->linkage == VLLocal && !cd->ext)
+        LLVMSetLinkage(func, LLVMPrivateLinkage);
 
     free(method_name);
 
@@ -234,6 +242,14 @@ void ac_make_class_definitions(AST *ast, CompilerBundle *cb)
         h.ast = ast;
         h.cb = cb;
 
+        h.linkage = a->linkage;
+        if(ec_allow(cb->exports, a->name, TCLASS))
+            h.linkage = VLExport;
+
+        // Set it back after checking with the other
+        // exports
+        a->linkage = h.linkage;
+
         LLVMTypeRef indirtype = ty_class_indirect();
         LLVMValueRef vtable = NULL;
 
@@ -327,6 +343,9 @@ void ac_make_class_constructor(AST *ast, CompilerBundle *cb, ac_class_helper *h)
     if(a->ext)
         return;
 
+    if(a->linkage == VLLocal)
+        LLVMSetLinkage(func, LLVMPrivateLinkage);
+
     EagleTypeType *ett = ett_pointer_type(ett_struct_type(a->name));
 
     LLVMBasicBlockRef entry = LLVMAppendBasicBlockInContext(utl_get_current_context(), func, "entry");
@@ -355,14 +374,6 @@ void ac_make_class_constructor(AST *ast, CompilerBundle *cb, ac_class_helper *h)
             param = LLVMBuildBitCast(cb->builder, param, LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), "");
             LLVMBuildCall(cb->builder, fc, &param, 1, "");
         }
-
-        // LLVMValueRef meth = hst_get(&a->methods, (void *)(uintptr_t)(i + 1), ahhd, ahed);
-        // if(meth)
-        // {
-        //     meth = LLVMBuildBitCast(cb->builder, meth, ett_llvm_type(t), "");
-        //     LLVMValueRef gep = LLVMBuildStructGEP(cb->builder, strct, i + 1, "");
-        //     LLVMBuildStore(cb->builder, meth, gep);
-        // }
     }
 
     LLVMBuildRetVoid(cb->builder);
@@ -375,6 +386,9 @@ void ac_make_class_destructor(AST *ast, CompilerBundle *cb)
 
     if(a->ext)
         return;
+
+    if(a->linkage == VLLocal)
+        LLVMSetLinkage(func, LLVMPrivateLinkage);
 
     LLVMBasicBlockRef entry = LLVMAppendBasicBlockInContext(utl_get_current_context(), func, "entry");
     LLVMPositionBuilderAtEnd(cb->builder, entry);

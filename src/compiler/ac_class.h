@@ -15,6 +15,8 @@ typedef struct {
     LLVMValueRef *interface_pointers;
     LLVMValueRef vtable;
     int table_len;
+
+    VariableLinkage linkage;
 } ac_class_helper;
 
 char *ac_gen_method_name(char *class_name, char *method);

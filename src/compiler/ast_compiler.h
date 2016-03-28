@@ -18,6 +18,7 @@
 #include "cpp/cpp.h"
 #include "core/utils.h"
 #include "environment/exports.h"
+#include "grammar/eagle.tab.h"
 
 #define IS_ANY_PTR(t) (t->type == ETPointer && ((EaglePointerType *)t)->to->type == ETAny)
 #define ALN (ast->lineno)

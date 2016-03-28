@@ -761,7 +761,7 @@ AST *ast_make_export(char *text, int tok)
 AST *ast_set_external_linkage(AST *ast)
 {
     ASTLinkable *al = (ASTLinkable *)ast;
-    al->linkage = VLLocal;
+    al->linkage = VLExport;
 
     return ast;
 }

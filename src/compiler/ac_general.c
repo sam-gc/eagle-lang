@@ -12,7 +12,6 @@
 #include "ast_compiler.h"
 #include "core/utils.h"
 #include "core/colors.h"
-#include "grammar/eagle.tab.h"
 
 extern hashtable global_args;
 extern char *current_file_name;
@@ -322,10 +321,8 @@ void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
     LLVMTypeRef func_type = LLVMFunctionType(ett_llvm_type(retType->etype), param_types, ct, a->vararg);
     LLVMValueRef func = LLVMAddFunction(cb->module, a->ident, func_type);
 
-    if(!ec_allow(cb->exports, a->ident, TFUNC) && a->body && strcmp(a->ident, "main") && a->linkage != VLLocal)
-    {
+    if(!ec_allow(cb->exports, a->ident, TFUNC) && a->body && strcmp(a->ident, "main") && a->linkage != VLExport)
         LLVMSetLinkage(func, LLVMPrivateLinkage);
-    }
 
     if(retType->etype->type == ETStruct)
         die(ALN, "Returning struct by value not supported. (%s)\n", a->ident);
