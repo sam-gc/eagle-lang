@@ -47,7 +47,6 @@ nvar {alpha}({alpha}|{digit})*
 strlit \"(\\.|[^"])*\"
 comment (\-\-).*(\n)
 import "import ".*
-export "export ".*
 lbrace ("{"|"{"{whitechar}*"\n"|"\n"{whitechar}*"{")
 rbrace ("}"|"}"{whitechar}*"\n")
 func ("func"|"func"{whitechar}*"\n")
@@ -64,8 +63,8 @@ charlit `[^`]`
 {charlit}   { SAVE_NL; SAVE_TOKEN; return TCHARLIT; }
 {real}      { SAVE_NL; SAVE_TOKEN; return TDOUBLE; }
 {import}    { SAVE_TOKEN; return TIMPORT; }
-{export}    { SAVE_TOKEN; return TEXPORT; }
 {reset}     yylineno = 1;
+"export"    { DISCARD_NL; return TEXPORT; }
 "+"         DISCARD_NL; return SET(TPLUS);
 "+="        DISCARD_NL; return SET(TPLUSE);
 "-"         DISCARD_NL; return SET(TMINUS);

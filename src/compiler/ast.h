@@ -61,6 +61,15 @@ typedef struct {
     struct AST *next;
     long lineno;
 
+    VariableLinkage linkage;
+} ASTLinkable;
+
+typedef struct {
+    ASTType type;
+    EagleTypeType *resultantType;
+    struct AST *next;
+    long lineno;
+
     struct AST *left;
     struct AST *right;
     char op;
@@ -97,6 +106,7 @@ typedef struct {
     EagleTypeType *resultantType;
     struct AST *next;
     long lineno;
+    VariableLinkage linkage;
 
     struct AST *retType;
     struct AST *body;
@@ -181,6 +191,7 @@ typedef struct {
     EagleTypeType *resultantType;
     struct AST *next;
     long lineno;
+    VariableLinkage linkage;
 
     int ext;
 
@@ -216,6 +227,7 @@ typedef struct {
     EagleTypeType *resultantType;
     struct AST *next;
     long lineno;
+    VariableLinkage linkage;
 
     char *name;
     arraylist types;
@@ -239,6 +251,7 @@ typedef struct {
     EagleTypeType *resultantType;
     struct AST *next;
     long lineno;
+    VariableLinkage linkage;
 
     char *name;
     struct AST *items;
@@ -272,6 +285,7 @@ typedef struct {
     long lineno;
 
     char *fmt;
+    int kind;
 } ASTExportSymbol;
 
 AST *ast_make();
@@ -328,7 +342,8 @@ AST *ast_make_cast(AST *type, AST *val);
 AST *ast_make_enum(char *type, AST *items);
 AST *ast_make_enumitem(char *name, char *def);
 AST *ast_make_type_lookup(char *type, char *item);
-AST *ast_make_export(char *text);
+AST *ast_make_export(char *text, int tok);
+AST *ast_set_external_linkage(AST *ast);
 void ast_add_if(AST *ast, AST *next);
 
 void ast_free_nodes();

@@ -22,6 +22,7 @@ typedef struct node
 {
     rgxnodetype type;
     struct node *next;
+    int token;
 
     union
     {
@@ -46,12 +47,13 @@ export_control *ec_alloc()
     return ec;
 }
 
-void ec_add_str(export_control *ec, const char *str)
+void ec_add_str(export_control *ec, const char *str, int token)
 {
     rgxnode *node = malloc(sizeof(rgxnode));
     node->next = NULL;
     node->pattern.rgx = rgx_compile((char *)str);
     node->type = EREGX;
+    node->token = token;
 
     if(!ec->head)
     {
@@ -64,12 +66,13 @@ void ec_add_str(export_control *ec, const char *str)
     ec->tail = node;
 }
 
-void ec_add_wcard(export_control *ec, const char *str)
+void ec_add_wcard(export_control *ec, const char *str, int token)
 {
     rgxnode *node = malloc(sizeof(rgxnode));
     node->next = NULL;
     node->pattern.wild = strdup(str);
     node->type = EWILD;
+    node->token = token;
 
     if(!ec->head)
     {
@@ -82,11 +85,14 @@ void ec_add_wcard(export_control *ec, const char *str)
     ec->tail = node;
 }
 
-int ec_allow(export_control *ec, const char *str)
+int ec_allow(export_control *ec, const char *str, int token)
 {
     rgxnode *node;
     for(node = ec->head; node; node = node->next)
     {
+        if(node->token && token != node->token)
+            continue;
+
         if(node->type == EREGX && rgx_matches(node->pattern.rgx, (char *)str))
             return 1;
         else if(node->type == EWILD && fnmatch(node->pattern.wild, str, FNM_PATHNAME | FNM_PERIOD) == 0)

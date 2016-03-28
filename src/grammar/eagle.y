@@ -25,19 +25,20 @@
     AST *node;
 }
 
-%token <string> TIDENTIFIER TINT TDOUBLE TCHARLIT TTYPE TCOUNTED TNEW TSTRUCT TCLASS TTOUCH TCSTR TEXPORT
+%token <string> TIDENTIFIER TINT TDOUBLE TCHARLIT TTYPE TCOUNTED TNEW TTOUCH TCSTR TEXPORT
 %token <token> TPLUS TMINUS TEQUALS TMUL TDIV TGT TLT TEQ TNE TGTE TLTE TNOT TPOW TLOGAND TLOGOR TMOD
 %token <token> TPLUSE TMINUSE TMULE TDIVE TOR
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TLBRACKET TRBRACKET
 %token <token> TFUNC TRETURN TYIELD TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF TFOR TIN TWEAK TUNWRAP
 %token <token> TBREAK TCONTINUE TVAR TGEN  TELLIPSES TVIEW
 %token <token> TCOLON TSEMI TNEWLINE TCOMMA TDOT TAMP TAT TARROW T__DEC T__INC
-%token <token> TYES TNO TNIL TIMPORT TTYPEDEF TENUM TSTATIC TINTERFACE
+%token <token> TYES TNO TNIL TIMPORT TTYPEDEF TENUM TSTATIC TINTERFACE TCLASS TSTRUCT
+%type <token> exportable
 %type <node> program declarations declaration statements statement block funcdecl ifstatement
 %type <node> variabledecl vardecllist funccall calllist funcident funcsident externdecl typelist type interfacetypelist
 %type <node> elifstatement elifblock elsestatement singif structdecl structlist blockalt classlist classdecl interfacedecl interfacelist compositetype
 %type <node> expr singexpr binexpr unexpr ounexpr forstatement clodecl genident gendecl initdecl viewdecl viewident
-%type <node> enumitem enumlist enumdecl globalvardecl constantexpr structlitlist structlit
+%type <node> enumitem enumlist enumdecl globalvardecl constantexpr structlitlist structlit exportdecl
 
 %nonassoc TTYPE;
 %nonassoc TNEW;
@@ -77,8 +78,28 @@ declaration         : externdecl TSEMI { $$ = $1; }
                     | enumdecl TSEMI { $$ = $1; }
                     | globalvardecl TSEMI { $$ = $1; }
                     | TIMPORT { $$ = NULL; }
-                    | TEXPORT { $$ = ast_make_export($1); }
                     | TTYPEDEF type TTYPE TSEMI { $$ = NULL; ty_set_typedef($3, ((ASTTypeDecl *)$2)->etype); }
+                    | exportdecl { $$ = $1; }
+                    | TEXPORT TTYPEDEF type TTYPE TSEMI { $$ = NULL; ty_set_typedef($4, ((ASTTypeDecl *)$3)->etype); }
+                    | TEXPORT enumdecl TSEMI { $$ = $2; }
+                    | TEXPORT interfacedecl TSEMI { $$ = $2; }
+                    ;
+
+exportdecl          : TEXPORT TCSTR TSEMI { $$ = ast_make_export($2, 0); }
+                    | TEXPORT TLPAREN exportable TRPAREN TCSTR TSEMI { $$ = ast_make_export($5, $3); }
+                    | TEXPORT funcdecl { $$ = ast_set_external_linkage($2); }
+                    | TEXPORT structdecl TSEMI { $$ = ast_set_external_linkage($2); }
+                    | TEXPORT gendecl { $$ = ast_set_external_linkage($2); }
+                    | TEXPORT classdecl TSEMI { $$ = ast_set_external_linkage($2); }
+                    ;
+
+exportable          : TCLASS { $$ = $1; }
+                    | TFUNC { $$ = $1; }
+                    | TINTERFACE { $$ = $1; }
+                    | TSTRUCT { $$ = $1; }
+                    | TGEN { $$ = $1; }
+                    | TTYPEDEF { $$ = $1; }
+                    | TENUM { $$ = $1; }
                     ;
 
 globalvardecl       : TSTATIC variabledecl { $$ = $2; ast_set_linkage($2, VLStatic); }

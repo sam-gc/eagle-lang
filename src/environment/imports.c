@@ -243,7 +243,7 @@ static ImportUnit imp_parse_class(int extdecl)
     return iu;
 }
 
-char *imp_scan_file(const char *filename)
+static char *imp_scan_file(const char *filename)
 {
     Strbuilder string;
     sb_init(&string);
@@ -251,7 +251,7 @@ char *imp_scan_file(const char *filename)
     FILE *f = fopen(filename, "r");
     YY_BUFFER_STATE buf = yy_create_buffer(f, YY_BUF_SIZE);
     yypush_buffer_state(buf);
-    int token, is_extern = 0;
+    int token, is_extern = 0, save_next = 0;
     ImportUnit iu;
 
     export_control *ec = hst_get(&imports_exports, (char *)filename, NULL, NULL);
@@ -262,9 +262,19 @@ char *imp_scan_file(const char *filename)
         {
             case TEXTERN:
                 is_extern = 1;
-            case TEXPORT:
             case TIMPORT:
             case TSEMI:
+            case TCSTR:
+            case TRPAREN:
+                save_next = 0;
+                continue;
+
+            case TLPAREN:
+                yylex();
+                continue;
+
+            case TEXPORT:
+                save_next = 1;
                 continue;
 
             case TFUNC:
@@ -291,8 +301,9 @@ char *imp_scan_file(const char *filename)
         }
 
         is_extern = 0;
-        if(ec_allow(ec, iu.symbol))
+        if(ec_allow(ec, iu.symbol, token) || save_next)
         {
+            save_next = 0;
             sb_append(&string, iu.full_text);
             sb_append(&string, "\n");
         }
@@ -377,8 +388,21 @@ multibuffer *imp_generate_imports(const char *filename)
                 hst_put(&all_imports, rp, PYES, NULL, NULL);
             }
 
-            if(token == TEXPORT)
-                ec_add_wcard(ec, yytext + 7);
+            if(token == TEXPORT && (((token = yylex()) == TCSTR) || token == TLPAREN))
+            {
+                int tok = 0;
+                if(token == TLPAREN)
+                {
+                    tok = yylex();
+                    yylex();
+                    token = yylex();
+                }
+
+                char buf[strlen(yytext) - 2];
+                memcpy(buf, yytext + 1, strlen(yytext) - 2);
+                buf[strlen(yytext) - 2] = '\0';
+                ec_add_wcard(ec, buf, tok);
+            }
         }
 
         yypop_buffer_state();

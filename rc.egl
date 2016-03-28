@@ -1,4 +1,4 @@
-export *
+export '*'
 
 extern func memset(any*, int, long) : any*
 extern func free(any*)

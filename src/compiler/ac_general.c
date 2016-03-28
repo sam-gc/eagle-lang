@@ -12,6 +12,7 @@
 #include "ast_compiler.h"
 #include "core/utils.h"
 #include "core/colors.h"
+#include "grammar/eagle.tab.h"
 
 extern hashtable global_args;
 extern char *current_file_name;
@@ -103,7 +104,7 @@ export_control *ac_get_exports(AST *ast)
             continue;
 
         ASTExportSymbol *aex = (ASTExportSymbol *)ast;
-        ec_add_wcard(ec, aex->fmt);
+        ec_add_wcard(ec, aex->fmt, aex->kind);
     }
 
     return ec;
@@ -321,7 +322,7 @@ void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
     LLVMTypeRef func_type = LLVMFunctionType(ett_llvm_type(retType->etype), param_types, ct, a->vararg);
     LLVMValueRef func = LLVMAddFunction(cb->module, a->ident, func_type);
 
-    if(!ec_allow(cb->exports, a->ident) && a->body && strcmp(a->ident, "main"))
+    if(!ec_allow(cb->exports, a->ident, TFUNC) && a->body && strcmp(a->ident, "main") && a->linkage != VLLocal)
     {
         LLVMSetLinkage(func, LLVMPrivateLinkage);
     }

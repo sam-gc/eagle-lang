@@ -231,6 +231,7 @@ AST *ast_make_func_decl(AST *type, char *ident, AST *body, AST *params)
     ast->ident = ident ? ident : (char *)"close";
     ast->params = params;
     ast->vararg = 0;
+    ast->linkage = VLLocal;
 
     return (AST *)ast;
 }
@@ -355,6 +356,7 @@ AST *ast_make_class_decl()
 {
     ASTClassDecl *ast = ast_malloc(sizeof(ASTClassDecl));
     ast->type = ACLASSDECL;
+    ast->linkage = VLLocal;
 
     ast->name = NULL;
     ast->names = arr_create(10);
@@ -744,14 +746,24 @@ AST *ast_make_type_lookup(char *type, char *item)
     return (AST *)ast;
 }
 
-AST *ast_make_export(char *text)
+AST *ast_make_export(char *text, int tok)
 {
     ASTExportSymbol *ast = ast_malloc(sizeof(ASTExportSymbol));
     ast->type = AEXPORT;
+    ast->kind = tok;
 
-    ast->fmt = text + 7;
+    ast->fmt = text + 1;
+    text[strlen(text) - 1] = '\0';
 
     return (AST *)ast;
+}
+
+AST *ast_set_external_linkage(AST *ast)
+{
+    ASTLinkable *al = (ASTLinkable *)ast;
+    al->linkage = VLLocal;
+
+    return ast;
 }
 
 void ast_add_if(AST *ast, AST *next)
