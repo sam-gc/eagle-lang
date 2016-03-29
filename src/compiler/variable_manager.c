@@ -18,17 +18,25 @@ VarScopeStack vs_make()
     VarScopeStack vs;
     vs.pool = pool_create();
     vs.scope = NULL;
-    vs.globals = hst_create();
-    vs.globals.duplicate_keys = 1;
+    vs.modules = hst_create();
+    vs.modules.duplicate_keys = 1;
     vs.warnunused = 1;
 
     return vs;
 }
 
+static void vs_modules_free_each(void *key, void *val, void *data)
+{
+    hst_free(val);
+    free(val);
+}
+
 void vs_free(VarScopeStack *vs)
 {
     pool_drain(&vs->pool);
-    hst_free(&vs->globals);
+
+    hst_for_each(&vs->modules, &vs_modules_free_each, NULL);
+    hst_free(&vs->modules);
 }
 
 void vs_push(VarScopeStack *vs)
@@ -106,6 +114,15 @@ VarBundle *vs_get(VarScopeStack *vs, char *ident)
     return NULL;
 }
 
+VarBundle *vs_get_from_module(VarScopeStack *vs, char *ident, char *mod_name)
+{
+    hashtable *module = hst_get(&vs->modules, mod_name, NULL, NULL);
+    if(!module)
+        return NULL;
+
+    return hst_get(module, ident, NULL, NULL);
+}
+
 void vs_push_closure(VarScopeStack *vs, ClosedCallback cb, void *data)
 {
     VarBarrier *barrier = malloc(sizeof(VarBarrier));
@@ -118,23 +135,7 @@ void vs_push_closure(VarScopeStack *vs, ClosedCallback cb, void *data)
     vs->scope = (VarScope *)barrier;
 }
 
-/*void vs_put_global(VarScopeStack *vs, char *ident, LLVMValueRef val, EagleTypeType *type)
-{
-    VarBundle *vb = malloc(sizeof(VarBundle));
-    vb->type = type;
-    vb->value = val;
-
-    hst_put(&vs->globals, ident, vb, NULL, NULL);
-    pool_add(&vs->pool, vb);
-}
-*/
-
-VarBundle *vs_get_global(VarScopeStack *vs, char *ident)
-{
-    return hst_get(&vs->globals, ident, NULL, NULL);
-}
-
-VarBundle *vs_put(VarScopeStack *vs, char *ident, LLVMValueRef val, EagleTypeType *type, int lineno)
+static VarBundle *vs_create(char *ident, char *module, EagleTypeType *type, LLVMValueRef val, int lineno)
 {
     VarBundle *vb = malloc(sizeof(VarBundle));
     vb->type = type;
@@ -143,12 +144,39 @@ VarBundle *vs_put(VarScopeStack *vs, char *ident, LLVMValueRef val, EagleTypeTyp
     vb->scopeData = NULL;
     vb->wasused = vb->wasassigned = 0;
     vb->lineno = lineno;
+    vb->module = module;
 
+    return vb;
+}
+
+VarBundle *vs_put(VarScopeStack *vs, char *ident, LLVMValueRef val, EagleTypeType *type, int lineno)
+{
+    VarBundle *vb = vs_create(ident, NULL, type, val, lineno);
     VarScope *s = vs->scope;
 
     hst_put(&s->table, ident, vb, NULL, NULL);
     pool_add(&vs->pool, vb);
 
+    return vb;
+}
+
+VarBundle *vs_put_in_module(VarScopeStack *vs, char *ident, char *module, LLVMValueRef val, EagleTypeType *type)
+{
+    VarBundle *vb = vs_create(ident, module, type, val, -1);
+
+    hashtable *mod = hst_get(&vs->modules, module, NULL, NULL);
+    if(!mod)
+    {
+        mod = malloc(sizeof(hashtable));
+        *mod = hst_create();
+        mod->duplicate_keys = 1;
+
+        hst_put(&vs->modules, module, mod, NULL, NULL);
+    }
+
+    hst_put(mod, ident, vb, NULL, NULL);
+    pool_add(&vs->pool, vb);
+    
     return vb;
 }
 

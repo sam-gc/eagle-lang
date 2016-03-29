@@ -26,6 +26,8 @@ typedef struct {
     unsigned wasassigned : 1;
 
     int lineno;
+
+    char *module;
 } VarBundle;
 
 typedef void(*ClosedCallback)(VarBundle *, char *, void *);
@@ -33,6 +35,7 @@ typedef void(*ClosedCallback)(VarBundle *, char *, void *);
 typedef struct VarScope {
     int scope;
     struct VarScope *next;
+
     hashtable table;
 } VarScope;
 
@@ -47,7 +50,7 @@ typedef struct {
 typedef struct {
     mempool pool;
     VarScope *scope;
-    hashtable globals;
+    hashtable modules;
 
     unsigned warnunused : 1;
 } VarScopeStack;
@@ -55,8 +58,9 @@ typedef struct {
 VarScopeStack vs_make();
 void vs_free(VarScopeStack *vs);
 VarBundle *vs_get(VarScopeStack *vs, char *ident);
+VarBundle *vs_get_from_module(VarScopeStack *vs, char *ident, char *mod_name);
 VarBundle *vs_put(VarScopeStack *vs, char *ident, LLVMValueRef val, EagleTypeType *type, int lineno);
-VarBundle *vs_get_global(VarScopeStack *vs, char *ident);
+VarBundle *vs_put_in_module(VarScopeStack *vs, char *ident, char *module, LLVMValueRef val, EagleTypeType *type);
 void vs_push_closure(VarScopeStack *vs, ClosedCallback cb, void *data);
 void vs_push(VarScopeStack *vs);
 void vs_pop(VarScopeStack *vs);
