@@ -362,7 +362,7 @@ static void ac_struct_lit_each(void *key, void *val, void *data)
     fromtype = exp->resultantType;
 
     if(!ett_are_same(fromtype, memtype))
-        value = ac_build_conversion(cb, value, fromtype, memtype, LOOSE_CONVERSION);
+        value = ac_build_conversion(cb, value, fromtype, memtype, LOOSE_CONVERSION, exp->lineno);
 
     // We need to make sure to load the other structure if necessary
     if(fromtype->type == ETStruct && LLVMTypeOf(value) == ett_llvm_type(ett_pointer_type(fromtype)))

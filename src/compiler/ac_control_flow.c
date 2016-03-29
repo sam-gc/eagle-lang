@@ -59,7 +59,7 @@ void ac_compile_return(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
         EagleTypeType *o = cb->currentFunctionType->retType;
 
         if(!ett_are_same(t, o))
-            val = ac_build_conversion(cb, val, t, o, LOOSE_CONVERSION);
+            val = ac_build_conversion(cb, val, t, o, LOOSE_CONVERSION, ALN);
         if(t->type == ETStruct)
             val = LLVMBuildLoad(cb->builder, val, "");
 
@@ -107,7 +107,7 @@ void ac_compile_yield(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
     EagleTypeType *o = cb->currentGenType->ytype;
 
     if(!ett_are_same(t, o))
-        val = ac_build_conversion(cb, val, t, o, LOOSE_CONVERSION);
+        val = ac_build_conversion(cb, val, t, o, LOOSE_CONVERSION, ya->val->lineno);
 
     if(ET_IS_COUNTED(o))
     {

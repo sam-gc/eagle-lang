@@ -390,7 +390,7 @@ LLVMValueRef ac_compile_new_decl(AST *ast, CompilerBundle *cb)
         LLVMValueRef init = ac_dispatch_expression(a->right, cb);
         
         if(!ett_are_same(a->right->resultantType, type->etype))
-            init = ac_build_conversion(cb, init, a->right->resultantType, type->etype, LOOSE_CONVERSION);
+            init = ac_build_conversion(cb, init, a->right->resultantType, type->etype, LOOSE_CONVERSION, a->right->lineno);
         LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, val, 5, "");
         LLVMBuildStore(cb->builder, init, pos);
     }
@@ -419,7 +419,7 @@ LLVMValueRef ac_compile_new_decl(AST *ast, CompilerBundle *cb)
             if(i < ett->pct)
             {
                 if(!ett_are_same(rt, ett->params[i]))
-                    val = ac_build_conversion(cb, val, rt, ett->params[i], LOOSE_CONVERSION);
+                    val = ac_build_conversion(cb, val, rt, ett->params[i], LOOSE_CONVERSION, p->lineno);
             }
 
             hst_remove_key(&cb->transients, p, ahhd, ahed);
@@ -456,7 +456,7 @@ LLVMValueRef ac_compile_cast(AST *ast, CompilerBundle *cb)
 
     if(ett_is_numeric(to) && ett_is_numeric(from))
     {
-        return ac_build_conversion(cb, val, from, to, STRICT_CONVERSION);
+        return ac_build_conversion(cb, val, from, to, STRICT_CONVERSION, ALN);
     }
 
     if(to->type == ETPointer && from->type == ETPointer)
@@ -503,7 +503,7 @@ LLVMValueRef ac_compile_index(AST *ast, int keepPointer, CompilerBundle *cb)
         die(LN(right), "Arrays can only be indexed by a number.");
 
     if(ET_IS_REAL(rt->type))
-        r = ac_build_conversion(cb, r, rt, ett_base_type(ETInt64), STRICT_CONVERSION);
+        r = ac_build_conversion(cb, r, rt, ett_base_type(ETInt64), STRICT_CONVERSION, right->lineno);
 
     if(lt->type == ETPointer)
         ast->resultantType = ((EaglePointerType *)lt)->to;
@@ -683,7 +683,7 @@ LLVMValueRef ac_generic_unary(ASTUnary *a, LLVMValueRef val, CompilerBundle *cb)
     switch(a->op)
     {
         case '-':
-            return ac_make_neg(val, cb->builder, a->val->resultantType->type);
+            return ac_make_neg(val, cb->builder, a->val->resultantType->type, a->lineno);
         default:
             die(a->lineno, "Internal compiler error");
     }
@@ -742,18 +742,18 @@ LLVMValueRef ac_generic_binary(ASTBinary *a, LLVMValueRef l, LLVMValueRef r, cha
     {
         case '+':
         case 'P':
-            return ac_make_add(l, r, cb->builder, totype->type);
+            return ac_make_add(l, r, cb->builder, totype->type, a->lineno);
         case '-':
         case 'M':
-            return ac_make_sub(l, r, cb->builder, totype->type);
+            return ac_make_sub(l, r, cb->builder, totype->type, a->lineno);
         case '*':
         case 'T':
-            return ac_make_mul(l, r, cb->builder, totype->type);
+            return ac_make_mul(l, r, cb->builder, totype->type, a->lineno);
         case '/':
         case 'D':
-            return ac_make_div(l, r, cb->builder, totype->type);
+            return ac_make_div(l, r, cb->builder, totype->type, a->lineno);
         case '%':
-            return ac_make_mod(l, r, cb->builder, totype->type);
+            return ac_make_mod(l, r, cb->builder, totype->type, a->lineno);
         default:
             die(a->lineno, "Invalid binary operation (%c).", a->op);
             return NULL;
@@ -790,11 +790,11 @@ LLVMValueRef ac_compile_binary(AST *ast, CompilerBundle *cb)
 
     if(a->left->resultantType->type != promo)
     {
-        l = ac_build_conversion(cb, l, a->left->resultantType, ett_base_type(promo), STRICT_CONVERSION);
+        l = ac_build_conversion(cb, l, a->left->resultantType, ett_base_type(promo), STRICT_CONVERSION, a->left->lineno);
     }
     else if(a->right->resultantType->type != promo)
     {
-        r = ac_build_conversion(cb, r, a->right->resultantType, ett_base_type(promo), STRICT_CONVERSION);
+        r = ac_build_conversion(cb, r, a->right->resultantType, ett_base_type(promo), STRICT_CONVERSION, a->left->lineno);
     }
 
     switch(a->op)
@@ -806,7 +806,7 @@ LLVMValueRef ac_compile_binary(AST *ast, CompilerBundle *cb)
         case 'G':
         case 'L':
             a->resultantType = ett_base_type(ETInt1);
-            return ac_make_comp(l, r, cb->builder, promo, a->op);
+            return ac_make_comp(l, r, cb->builder, promo, a->op, ALN);
         default:
             return ac_generic_binary(a, l, r, 0, a->resultantType, a->resultantType, cb);
     }
@@ -1026,7 +1026,7 @@ LLVMValueRef ac_compile_generator_call(AST *ast, LLVMValueRef gen, CompilerBundl
     EagleTypeType *rt = p->resultantType;
 
     if(!ett_are_same(rt, ett_pointer_type(ett->ytype)))
-        val = ac_build_conversion(cb, val, rt, ett_pointer_type(ett->ytype), STRICT_CONVERSION);
+        val = ac_build_conversion(cb, val, rt, ett_pointer_type(ett->ytype), STRICT_CONVERSION, ALN);
 
     LLVMValueRef args[2];
     EaglePointerType *pt = (EaglePointerType *)rt;
@@ -1104,7 +1104,7 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
         if(i < ett->pct)
         {
             if(!ett_are_same(rt, ett->params[i]))
-                val = ac_build_conversion(cb, val, rt, ett->params[i], LOOSE_CONVERSION);
+                val = ac_build_conversion(cb, val, rt, ett->params[i], LOOSE_CONVERSION, p->lineno);
         }
 
         hst_remove_key(&cb->transients, p, ahhd, ahed);
@@ -1301,7 +1301,7 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update)
             die(ALN, "Invalid implicit conversion in constant initializer");
     }
     else if(!ett_are_same(fromtype, totype) && (!update || (update && totype->type != ETPointer)))
-        r = ac_build_conversion(cb, r, fromtype, totype, LOOSE_CONVERSION);
+        r = ac_build_conversion(cb, r, fromtype, totype, LOOSE_CONVERSION, a->right->lineno);
 
     if(update)
     {
