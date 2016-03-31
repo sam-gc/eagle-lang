@@ -31,6 +31,13 @@ char *ac_gen_vtable_name(char *class_name)
     return name;
 }
 
+char *ac_gen_ifc_internal_name(char *class_name, char postfix)
+{
+    char *name = malloc(strlen(class_name) + 10);
+    sprintf(name, "_Ifc%c_%s", postfix, class_name);
+    return name;
+}
+
 void ac_generate_interface_methods_each(void *key, void *val, void *data)
 {
     ASTClassDecl *cd = (ASTClassDecl *)data;
@@ -272,11 +279,14 @@ void ac_make_class_definitions(AST *ast, CompilerBundle *cb)
                 curoffset += ty_interface_count(interface);
             }
 
+            char *offset_name = ac_gen_ifc_internal_name(a->name, 'o');
+            char *const_name  = ac_gen_ifc_internal_name(a->name, 'c');
             LLVMValueRef initcn = LLVMConstArray(LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), constnamesarr, (int)a->interfaces.count);
             LLVMValueRef initof = LLVMConstArray(LLVMInt64TypeInContext(utl_get_current_context()), offsetsarr, (int)a->interfaces.count);
 
-            constnames = LLVMAddGlobal(cb->module, LLVMArrayType(LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), count), "_ifn");
-            offsets = LLVMAddGlobal(cb->module, LLVMArrayType(LLVMInt64TypeInContext(utl_get_current_context()), count), "_ifo");
+            constnames = LLVMAddGlobal(cb->module, LLVMArrayType(LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), count), const_name);
+
+            offsets = LLVMAddGlobal(cb->module, LLVMArrayType(LLVMInt64TypeInContext(utl_get_current_context()), count), offset_name);
 
             LLVMSetInitializer(constnames, initcn);
             LLVMSetInitializer(offsets, initof);
@@ -287,6 +297,8 @@ void ac_make_class_definitions(AST *ast, CompilerBundle *cb)
             char *vtablename = ac_gen_vtable_name(a->name);
             vtable = LLVMAddGlobal(cb->module, indirtype, vtablename);
             free(vtablename);
+            free(const_name);
+            free(offset_name);
         }
 
         h.vtable = vtable;
@@ -304,7 +316,11 @@ void ac_make_class_definitions(AST *ast, CompilerBundle *cb)
             for(i = 0; i < h.table_len; i++) if(!h.interface_pointers[i])
                 die(ast->lineno, "Class (%s) does not fully implement all announced interfaces", a->name);
             LLVMValueRef initptrs = LLVMConstArray(LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), h.interface_pointers, h.table_len);
-            LLVMValueRef ptrs = LLVMAddGlobal(cb->module, LLVMArrayType(LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), h.table_len), "_ifp");
+
+            char *ptrs_name = ac_gen_ifc_internal_name(a->name, 'p');
+            LLVMValueRef ptrs = LLVMAddGlobal(cb->module, LLVMArrayType(LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), h.table_len), ptrs_name);
+            free(ptrs_name);
+
             LLVMSetInitializer(ptrs, initptrs);
             free(h.interface_pointers);
 
