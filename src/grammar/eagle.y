@@ -30,7 +30,7 @@
 %token <token> TPLUSE TMINUSE TMULE TDIVE TOR
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TLBRACKET TRBRACKET
 %token <token> TFUNC TRETURN TYIELD TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF TFOR TIN TWEAK TUNWRAP TSWITCH
-%token <token> TBREAK TCONTINUE TVAR TGEN  TELLIPSES TVIEW TFALLTHROUGH TCASE
+%token <token> TBREAK TCONTINUE TVAR TGEN  TELLIPSES TVIEW TFALLTHROUGH TCASE TDEFAULT
 %token <token> TCOLON TSEMI TNEWLINE TCOMMA TDOT TAMP TAT TARROW T__DEC T__INC
 %token <token> TYES TNO TNIL TIMPORT TTYPEDEF TENUM TSTATIC TINTERFACE TCLASS TSTRUCT
 %type <token> exportable 
@@ -291,6 +291,8 @@ ifstatement         : singif { $$ = $1; }
 
 singcase            : TCASE expr TSEMI statement { $$ = ast_make_case($2, $4); }
                     | TCASE expr block { $$ = ast_make_case($2, $3); }
+                    | TDEFAULT TSEMI statement { $$ = ast_make_case(NULL, $3); }
+                    | TDEFAULT block { $$ = ast_make_case(NULL, $2); }
                     | TSEMI { $$ = NULL; }
                     ;
 

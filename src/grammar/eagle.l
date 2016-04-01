@@ -132,6 +132,7 @@ charlit `[^`]`
 "switch"    DISCARD_NL; return SET(TSWITCH);
 "case"      DISCARD_NL; return SET(TCASE);
 "fallthrough" SAVE_NL; return SET(TFALLTHROUGH);
+"default"   SAVE_NL; return SET(TDEFAULT);
 "yes"       SAVE_NL; return SET(TYES);
 "no"        SAVE_NL; return SET(TNO);
 "nil"       SAVE_NL; return SET(TNIL);

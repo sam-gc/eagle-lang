@@ -93,6 +93,18 @@ void warn_debug(int complineno, const char *file, int lineno, const char *fmt, .
 }
 #endif
 
+void ac_flush_transients(CompilerBundle *cb)
+{
+    hst_for_each(&cb->transients, ac_decr_transients, cb);
+    hst_for_each(&cb->loadedTransients, ac_decr_loaded_transients, cb);
+
+    hst_free(&cb->transients);
+    hst_free(&cb->loadedTransients);
+
+    cb->transients = hst_create();
+    cb->loadedTransients = hst_create();
+}
+
 export_control *ac_get_exports(AST *ast)
 {
     export_control *ec = ec_alloc();
@@ -447,15 +459,8 @@ void ac_dispatch_statement(AST *ast, CompilerBundle *cb)
         default:
             die(ALN, "Invalid statement type.");
     }
-
-    hst_for_each(&cb->transients, ac_decr_transients, cb);
-    hst_for_each(&cb->loadedTransients, ac_decr_loaded_transients, cb);
-
-    hst_free(&cb->transients);
-    hst_free(&cb->loadedTransients);
-
-    cb->transients = hst_create();
-    cb->loadedTransients = hst_create();
+    
+    ac_flush_transients(cb);
 }
 
 void ac_dispatch_declaration(AST *ast, CompilerBundle *cb)

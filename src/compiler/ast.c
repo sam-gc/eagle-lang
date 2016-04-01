@@ -694,6 +694,23 @@ AST *ast_make_switch(AST *test, AST *cases)
 
     ast->test = test;
     ast->cases = cases;
+    ast->deflt = NULL;
+
+    for(AST *prev = NULL; cases; cases = cases->next)
+    {
+        ASTCaseBlock *cs = (ASTCaseBlock *)cases;
+        if(!cs->targ) // Default value
+        {
+            ast->deflt = cases;
+            if(!prev)
+                ast->cases = cases->next;
+            else
+                prev->next = cases->next;
+            break;
+        }
+
+        prev = cases;
+    }
     
     return (AST *)ast;
 }

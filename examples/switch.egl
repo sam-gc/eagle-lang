@@ -1,15 +1,24 @@
+enum Blah
+{
+    Small
+    Medium
+    Large
+}
+
 func main()
 {
-    int i = 1
+    var b = Blah.Medium
 
-    switch (new int(i))^
+    switch b
     {
-        case 0
+        case Small
             puts 0
-        case 1
+        case Large
         {
             puts 'You are number one!'
             puts (new int(1))^
         }
+        default
+            puts 'medium...'
     }
 }

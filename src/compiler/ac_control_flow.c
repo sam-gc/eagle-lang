@@ -142,7 +142,7 @@ int ac_type_is_valid_for_switch(EagleTypeType *type)
     }
 }
 
-int ac_count_switch_cases(ASTSwitchBlock *ast)
+static int ac_count_switch_cases(ASTSwitchBlock *ast)
 {
     AST *cblock = ast->cases;
     int i;
@@ -150,17 +150,34 @@ int ac_count_switch_cases(ASTSwitchBlock *ast)
     return i;
 }
 
-LLVMValueRef ac_compile_case_label(AST *ast, CompilerBundle *cb)
+static LLVMValueRef ac_compile_case_label(AST *ast, CompilerBundle *cb)
 {
     ASTCaseBlock *cblock = (ASTCaseBlock *)ast;
-    if(cblock->targ->type != AVALUE)
-        die(ALN, "Case branches must be constant values");
 
-    ASTValue *targ = (ASTValue *)cblock->targ;
-    if(!ac_type_is_valid_for_switch(ett_base_type(targ->etype)))
-        die(ALN, "Case branches must be constant integer values");
+    if(!cblock->targ)
+        return NULL;
 
-    return ac_dispatch_expression(cblock->targ, cb);
+    LLVMValueRef label = ac_dispatch_expression(cblock->targ, cb);
+    
+    EagleTypeType *rt = cblock->targ->resultantType;
+    if(!ac_type_is_valid_for_switch(rt))
+        die(ALN, "Case branch not constant");
+    if(!LLVMIsConstant(label))
+        die(ALN, "Case branch not constant");
+
+    return label;
+}
+
+static void ac_check_case_label_uniqueness(LLVMValueRef label, long long *cases, int ct, int lineno)
+{
+    long long num = LLVMConstIntGetSExtValue(label);
+    for(int i = 0; i < ct; i++)
+    {
+        if(cases[i] == num)
+            die(lineno, "Duplicate case label");
+    }
+
+    cases[ct] = num;
 }
 
 void ac_compile_switch(AST *ast, CompilerBundle *cb)
@@ -170,23 +187,38 @@ void ac_compile_switch(AST *ast, CompilerBundle *cb)
     int case_count = ac_count_switch_cases(a);
 
     LLVMBasicBlockRef caseBlocks[case_count];
+    long long caseLabels[case_count];
 
     for(int i = 0; i < case_count; i++)
         caseBlocks[i] = LLVMAppendBasicBlockInContext(utl_get_current_context(), cb->currentFunction, "case");
 
     LLVMBasicBlockRef mergeBB = LLVMAppendBasicBlockInContext(utl_get_current_context(), cb->currentFunction, "merge");
+    LLVMBasicBlockRef defaultBB = a->deflt ?
+        LLVMAppendBasicBlockInContext(utl_get_current_context(), cb->currentFunction, "default")
+        : NULL;
 
     LLVMValueRef test = ac_dispatch_expression(a->test, cb);
+    ac_flush_transients(cb);
+
     EagleTypeType *test_type = a->test->resultantType;
     if(!ac_type_is_valid_for_switch(test_type))
         die(ALN, "Cannot switch over given type");
 
     AST *cblock = a->cases;
 
-    LLVMValueRef swtch = LLVMBuildSwitch(cb->builder, test, mergeBB, case_count);
+    LLVMValueRef swtch = LLVMBuildSwitch(cb->builder, test, defaultBB ? defaultBB : mergeBB, case_count);
     for(int i = 0; i < case_count; i++)
     {
+        if(test_type->type == ETEnum)
+            cb->enum_lookup = test_type;
+    
         LLVMValueRef targ = ac_compile_case_label(cblock, cb);
+        if(!targ)
+            die(ALN, "Switch statement has more than one default case");
+        cb->enum_lookup = NULL;
+
+        ac_check_case_label_uniqueness(targ, caseLabels, i, cblock->lineno);
+
         LLVMAddCase(swtch, targ, caseBlocks[i]);
 
         vs_push(cb->varScope);
@@ -200,6 +232,18 @@ void ac_compile_switch(AST *ast, CompilerBundle *cb)
         vs_pop(cb->varScope);
 
         cblock = cblock->next;
+    }
+
+    if(defaultBB)
+    {
+        LLVMPositionBuilderAtEnd(cb->builder, defaultBB);
+        vs_push(cb->varScope);
+        if(!ac_compile_block(((ASTCaseBlock *)a->deflt)->body, defaultBB, cb))
+        {
+            vs_run_callbacks_through(cb->varScope, cb->varScope->scope);
+            LLVMBuildBr(cb->builder, mergeBB);
+        }
+        vs_pop(cb->varScope);
     }
 
     LLVMPositionBuilderAtEnd(cb->builder, mergeBB);
@@ -423,3 +467,4 @@ LLVMValueRef ac_compile_test(AST *res, LLVMValueRef val, CompilerBundle *cb)
         die(LN(res), "Cannot test against given type.");
     return cmp;
 }
+
