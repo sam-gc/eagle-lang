@@ -29,16 +29,17 @@
 %token <token> TPLUS TMINUS TEQUALS TMUL TDIV TGT TLT TEQ TNE TGTE TLTE TNOT TPOW TLOGAND TLOGOR TMOD
 %token <token> TPLUSE TMINUSE TMULE TDIVE TOR
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TLBRACKET TRBRACKET
-%token <token> TFUNC TRETURN TYIELD TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF TFOR TIN TWEAK TUNWRAP
-%token <token> TBREAK TCONTINUE TVAR TGEN  TELLIPSES TVIEW
+%token <token> TFUNC TRETURN TYIELD TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF TFOR TIN TWEAK TUNWRAP TSWITCH
+%token <token> TBREAK TCONTINUE TVAR TGEN  TELLIPSES TVIEW TFALLTHROUGH TCASE
 %token <token> TCOLON TSEMI TNEWLINE TCOMMA TDOT TAMP TAT TARROW T__DEC T__INC
 %token <token> TYES TNO TNIL TIMPORT TTYPEDEF TENUM TSTATIC TINTERFACE TCLASS TSTRUCT
-%type <token> exportable
+%type <token> exportable 
 %type <node> program declarations declaration statements statement block funcdecl ifstatement
 %type <node> variabledecl vardecllist funccall calllist funcident funcsident externdecl typelist type interfacetypelist
 %type <node> elifstatement elifblock elsestatement singif structdecl structlist blockalt classlist classdecl interfacedecl interfacelist compositetype
 %type <node> expr singexpr binexpr unexpr ounexpr forstatement clodecl genident gendecl initdecl viewdecl viewident
 %type <node> enumitem enumlist enumdecl globalvardecl constantexpr structlitlist structlit exportdecl
+%type <node> singcase caseblock switchstatement
 
 %nonassoc TTYPE;
 %nonassoc TNEW;
@@ -261,6 +262,7 @@ statement           : expr TSEMI { $$ = $1; }
                     | TSEMI { $$ = NULL; }
                     | ifstatement { $$ = $1; }
                     | forstatement { $$ = $1; }
+                    | switchstatement { $$ = $1; }
                     | TTOUCH expr TSEMI { $$ = ast_make_unary($2, 't'); }
                     /*| funcdecl { $$ = $1; }*/
                     ;
@@ -286,6 +288,19 @@ ifstatement         : singif { $$ = $1; }
                     | singif elsestatement { $$ = $1; ast_add_if($$, $2); }
                     | singif elifblock { $$ = $1; ast_add_if($1, $2); }
                     | singif elifblock elsestatement { $$ = $1; ast_add_if($$, $2); ast_add_if($$, $3); };
+
+singcase            : TCASE expr TSEMI statement { $$ = ast_make_case($2, $4); }
+                    | TCASE expr block { $$ = ast_make_case($2, $3); }
+                    | TSEMI { $$ = NULL; }
+                    ;
+
+caseblock           : singcase { $$ = $1; }
+                    | singcase caseblock { if($1) $1->next = $2; $$ = $1 ? $1 : $2; }
+                    ;
+
+switchstatement     : TSWITCH expr TLBRACE caseblock TRBRACE TSEMI { $$ = ast_make_switch($2, $4); }
+                    | TSWITCH expr TSEMI TLBRACE caseblock TRBRACE TSEMI { $$ = ast_make_switch($2, $5); }
+                    ;
 
 variabledecl        : type TIDENTIFIER { $$ = ast_make_var_decl($1, $2); };
                     /*| TCOUNTED type TIDENTIFIER { $$ = ast_make_var_decl($2, $3); ast_set_counted($$); };*/

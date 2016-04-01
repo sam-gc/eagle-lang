@@ -39,7 +39,9 @@ typedef enum {
     AENUMDECL,
     AENUMITEM,
     ATYPELOOKUP,
-    AEXPORT
+    AEXPORT,
+    ASWITCH,
+    ACASE
 } ASTType;
 
 typedef enum {
@@ -165,6 +167,26 @@ typedef struct {
     struct AST *block;
     struct AST *ifNext;
 } ASTIfBlock;
+
+typedef struct {
+    ASTType type;
+    EagleTypeType *resultantType;
+    struct AST *next;
+    long lineno;
+
+    struct AST *test;
+    struct AST *cases;
+} ASTSwitchBlock;
+
+typedef struct {
+    ASTType type;
+    EagleTypeType *resultantType;
+    struct AST *next;
+    long lineno;
+
+    struct AST *targ;
+    struct AST *body;
+} ASTCaseBlock;
 
 typedef struct {
     ASTType type;
@@ -338,6 +360,8 @@ AST *ast_make_weak(AST *ast);
 AST *ast_make_composite(AST *orig, char *nw);
 AST *ast_make_array(AST *ast, int ct);
 AST *ast_make_if(AST *test, AST *block);
+AST *ast_make_switch(AST *test, AST *cases);
+AST *ast_make_case(AST *targ, AST *body);
 AST *ast_make_loop(AST *setup, AST *test, AST *update, AST *block);
 AST *ast_make_cast(AST *type, AST *val);
 AST *ast_make_enum(char *type, AST *items);

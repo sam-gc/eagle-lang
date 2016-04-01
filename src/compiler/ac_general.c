@@ -441,6 +441,9 @@ void ac_dispatch_statement(AST *ast, CompilerBundle *cb)
         case ATYPELOOKUP:
             ac_compile_type_lookup(ast, cb);
             break;
+        case ASWITCH:
+            ac_compile_switch(ast, cb);
+            break;
         default:
             die(ALN, "Invalid statement type.");
     }

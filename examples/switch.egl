@@ -1,0 +1,15 @@
+func main()
+{
+    int i = 1
+
+    switch (new int(i))^
+    {
+        case 0
+            puts 0
+        case 1
+        {
+            puts 'You are number one!'
+            puts (new int(1))^
+        }
+    }
+}

@@ -127,6 +127,84 @@ void ac_compile_yield(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
     LLVMPositionBuilderAtEnd(cb->builder, nblock);
 }
 
+int ac_type_is_valid_for_switch(EagleTypeType *type)
+{
+    switch(type->type)
+    {
+        case ETInt1:
+        case ETInt8:
+        case ETInt32:
+        case ETInt64:
+        case ETEnum:
+            return 1;
+        default:
+            return 0;
+    }
+}
+
+int ac_count_switch_cases(ASTSwitchBlock *ast)
+{
+    AST *cblock = ast->cases;
+    int i;
+    for(i = 0; cblock; i += 1, cblock = cblock->next);
+    return i;
+}
+
+LLVMValueRef ac_compile_case_label(AST *ast, CompilerBundle *cb)
+{
+    ASTCaseBlock *cblock = (ASTCaseBlock *)ast;
+    if(cblock->targ->type != AVALUE)
+        die(ALN, "Case branches must be constant values");
+
+    ASTValue *targ = (ASTValue *)cblock->targ;
+    if(!ac_type_is_valid_for_switch(ett_base_type(targ->etype)))
+        die(ALN, "Case branches must be constant integer values");
+
+    return ac_dispatch_expression(cblock->targ, cb);
+}
+
+void ac_compile_switch(AST *ast, CompilerBundle *cb)
+{
+    ASTSwitchBlock *a = (ASTSwitchBlock *)ast;
+
+    int case_count = ac_count_switch_cases(a);
+
+    LLVMBasicBlockRef caseBlocks[case_count];
+
+    for(int i = 0; i < case_count; i++)
+        caseBlocks[i] = LLVMAppendBasicBlockInContext(utl_get_current_context(), cb->currentFunction, "case");
+
+    LLVMBasicBlockRef mergeBB = LLVMAppendBasicBlockInContext(utl_get_current_context(), cb->currentFunction, "merge");
+
+    LLVMValueRef test = ac_dispatch_expression(a->test, cb);
+    EagleTypeType *test_type = a->test->resultantType;
+    if(!ac_type_is_valid_for_switch(test_type))
+        die(ALN, "Cannot switch over given type");
+
+    AST *cblock = a->cases;
+
+    LLVMValueRef swtch = LLVMBuildSwitch(cb->builder, test, mergeBB, case_count);
+    for(int i = 0; i < case_count; i++)
+    {
+        LLVMValueRef targ = ac_compile_case_label(cblock, cb);
+        LLVMAddCase(swtch, targ, caseBlocks[i]);
+
+        vs_push(cb->varScope);
+        LLVMPositionBuilderAtEnd(cb->builder, caseBlocks[i]);
+
+        if(!ac_compile_block(((ASTCaseBlock *)cblock)->body, caseBlocks[i], cb))
+        {
+            vs_run_callbacks_through(cb->varScope, cb->varScope->scope);
+            LLVMBuildBr(cb->builder, mergeBB);
+        }
+        vs_pop(cb->varScope);
+
+        cblock = cblock->next;
+    }
+
+    LLVMPositionBuilderAtEnd(cb->builder, mergeBB);
+}
+
 void ac_compile_loop(AST *ast, CompilerBundle *cb)
 {
     ASTLoopBlock *a = (ASTLoopBlock *)ast;

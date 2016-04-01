@@ -687,6 +687,28 @@ AST *ast_make_if(AST *test, AST *block)
     return (AST *)ast;
 }
 
+AST *ast_make_switch(AST *test, AST *cases)
+{
+    ASTSwitchBlock *ast = ast_malloc(sizeof(ASTSwitchBlock));
+    ast->type = ASWITCH;
+
+    ast->test = test;
+    ast->cases = cases;
+    
+    return (AST *)ast;
+}
+
+AST *ast_make_case(AST *targ, AST *body)
+{
+    ASTCaseBlock *ast = ast_malloc(sizeof(ASTCaseBlock));
+    ast->type = ACASE;
+
+    ast->targ = targ;
+    ast->body = body;
+
+    return (AST *)ast;
+}
+
 AST *ast_make_loop(AST *setup, AST *test, AST *update, AST *block)
 {
     ASTLoopBlock *ast = ast_malloc(sizeof(ASTLoopBlock));
