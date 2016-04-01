@@ -92,7 +92,7 @@ void ta_run(TermArgs *args, const char *argv[])
         hst_put(args->argdump, arg, *(argv + 1) ? (char *)*(argv + 1) : (void *)(uintptr_t)1, NULL, NULL);
 
         argv++;
-        if(skip_next)
+        if(skip_next && *argv)
             argv++;
     }
 }
