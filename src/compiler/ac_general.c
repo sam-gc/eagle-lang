@@ -128,6 +128,7 @@ LLVMModuleRef ac_compile(AST *ast, int include_rc)
     cb.builder = LLVMCreateBuilderInContext(utl_get_current_context());
     cb.transients = hst_create();
     cb.loadedTransients = hst_create();
+    cb.nextCaseBlock = NULL;
 
     cb.compilingMethod = 0;
 

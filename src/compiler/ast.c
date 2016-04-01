@@ -694,22 +694,17 @@ AST *ast_make_switch(AST *test, AST *cases)
 
     ast->test = test;
     ast->cases = cases;
-    ast->deflt = NULL;
+    ast->default_index = -1;
 
-    for(AST *prev = NULL; cases; cases = cases->next)
+    for(int i = 0; cases; cases = cases->next, i++)
     {
         ASTCaseBlock *cs = (ASTCaseBlock *)cases;
         if(!cs->targ) // Default value
         {
-            ast->deflt = cases;
-            if(!prev)
-                ast->cases = cases->next;
-            else
-                prev->next = cases->next;
-            break;
+            if(ast->default_index >= 0) // We already have a default
+                die(ast->lineno, "Switch statement has multiple default cases");
+            ast->default_index = i;
         }
-
-        prev = cases;
     }
     
     return (AST *)ast;

@@ -253,6 +253,7 @@ statements          : statement { if($1) $$ = $1; else $$ = ast_make(); }
 statement           : expr TSEMI { $$ = $1; }
                     | TBREAK TSEMI { $$ = ast_make_unary(NULL, 'b'); }
                     | TCONTINUE TSEMI { $$ = ast_make_unary(NULL, 'c'); }
+                    | TFALLTHROUGH TSEMI { $$ = ast_make_unary(NULL, 'f'); }
                     | TRETURN TSEMI { $$ = ast_make_unary(NULL, 'r'); }
                     | TRETURN expr TSEMI { $$ = ast_make_unary($2, 'r'); }
                     | TYIELD expr TSEMI { $$ = ast_make_unary($2, 'y'); }
@@ -289,11 +290,10 @@ ifstatement         : singif { $$ = $1; }
                     | singif elifblock { $$ = $1; ast_add_if($1, $2); }
                     | singif elifblock elsestatement { $$ = $1; ast_add_if($$, $2); ast_add_if($$, $3); };
 
-singcase            : TCASE expr TSEMI statement { $$ = ast_make_case($2, $4); }
-                    | TCASE expr block { $$ = ast_make_case($2, $3); }
-                    | TDEFAULT TSEMI statement { $$ = ast_make_case(NULL, $3); }
-                    | TDEFAULT block { $$ = ast_make_case(NULL, $2); }
-                    | TSEMI { $$ = NULL; }
+singcase            : TCASE expr TSEMI statements { $$ = ast_make_case($2, $4); }
+                    | TDEFAULT TSEMI statements { $$ = ast_make_case(NULL, $3); }
+                    /*| TCASE expr block { $$ = ast_make_case($2, $3); }*/
+                    /*| TDEFAULT block { $$ = ast_make_case(NULL, $2); } */
                     ;
 
 caseblock           : singcase { $$ = $1; }
@@ -302,10 +302,10 @@ caseblock           : singcase { $$ = $1; }
 
 switchstatement     : TSWITCH expr TLBRACE caseblock TRBRACE TSEMI { $$ = ast_make_switch($2, $4); }
                     | TSWITCH expr TSEMI TLBRACE caseblock TRBRACE TSEMI { $$ = ast_make_switch($2, $5); }
+                    | TSWITCH expr TLBRACE TSEMI caseblock TRBRACE TSEMI { $$ = ast_make_switch($2, $5); }
                     ;
 
-variabledecl        : type TIDENTIFIER { $$ = ast_make_var_decl($1, $2); };
-                    /*| TCOUNTED type TIDENTIFIER { $$ = ast_make_var_decl($2, $3); ast_set_counted($$); };*/
+variabledecl        : type TIDENTIFIER { $$ = ast_make_var_decl($1, $2); }; /*| TCOUNTED type TIDENTIFIER { $$ = ast_make_var_decl($2, $3); ast_set_counted($$); };*/
 
 funccall            : ounexpr TLPAREN TRPAREN { $$ = ast_make_func_call($1, NULL); }
                     | ounexpr TLPAREN calllist TRPAREN { $$ = ast_make_func_call($1, $3); };

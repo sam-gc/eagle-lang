@@ -7,18 +7,30 @@ enum Blah
 
 func main()
 {
-    var b = Blah.Medium
+    var b = Blah.Large
 
     switch b
     {
+        default
+            puts 'yooooo'
+            fallthrough
         case Small
             puts 0
+            int i = 5
+            switch i
+            {
+                case 5
+                    puts 'hello'
+                    fallthrough
+                default
+                    puts 'def'
+            }
+            fallthrough
         case Large
-        {
+            var num = new int(1)
             puts 'You are number one!'
-            puts (new int(1))^
-        }
-        default
-            puts 'medium...'
+            if b == Medium
+                fallthrough
+            puts num^
     }
 }

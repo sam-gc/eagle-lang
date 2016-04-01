@@ -176,7 +176,7 @@ typedef struct {
 
     struct AST *test;
     struct AST *cases;
-    struct AST *deflt;
+    int default_index;
 } ASTSwitchBlock;
 
 typedef struct {

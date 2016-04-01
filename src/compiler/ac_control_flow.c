@@ -12,28 +12,30 @@ int ac_compile_block(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
 {
     for(; ast; ast = ast->next)
     {
-        if(ast->type == AUNARY && ((ASTUnary *)ast)->op == 'r') // Handle the special return case
+        if(ast->type == AUNARY)
         {
-            ac_compile_return(ast, block, cb);
-            return 1;
-        }
-
-        if(ast->type == AUNARY && ((ASTUnary *)ast)->op == 'y') // Handle the special yield case
-        {
-            ac_compile_yield(ast, block, cb);
-            continue;
-        }
-
-        if(ast->type == AUNARY && ((ASTUnary *)ast)->op == 'b') // Handle the special break case
-        {
-            LLVMBuildBr(cb->builder, cb->currentLoopExit);
-            return 1;
-        }
-
-        if(ast->type == AUNARY && ((ASTUnary *)ast)->op == 'c') // Handle the special continue case
-        {
-            LLVMBuildBr(cb->builder, cb->currentLoopEntry);
-            return 1;
+            ASTUnary *un = (ASTUnary *)ast;
+            switch(un->op)
+            {
+                case 'r': // Return
+                    ac_compile_return(ast, block, cb);
+                    return 1;
+                case 'y': // Yield
+                    ac_compile_yield(ast, block, cb);
+                    continue;
+                case 'b': // Break
+                    LLVMBuildBr(cb->builder, cb->currentLoopExit);
+                    return 1;
+                case 'c': // Continue
+                    LLVMBuildBr(cb->builder, cb->currentLoopEntry);
+                    return 1;
+                case 'f': // Fallthrough
+                    if(!cb->nextCaseBlock)
+                        die(un->lineno, "Attempting a fallthrough outside of switch statement");
+                    vs_run_callbacks_through(cb->varScope, cb->currentFunctionScope);
+                    LLVMBuildBr(cb->builder, cb->nextCaseBlock);
+                    return 1;
+            }
         }
 
         ac_dispatch_statement(ast, cb);
@@ -184,6 +186,9 @@ void ac_compile_switch(AST *ast, CompilerBundle *cb)
 {
     ASTSwitchBlock *a = (ASTSwitchBlock *)ast;
 
+    // Save the old fall-through block value
+    LLVMBasicBlockRef old_nextCaseBlock = cb->nextCaseBlock;
+
     int case_count = ac_count_switch_cases(a);
 
     LLVMBasicBlockRef caseBlocks[case_count];
@@ -193,9 +198,6 @@ void ac_compile_switch(AST *ast, CompilerBundle *cb)
         caseBlocks[i] = LLVMAppendBasicBlockInContext(utl_get_current_context(), cb->currentFunction, "case");
 
     LLVMBasicBlockRef mergeBB = LLVMAppendBasicBlockInContext(utl_get_current_context(), cb->currentFunction, "merge");
-    LLVMBasicBlockRef defaultBB = a->deflt ?
-        LLVMAppendBasicBlockInContext(utl_get_current_context(), cb->currentFunction, "default")
-        : NULL;
 
     LLVMValueRef test = ac_dispatch_expression(a->test, cb);
     ac_flush_transients(cb);
@@ -206,23 +208,31 @@ void ac_compile_switch(AST *ast, CompilerBundle *cb)
 
     AST *cblock = a->cases;
 
-    LLVMValueRef swtch = LLVMBuildSwitch(cb->builder, test, defaultBB ? defaultBB : mergeBB, case_count);
+    LLVMBasicBlockRef dumpBB;
+    if(a->default_index < 0)
+        dumpBB = mergeBB;
+    else
+        dumpBB = caseBlocks[a->default_index];
+
+    LLVMValueRef swtch = LLVMBuildSwitch(cb->builder, test, dumpBB, case_count);
     for(int i = 0; i < case_count; i++)
     {
-        if(test_type->type == ETEnum)
-            cb->enum_lookup = test_type;
+        if(i != a->default_index)
+        {
+            if(test_type->type == ETEnum)
+                cb->enum_lookup = test_type;
     
-        LLVMValueRef targ = ac_compile_case_label(cblock, cb);
-        if(!targ)
-            die(ALN, "Switch statement has more than one default case");
-        cb->enum_lookup = NULL;
+            LLVMValueRef targ = ac_compile_case_label(cblock, cb);
+            cb->enum_lookup = NULL;
 
-        ac_check_case_label_uniqueness(targ, caseLabels, i, cblock->lineno);
-
-        LLVMAddCase(swtch, targ, caseBlocks[i]);
+            ac_check_case_label_uniqueness(targ, caseLabels, i, cblock->lineno);
+            LLVMAddCase(swtch, targ, caseBlocks[i]);
+        }
 
         vs_push(cb->varScope);
         LLVMPositionBuilderAtEnd(cb->builder, caseBlocks[i]);
+
+        cb->nextCaseBlock = i == case_count - 1 ? mergeBB : caseBlocks[i + 1];
 
         if(!ac_compile_block(((ASTCaseBlock *)cblock)->body, caseBlocks[i], cb))
         {
@@ -234,19 +244,10 @@ void ac_compile_switch(AST *ast, CompilerBundle *cb)
         cblock = cblock->next;
     }
 
-    if(defaultBB)
-    {
-        LLVMPositionBuilderAtEnd(cb->builder, defaultBB);
-        vs_push(cb->varScope);
-        if(!ac_compile_block(((ASTCaseBlock *)a->deflt)->body, defaultBB, cb))
-        {
-            vs_run_callbacks_through(cb->varScope, cb->varScope->scope);
-            LLVMBuildBr(cb->builder, mergeBB);
-        }
-        vs_pop(cb->varScope);
-    }
-
     LLVMPositionBuilderAtEnd(cb->builder, mergeBB);
+    
+    // Restore the old next case block value
+    cb->nextCaseBlock = old_nextCaseBlock;
 }
 
 void ac_compile_loop(AST *ast, CompilerBundle *cb)

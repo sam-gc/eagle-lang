@@ -34,6 +34,7 @@ typedef struct {
     EagleGenType *currentGenType;
 
     arraylist *yieldBlocks;
+    LLVMBasicBlockRef nextCaseBlock;
     LLVMBasicBlockRef currentYield;
     LLVMBasicBlockRef currentFunctionEntry;
     LLVMBasicBlockRef currentLoopEntry;
