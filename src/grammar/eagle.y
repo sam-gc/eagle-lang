@@ -31,7 +31,7 @@
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TLBRACKET TRBRACKET
 %token <token> TFUNC TRETURN TYIELD TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF TFOR TIN TWEAK TUNWRAP TSWITCH
 %token <token> TBREAK TCONTINUE TVAR TGEN  TELLIPSES TVIEW TFALLTHROUGH TCASE TDEFAULT
-%token <token> TCOLON TSEMI TNEWLINE TCOMMA TDOT TAMP TAT TARROW T__DEC T__INC TQUESTION
+%token <token> TCOLON TSEMI TNEWLINE TCOMMA TDOT TAMP TAT TARROW T__DEC T__INC TQUESTION TQUESTIONCOLON
 %token <token> TYES TNO TNIL TIMPORT TTYPEDEF TENUM TSTATIC TINTERFACE TCLASS TSTRUCT
 %type <token> exportable 
 %type <node> program declarations declaration statements statement block funcdecl ifstatement
@@ -47,7 +47,7 @@
 %right TPLUSE TMINUSE;
 %right TMULE TDIVE;
 %right TEQUALS;
-%right TQUESTION TCOLON;
+%right TQUESTION TCOLON TQUESTIONCOLON;
 %left TLOGOR;
 %left TLOGAND;
 %left TNOT;
@@ -325,6 +325,7 @@ expr                : binexpr { $$ = $1; }
                     | TNEW type TLPAREN calllist TRPAREN { $$ = ast_make_allocater('n', $2, $4); }
                     | TNEW type TLPAREN TRPAREN { $$ = ast_make_allocater('n', $2, (void *)1); }
                     | expr TQUESTION expr TCOLON expr { $$ = ast_make_ternary($1, $3, $5); }
+                    | expr TQUESTIONCOLON expr { $$ = ast_make_ternary($1, NULL, $3); }
                     ;
 
 binexpr             : expr TPLUS expr { $$ = ast_make_binary($1, $3, '+'); }

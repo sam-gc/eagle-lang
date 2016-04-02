@@ -1,8 +1,32 @@
 extern func printf(byte* ...) : int
 
+func alternator() : int
+{
+    static int i
+    int val = i % 2 ? 10 : 0
+    i += 1
+    return val
+}
+
 func main(int argc, byte** argv)
 {
     var name = argc > 1 ? argv[1] : 'World'
 
     printf('Hello, %s\n', name)
+
+    var a = alternator() ? alternator() : -10
+    var b = alternator() ? alternator() : -10
+    var c = alternator() ? alternator() : -10
+
+    puts a
+    puts b
+    puts c
+
+    a = alternator() ?: -10
+    b = alternator() ?: -10
+    c = alternator() ?: -10
+
+    puts a
+    puts b
+    puts c
 }

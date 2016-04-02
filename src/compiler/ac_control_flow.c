@@ -256,6 +256,8 @@ LLVMValueRef ac_compile_ternary(AST *ast, CompilerBundle *cb)
     AST *tree_ifYes = a->ifyes;
     AST *tree_ifNo  = a->ifno;
 
+    AST *yes_tree = tree_ifYes ? tree_ifYes : a->test;
+
     // Compile the test condition
     LLVMValueRef test_raw = ac_dispatch_expression(a->test, cb);
     LLVMValueRef test = ac_compile_test(a->test, test_raw, cb);
@@ -269,12 +271,14 @@ LLVMValueRef ac_compile_ternary(AST *ast, CompilerBundle *cb)
 
     // Generate the values
     LLVMPositionBuilderAtEnd(cb->builder, ifyesBB);
-    LLVMValueRef valA = ac_dispatch_expression(tree_ifYes, cb);
+
+    // Handle elvis operator (?:)
+    LLVMValueRef valA = tree_ifYes ? ac_dispatch_expression(tree_ifYes, cb) : test_raw;
     
     LLVMPositionBuilderAtEnd(cb->builder, ifnoBB);
     LLVMValueRef valB = ac_dispatch_expression(tree_ifNo, cb);
 
-    EagleTypeType *ytype = tree_ifYes->resultantType;
+    EagleTypeType *ytype = tree_ifYes ? tree_ifYes->resultantType : a->test->resultantType;
     EagleTypeType *ntype = tree_ifNo->resultantType;
 
     // If the types are not the same, we will try to run a conversion. The resultant
@@ -295,22 +299,23 @@ LLVMValueRef ac_compile_ternary(AST *ast, CompilerBundle *cb)
     int need_loaded = 0;
     int need_transients = 0;
 
-    need_loaded = hst_contains_key(&cb->loadedTransients, tree_ifYes, ahhd, ahed) ||
+    need_loaded = hst_contains_key(&cb->loadedTransients, yes_tree, ahhd, ahed) ||
                   hst_contains_key(&cb->loadedTransients, tree_ifNo, ahhd, ahed);
-    need_transients = need_loaded || hst_contains_key(&cb->transients, tree_ifYes, ahhd, ahed) ||
+    need_transients = need_loaded || hst_contains_key(&cb->transients, yes_tree, ahhd, ahed) ||
                                      hst_contains_key(&cb->transients, tree_ifNo, ahhd, ahed);
 
+    printf("%d %d\n", need_loaded, need_transients);
     if(need_loaded)
     {
         LLVMPositionBuilderAtEnd(cb->builder, ifyesBB);
-        if(!hst_remove_key(&cb->loadedTransients, tree_ifYes, ahhd, ahed))
+        if(!hst_remove_key(&cb->loadedTransients, yes_tree, ahhd, ahed))
             ac_incr_val_pointer(cb, &valA, ytype);
         LLVMPositionBuilderAtEnd(cb->builder, ifnoBB);
         if(!hst_remove_key(&cb->loadedTransients, tree_ifNo, ahhd, ahed))
             ac_incr_val_pointer(cb, &valB, ytype);
     }
 
-    hst_remove_key(&cb->transients, tree_ifYes, ahhd, ahed);
+    hst_remove_key(&cb->transients, yes_tree, ahhd, ahed);
     hst_remove_key(&cb->transients, tree_ifNo, ahhd, ahed);
 
     LLVMPositionBuilderAtEnd(cb->builder, mergeBB);
