@@ -1,0 +1,14 @@
+func blah() : int^
+{
+    return new int(11)
+}
+
+func main(int argc, byte **argv)
+{
+    var a = new int(5)
+
+    var i = argc > 1 ? a : new int(6)
+    argc > blah()^ ? blah() : new int(6)
+
+    puts i^
+}

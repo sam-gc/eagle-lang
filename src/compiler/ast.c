@@ -734,6 +734,18 @@ AST *ast_make_loop(AST *setup, AST *test, AST *update, AST *block)
     return (AST *)ast;
 }
 
+AST *ast_make_ternary(AST *test, AST *ifyes, AST *ifno)
+{
+    ASTTernary *ast = ast_malloc(sizeof(ASTTernary));
+    ast->type = ATERNARY;
+
+    ast->test  = test;
+    ast->ifyes = ifyes;
+    ast->ifno  = ifno;
+
+    return (AST *)ast;
+}
+
 AST *ast_make_cast(AST *type, AST *val)
 {
     ASTCast *ast = ast_malloc(sizeof(ASTCast));

@@ -1,0 +1,8 @@
+extern func printf(byte* ...) : int
+
+func main(int argc, byte** argv)
+{
+    var name = argc > 1 ? argv[1] : 'World'
+
+    printf('Hello, %s\n', name)
+}

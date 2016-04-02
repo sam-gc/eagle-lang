@@ -403,6 +403,9 @@ LLVMValueRef ac_dispatch_expression(AST *ast, CompilerBundle *cb)
         case ATYPELOOKUP:
             val = ac_compile_type_lookup(ast, cb);
             break;
+        case ATERNARY:
+            val = ac_compile_ternary(ast, cb);
+            break;
         default:
             die(ALN, "Invalid expression type.");
             return NULL;
@@ -456,6 +459,9 @@ void ac_dispatch_statement(AST *ast, CompilerBundle *cb)
             break;
         case ASWITCH:
             ac_compile_switch(ast, cb);
+            break;
+        case ATERNARY:
+            ac_compile_ternary(ast, cb);
             break;
         default:
             die(ALN, "Invalid statement type.");

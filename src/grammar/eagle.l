@@ -90,6 +90,7 @@ charlit `[^`]`
 "gen"       DISCARD_NL; return SET(TGEN);
 "view"      DISCARD_NL; return SET(TVIEW);
 ":"         DISCARD_NL; return SET(TCOLON);
+"?"         DISCARD_NL; return SET(TQUESTION);
 ","         DISCARD_NL; return SET(TCOMMA);
 "."         DISCARD_NL; return SET(TDOT);
 "->"        DISCARD_NL; return SET(TARROW);

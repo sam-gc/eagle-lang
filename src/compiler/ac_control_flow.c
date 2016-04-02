@@ -250,6 +250,94 @@ void ac_compile_switch(AST *ast, CompilerBundle *cb)
     cb->nextCaseBlock = old_nextCaseBlock;
 }
 
+LLVMValueRef ac_compile_ternary(AST *ast, CompilerBundle *cb)
+{
+    ASTTernary *a = (ASTTernary *)ast;
+    AST *tree_ifYes = a->ifyes;
+    AST *tree_ifNo  = a->ifno;
+
+    // Compile the test condition
+    LLVMValueRef test_raw = ac_dispatch_expression(a->test, cb);
+    LLVMValueRef test = ac_compile_test(a->test, test_raw, cb);
+
+    // Add the blocks to build
+    LLVMBasicBlockRef ifyesBB = LLVMAppendBasicBlockInContext(utl_get_current_context(), cb->currentFunction, "ifyes");
+    LLVMBasicBlockRef ifnoBB  = LLVMAppendBasicBlockInContext(utl_get_current_context(), cb->currentFunction, "ifno");
+    LLVMBasicBlockRef mergeBB = LLVMAppendBasicBlockInContext(utl_get_current_context(), cb->currentFunction, "merge");
+
+    LLVMBuildCondBr(cb->builder, test, ifyesBB, ifnoBB);
+
+    // Generate the values
+    LLVMPositionBuilderAtEnd(cb->builder, ifyesBB);
+    LLVMValueRef valA = ac_dispatch_expression(tree_ifYes, cb);
+    
+    LLVMPositionBuilderAtEnd(cb->builder, ifnoBB);
+    LLVMValueRef valB = ac_dispatch_expression(tree_ifNo, cb);
+
+    EagleTypeType *ytype = tree_ifYes->resultantType;
+    EagleTypeType *ntype = tree_ifNo->resultantType;
+
+    // If the types are not the same, we will try to run a conversion. The resultant
+    // type is assumed to be the type of the _yes_ branch. As such, we will build any
+    // conversion code in the _no_ branch, which the builder is still positioned on
+    if(!ett_are_same(ytype, ntype))
+        valB = ac_build_conversion(cb, valB, ntype, ytype, LOOSE_CONVERSION, tree_ifNo->lineno);
+
+    // Now we need to build a temporary alloca to store the result
+    LLVMPositionBuilderAtEnd(cb->builder, cb->currentFunctionEntry);
+    LLVMValueRef begin = LLVMGetFirstInstruction(cb->currentFunctionEntry);
+    if(begin)
+        LLVMPositionBuilderBefore(cb->builder, begin);
+
+    LLVMValueRef output = LLVMBuildAlloca(cb->builder, ett_llvm_type(ytype), "ternary.tmp");
+
+    // We need to deal with transient allocations at this point
+    int need_loaded = 0;
+    int need_transients = 0;
+
+    need_loaded = hst_contains_key(&cb->loadedTransients, tree_ifYes, ahhd, ahed) ||
+                  hst_contains_key(&cb->loadedTransients, tree_ifNo, ahhd, ahed);
+    need_transients = need_loaded || hst_contains_key(&cb->transients, tree_ifYes, ahhd, ahed) ||
+                                     hst_contains_key(&cb->transients, tree_ifNo, ahhd, ahed);
+
+    printf("%d %d\n", need_loaded, need_transients);
+
+    if(need_loaded)
+    {
+        LLVMPositionBuilderAtEnd(cb->builder, ifyesBB);
+        if(!hst_remove_key(&cb->loadedTransients, tree_ifYes, ahhd, ahed))
+            ac_incr_val_pointer(cb, &valA, ytype);
+        LLVMPositionBuilderAtEnd(cb->builder, ifnoBB);
+        if(!hst_remove_key(&cb->loadedTransients, tree_ifNo, ahhd, ahed))
+            ac_incr_val_pointer(cb, &valB, ytype);
+    }
+
+    hst_remove_key(&cb->transients, tree_ifYes, ahhd, ahed);
+    hst_remove_key(&cb->transients, tree_ifNo, ahhd, ahed);
+
+    LLVMPositionBuilderAtEnd(cb->builder, mergeBB);
+    LLVMValueRef opened_output = LLVMBuildLoad(cb->builder, output, "ternary.output");
+
+    if(need_loaded)
+        hst_put(&cb->loadedTransients, ast, opened_output, ahhd, ahed);
+    else if(need_transients)
+        hst_put(&cb->transients, ast, opened_output, ahhd, ahed);
+
+    // Now we will go back and assign those temp values to the alloc'd variable
+    LLVMPositionBuilderAtEnd(cb->builder, ifyesBB);
+    LLVMBuildStore(cb->builder, valA, output);
+    LLVMBuildBr(cb->builder, mergeBB);
+
+    LLVMPositionBuilderAtEnd(cb->builder, ifnoBB);
+    LLVMBuildStore(cb->builder, valB, output);
+    LLVMBuildBr(cb->builder, mergeBB);
+
+    LLVMPositionBuilderAtEnd(cb->builder, mergeBB);
+
+    ast->resultantType = ytype;
+    return opened_output;
+}
+
 void ac_compile_loop(AST *ast, CompilerBundle *cb)
 {
     ASTLoopBlock *a = (ASTLoopBlock *)ast;
