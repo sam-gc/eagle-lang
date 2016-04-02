@@ -300,8 +300,6 @@ LLVMValueRef ac_compile_ternary(AST *ast, CompilerBundle *cb)
     need_transients = need_loaded || hst_contains_key(&cb->transients, tree_ifYes, ahhd, ahed) ||
                                      hst_contains_key(&cb->transients, tree_ifNo, ahhd, ahed);
 
-    printf("%d %d\n", need_loaded, need_transients);
-
     if(need_loaded)
     {
         LLVMPositionBuilderAtEnd(cb->builder, ifyesBB);

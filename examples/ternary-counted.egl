@@ -10,5 +10,10 @@ func main(int argc, byte **argv)
     var i = argc > 1 ? a : new int(6)
     argc > blah()^ ? blah() : new int(6)
 
+    for int j = 0; j < (argc > 1 ? 10 : 20); j += 1
+    {
+        puts j
+    }
+
     puts i^
 }
