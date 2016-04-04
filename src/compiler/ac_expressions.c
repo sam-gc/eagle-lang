@@ -758,6 +758,8 @@ ac_generic_binary(ASTBinary *a, LLVMValueRef l, LLVMValueRef r,
             return ac_make_mod(l, r, cb->builder, totype->type, a->lineno);
         case 'o':
             return ac_make_bitor(l, r, cb->builder, totype->type, a->lineno);
+        case 'a':
+            return ac_make_bitand(l, r, cb->builder, totype->type, a->lineno);
         default:
             die(a->lineno, "Invalid binary operation (%c).", a->op);
             return NULL;

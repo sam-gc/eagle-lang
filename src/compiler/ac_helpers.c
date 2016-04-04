@@ -264,6 +264,24 @@ LLVMValueRef ac_make_bitor(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef
     }
 }
 
+LLVMValueRef ac_make_bitand(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type, int lineno)
+{
+    switch(type)
+    {
+        case ETDouble:
+            die(lineno, "Bitwise AND does not apply to floating point types");
+            return NULL;
+        case ETInt8:
+        case ETInt16:
+        case ETInt32:
+        case ETInt64:
+            return LLVMBuildAnd(builder, left, right, "AND");
+        default:
+            die(lineno, "The given types may not be AND'd");
+            return NULL;
+    }
+}
+
 LLVMValueRef ac_make_neg(LLVMValueRef val, LLVMBuilderRef builder, EagleType type, int lineno)
 {
     switch(type)
