@@ -22,6 +22,7 @@ LLVMValueRef ac_make_sub(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
 LLVMValueRef ac_make_mul(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type, int lineno);
 LLVMValueRef ac_make_div(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type, int lineno);
 LLVMValueRef ac_make_mod(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type, int lineno);
+LLVMValueRef ac_make_bitor(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type, int lineno);
 LLVMValueRef ac_make_comp(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type, char comp, int lineno);
 LLVMValueRef ac_make_neg(LLVMValueRef val, LLVMBuilderRef builder, EagleType type, int lineno);
 void ac_replace_with_counted(CompilerBundle *cb, VarBundle *b);

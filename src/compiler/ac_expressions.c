@@ -691,7 +691,9 @@ LLVMValueRef ac_generic_unary(ASTUnary *a, LLVMValueRef val, CompilerBundle *cb)
     return NULL;
 }
 
-LLVMValueRef ac_generic_binary(ASTBinary *a, LLVMValueRef l, LLVMValueRef r, char save_left, EagleTypeType *fromtype, EagleTypeType *totype, CompilerBundle *cb)
+LLVMValueRef
+ac_generic_binary(ASTBinary *a, LLVMValueRef l, LLVMValueRef r,
+                  char save_left, EagleTypeType *fromtype, EagleTypeType *totype, CompilerBundle *cb)
 {
     if(
     (!save_left && (fromtype->type == ETPointer || totype->type == ETPointer)) ||
@@ -754,6 +756,8 @@ LLVMValueRef ac_generic_binary(ASTBinary *a, LLVMValueRef l, LLVMValueRef r, cha
             return ac_make_div(l, r, cb->builder, totype->type, a->lineno);
         case '%':
             return ac_make_mod(l, r, cb->builder, totype->type, a->lineno);
+        case 'o':
+            return ac_make_bitor(l, r, cb->builder, totype->type, a->lineno);
         default:
             die(a->lineno, "Invalid binary operation (%c).", a->op);
             return NULL;

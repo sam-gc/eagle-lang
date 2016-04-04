@@ -346,6 +346,7 @@ binexpr             : expr TPLUS expr { $$ = ast_make_binary($1, $3, '+'); }
                     | expr TLOGAND expr { $$ = ast_make_binary($1, $3, '&'); }
                     | expr TLOGOR expr { $$ = ast_make_binary($1, $3, '|'); }
                     | expr TMOD expr { $$ = ast_make_binary($1, $3, '%'); }
+                    | expr TOR expr { $$ = ast_make_binary($1, $3, 'o'); }
                     ;
 
 unexpr              : ounexpr TPOW { $$ = ast_make_unary($1, '*'); }
