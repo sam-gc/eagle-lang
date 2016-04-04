@@ -74,6 +74,7 @@ charlit `[^`]`
 "/"         DISCARD_NL; return SET(TDIV);
 "/="        DISCARD_NL; return SET(TDIVE);
 "%"         DISCARD_NL; return SET(TMOD);
+"%="        DISCARD_NL; return SET(TMODE);
 "^"         SAVE_NL; return SET(TPOW);
 ">"         DISCARD_NL; return SET(TGT);
 ">="        DISCARD_NL; return SET(TGTE);
@@ -84,8 +85,10 @@ charlit `[^`]`
 "!"         DISCARD_NL; return SET(TNOT);
 "="         DISCARD_NL; return SET(TEQUALS);
 "&&"        DISCARD_NL; return SET(TLOGAND);
+"&="        DISCARD_NL; return SET(TAMPE);
 "||"        DISCARD_NL; return SET(TLOGOR);
 "|"         DISCARD_NL; return SET(TOR);
+"|="        DISCARD_NL; return SET(TORE);
 "func"      DISCARD_NL; in_interface && OVERRIDE; return SET(TFUNC);
 "gen"       DISCARD_NL; return SET(TGEN);
 "view"      DISCARD_NL; return SET(TVIEW);

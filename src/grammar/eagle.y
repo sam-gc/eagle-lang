@@ -27,7 +27,7 @@
 
 %token <string> TIDENTIFIER TINT TDOUBLE TCHARLIT TTYPE TCOUNTED TNEW TTOUCH TCSTR TEXPORT
 %token <token> TPLUS TMINUS TEQUALS TMUL TDIV TGT TLT TEQ TNE TGTE TLTE TNOT TPOW TLOGAND TLOGOR TMOD
-%token <token> TPLUSE TMINUSE TMULE TDIVE 
+%token <token> TPLUSE TMINUSE TMULE TDIVE TMODE TORE TAMPE
 %token <token> TOR
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TLBRACKET TRBRACKET
 %token <token> TFUNC TRETURN TYIELD TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF TFOR TIN TWEAK TUNWRAP TSWITCH
@@ -45,8 +45,9 @@
 %nonassoc TTYPE;
 %nonassoc TNEW;
 %nonassoc TCOUNTED TWEAK TUNWRAP TTOUCH;
+%right TORE TAMPE;
 %right TPLUSE TMINUSE;
-%right TMULE TDIVE;
+%right TMULE TDIVE TMODE;
 %right TEQUALS;
 %right TQUESTION TCOLON TQUESTIONCOLON;
 %left TLOGOR;
@@ -347,8 +348,11 @@ binexpr             : expr TPLUS expr { $$ = ast_make_binary($1, $3, '+'); }
                     | expr TLOGAND expr { $$ = ast_make_binary($1, $3, '&'); }
                     | expr TLOGOR expr { $$ = ast_make_binary($1, $3, '|'); }
                     | expr TMOD expr { $$ = ast_make_binary($1, $3, '%'); }
+                    | expr TMODE expr { $$ = ast_make_binary($1, $3, 'R'); }
                     | expr TOR expr { $$ = ast_make_binary($1, $3, 'o'); }
+                    | expr TORE expr { $$ = ast_make_binary($1, $3, 'O'); }
                     | expr TAMP expr { $$ = ast_make_binary($1, $3, 'a'); }
+                    | expr TAMPE expr { $$ = ast_make_binary($1, $3, 'A'); }
                     ;
 
 unexpr              : ounexpr TPOW { $$ = ast_make_unary($1, '*'); }

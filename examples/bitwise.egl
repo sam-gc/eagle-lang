@@ -6,5 +6,8 @@ func main()
 
     i = 5
     puts i & j
+
+    i &= 1
+    puts i
 }
 

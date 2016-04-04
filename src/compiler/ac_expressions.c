@@ -755,10 +755,13 @@ ac_generic_binary(ASTBinary *a, LLVMValueRef l, LLVMValueRef r,
         case 'D':
             return ac_make_div(l, r, cb->builder, totype->type, a->lineno);
         case '%':
+        case 'R':
             return ac_make_mod(l, r, cb->builder, totype->type, a->lineno);
         case 'o':
+        case 'O':
             return ac_make_bitor(l, r, cb->builder, totype->type, a->lineno);
         case 'a':
+        case 'A':
             return ac_make_bitand(l, r, cb->builder, totype->type, a->lineno);
         default:
             die(a->lineno, "Invalid binary operation (%c).", a->op);
@@ -777,7 +780,9 @@ LLVMValueRef ac_compile_binary(AST *ast, CompilerBundle *cb)
         return ac_compile_logical_and(ast, cb);
     else if(a->op == '|')
         return ac_compile_logical_or(ast, cb);
-    else if(a->op == 'P' || a->op == 'M' || a->op == 'T' || a->op == 'D')
+    else if(a->op == 'P' || a->op == 'M' || a->op == 'T' || a->op == 'D' || a->op == 'R')
+        return ac_build_store(ast, cb, 1);
+    else if(a->op == 'A' || a->op == 'O')
         return ac_build_store(ast, cb, 1);
 
     LLVMValueRef l = ac_dispatch_expression(a->left, cb);
@@ -789,7 +794,6 @@ LLVMValueRef ac_compile_binary(AST *ast, CompilerBundle *cb)
 
     if(a->left->resultantType->type == ETPointer || a->right->resultantType->type == ETPointer)
         return ac_generic_binary(a, l, r, 0, a->right->resultantType, a->left->resultantType, cb);
-
 
     EagleType promo = et_promotion(a->left->resultantType->type, a->right->resultantType->type);
     a->resultantType = ett_base_type(promo);
@@ -1203,8 +1207,7 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update)
         if(l->val->resultantType->type != ETPointer)
         {
             fprintf(stderr, "Error: Only pointers may be dereferenced.\n");
-            exit(1);
-        }
+            exit(1); }
         if(IS_ANY_PTR(l->val->resultantType))
         {
             fprintf(stderr, "Error: Any pointers may not be dereferenced without cast.\n");
