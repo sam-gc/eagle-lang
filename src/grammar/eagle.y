@@ -27,8 +27,8 @@
 
 %token <string> TIDENTIFIER TINT TDOUBLE TCHARLIT TTYPE TCOUNTED TNEW TTOUCH TCSTR TEXPORT
 %token <token> TPLUS TMINUS TEQUALS TMUL TDIV TGT TLT TEQ TNE TGTE TLTE TNOT TPOW TLOGAND TLOGOR TMOD
-%token <token> TPLUSE TMINUSE TMULE TDIVE TMODE TORE TAMPE
-%token <token> TOR
+%token <token> TPLUSE TMINUSE TMULE TDIVE TMODE TORE TAMPE TRSHIFTE TLSHIFTE TPOWE
+%token <token> TOR TTILDE TRSHIFT TLSHIFT
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TLBRACKET TRBRACKET
 %token <token> TFUNC TRETURN TYIELD TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF TFOR TIN TWEAK TUNWRAP TSWITCH
 %token <token> TBREAK TCONTINUE TVAR TGEN  TELLIPSES TVIEW TFALLTHROUGH TCASE TDEFAULT
@@ -45,19 +45,22 @@
 %nonassoc TTYPE;
 %nonassoc TNEW;
 %nonassoc TCOUNTED TWEAK TUNWRAP TTOUCH;
-%right TORE TAMPE;
+%right TORE TAMPE TPOWE;
+%right TLSHIFTE TRSHIFTE;
 %right TPLUSE TMINUSE;
 %right TMULE TDIVE TMODE;
 %right TEQUALS;
 %right TQUESTION TCOLON TQUESTIONCOLON;
 %left TLOGOR;
 %left TLOGAND;
-%left TAMP TOR;
 %left TNOT;
 %left TEQ TNE TLT TGT TLTE TGTE
+%left TLSHIFT TRSHIFT;
+%left TAMP TOR;
 %left TPLUS TMINUS;
 %left TMUL TDIV TMOD;
 %precedence NEG
+%left TTILDE
 %left TAT;
 %left TDOT TPOW TARROW;
 %left DEREF;
@@ -354,6 +357,12 @@ binexpr             : expr TPLUS expr { $$ = ast_make_binary($1, $3, '+'); }
                     | expr TORE expr { $$ = ast_make_binary($1, $3, 'O'); }
                     | expr TAMP expr { $$ = ast_make_binary($1, $3, 'a'); }
                     | expr TAMPE expr { $$ = ast_make_binary($1, $3, 'A'); }
+                    | expr TPOW expr { $$ = ast_make_binary($1, $3, '^'); }
+                    | expr TPOWE expr { $$ = ast_make_binary($1, $3, 'X'); }
+                    | expr TRSHIFT expr { $$ = ast_make_binary($1, $3, '>'); }
+                    | expr TRSHIFTE expr { $$ = ast_make_binary($1, $3, 'I'); }
+                    | expr TLSHIFT expr { $$ = ast_make_binary($1, $3, '<'); }
+                    | expr TLSHIFTE expr { $$ = ast_make_binary($1, $3, 'E'); }
                     ;
 
 unexpr              :/* ounexpr TPOW { $$ = ast_make_unary($1, '*'); }
@@ -370,6 +379,7 @@ unexpr              :/* ounexpr TPOW { $$ = ast_make_unary($1, '*'); }
                     | ounexpr TDOT TIDENTIFIER { $$ = ast_make_struct_get($1, $3); }
                     | ounexpr TARROW TIDENTIFIER { $$ = ast_make_struct_get(ast_make_unary($1, '*'), $3); }
                     | TMINUS ounexpr %prec NEG { $$ = ast_make_unary($2, '-'); }
+                    | TTILDE ounexpr { $$ = ast_make_unary($2, '~'); }
                     ;
 
 ounexpr             : singexpr { $$ = $1; }

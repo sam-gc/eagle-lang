@@ -684,6 +684,8 @@ LLVMValueRef ac_generic_unary(ASTUnary *a, LLVMValueRef val, CompilerBundle *cb)
     {
         case '-':
             return ac_make_neg(val, cb->builder, a->val->resultantType->type, a->lineno);
+        case '~':
+            return ac_make_bitnot(val, cb->builder, a->val->resultantType->type, a->lineno);
         default:
             die(a->lineno, "Internal compiler error");
     }
@@ -763,6 +765,15 @@ ac_generic_binary(ASTBinary *a, LLVMValueRef l, LLVMValueRef r,
         case 'a':
         case 'A':
             return ac_make_bitand(l, r, cb->builder, totype->type, a->lineno);
+        case '^':
+        case 'X':
+            return ac_make_bitxor(l, r, cb->builder, totype->type, a->lineno);
+        case '>':
+        case 'I':
+            return ac_make_bitshift(l, r, cb->builder, totype->type, a->lineno, RIGHT);
+        case '<':
+        case 'E':
+            return ac_make_bitshift(l, r, cb->builder, totype->type, a->lineno, LEFT);
         default:
             die(a->lineno, "Invalid binary operation (%c).", a->op);
             return NULL;
@@ -782,7 +793,9 @@ LLVMValueRef ac_compile_binary(AST *ast, CompilerBundle *cb)
         return ac_compile_logical_or(ast, cb);
     else if(a->op == 'P' || a->op == 'M' || a->op == 'T' || a->op == 'D' || a->op == 'R')
         return ac_build_store(ast, cb, 1);
-    else if(a->op == 'A' || a->op == 'O')
+    else if(a->op == 'A' || a->op == 'O' || a->op == 'X')
+        return ac_build_store(ast, cb, 1);
+    else if(a->op == 'I' || a->op == 'E')
         return ac_build_store(ast, cb, 1);
 
     LLVMValueRef l = ac_dispatch_expression(a->left, cb);
@@ -1005,6 +1018,7 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
             a->resultantType = ett_base_type(ETInt1);
             return ac_compile_ntest(a->val, v, cb);
         case '-':
+        case '~':
             if(!ett_is_numeric(a->val->resultantType))
                 die(ALN, "Trying to negate non-numeric type");
             a->resultantType = a->val->resultantType;

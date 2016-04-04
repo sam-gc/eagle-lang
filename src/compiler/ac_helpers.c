@@ -282,6 +282,49 @@ LLVMValueRef ac_make_bitand(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRe
     }
 }
 
+LLVMValueRef ac_make_bitxor(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type, int lineno)
+{
+    switch(type)
+    {
+        case ETDouble:
+            die(lineno, "Bitwise XOR does not apply to floating point types");
+            return NULL;
+        case ETInt8:
+        case ETInt16:
+        case ETInt32:
+        case ETInt64:
+            return LLVMBuildXor(builder, left, right, "XOR");
+        default:
+            die(lineno, "The given types may not be XOR'd");
+            return NULL;
+    }
+}
+
+LLVMValueRef ac_make_bitshift(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type, int lineno, int dir)
+{
+    LLVMValueRef (*shift_func)(LLVMBuilderRef, LLVMValueRef, LLVMValueRef, const char*);
+
+    if(dir == LEFT)
+        shift_func = &LLVMBuildShl;
+    else
+        shift_func = &LLVMBuildAShr;
+
+    switch(type)
+    {
+        case ETDouble:
+            die(lineno, "Bitwise shift does not apply to floating point types");
+            return NULL;
+        case ETInt8:
+        case ETInt16:
+        case ETInt32:
+        case ETInt64:
+            return shift_func(builder, left, right, "shift");
+        default:
+            die(lineno, "The given types may not be shifted");
+            return NULL;
+    }
+}
+
 LLVMValueRef ac_make_neg(LLVMValueRef val, LLVMBuilderRef builder, EagleType type, int lineno)
 {
     switch(type)
@@ -295,6 +338,24 @@ LLVMValueRef ac_make_neg(LLVMValueRef val, LLVMBuilderRef builder, EagleType typ
             return LLVMBuildNeg(builder, val, "negtmp");
         default:
             die(lineno, "The given type may not have negation applied (%d).", type);
+            return NULL;
+    }
+}
+
+LLVMValueRef ac_make_bitnot(LLVMValueRef val, LLVMBuilderRef builder, EagleType type, int lineno)
+{
+    switch(type)
+    {
+        case ETDouble:
+            die(lineno, "Bitwise NOT does not apply to floating point types");
+            return NULL;
+        case ETInt8:
+        case ETInt16:
+        case ETInt32:
+        case ETInt64:
+            return LLVMBuildNot(builder, val, "NOT");
+        default:
+            die(lineno, "The given type may not be NOT'd");
             return NULL;
     }
 }

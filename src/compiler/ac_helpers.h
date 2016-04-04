@@ -12,6 +12,9 @@
 #define STRICT_CONVERSION 0
 #define LOOSE_CONVERSION 1
 
+#define LEFT (-1)
+#define RIGHT 1
+
 long ahhd(void *k, void *d);
 int ahed(void *k, void *d);
 LLVMValueRef ac_make_floating_string(CompilerBundle *cb, const char *text, const char *name);
@@ -24,8 +27,11 @@ LLVMValueRef ac_make_div(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
 LLVMValueRef ac_make_mod(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type, int lineno);
 LLVMValueRef ac_make_bitor(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type, int lineno);
 LLVMValueRef ac_make_bitand(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type, int lineno);
+LLVMValueRef ac_make_bitxor(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type, int lineno);
+LLVMValueRef ac_make_bitshift(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type, int lineno, int dir);
 LLVMValueRef ac_make_comp(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type, char comp, int lineno);
 LLVMValueRef ac_make_neg(LLVMValueRef val, LLVMBuilderRef builder, EagleType type, int lineno);
+LLVMValueRef ac_make_bitnot(LLVMValueRef val, LLVMBuilderRef builder, EagleType type, int lineno);
 void ac_replace_with_counted(CompilerBundle *cb, VarBundle *b);
 
 #endif

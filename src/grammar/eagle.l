@@ -65,8 +65,13 @@ charlit `[^`]`
 {import}    { SAVE_TOKEN; return TIMPORT; }
 {reset}     yylineno = 1;
 "export"    { DISCARD_NL; return TEXPORT; }
+">>"        DISCARD_NL; return SET(TRSHIFT);
+">>="       DISCARD_NL; return SET(TRSHIFTE);
+"<<"        DISCARD_NL; return SET(TLSHIFT);
+"<<="       DISCARD_NL; return SET(TLSHIFTE);
 "+"         DISCARD_NL; return SET(TPLUS);
 "+="        DISCARD_NL; return SET(TPLUSE);
+"~"         DISCARD_NL; return SET(TTILDE);
 "-"         DISCARD_NL; return SET(TMINUS);
 "-="        DISCARD_NL; return SET(TMINUSE);
 "*"         SAVE_NL; return SET(TMUL);
@@ -76,6 +81,7 @@ charlit `[^`]`
 "%"         DISCARD_NL; return SET(TMOD);
 "%="        DISCARD_NL; return SET(TMODE);
 "^"         SAVE_NL; return SET(TPOW);
+"^="        SAVE_NL; return SET(TPOWE);
 ">"         DISCARD_NL; return SET(TGT);
 ">="        DISCARD_NL; return SET(TGTE);
 "=="        DISCARD_NL; return SET(TEQ);
