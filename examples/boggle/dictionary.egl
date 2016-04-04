@@ -1,6 +1,6 @@
 import trie.egl
 
-export *
+export '*'
 
 extern func fopen(byte*, byte*) : any*
 extern func fgets(byte*, int, any*) : int
@@ -16,7 +16,7 @@ class Dictionary
     init(byte* filename)
     {
         self.core = new Trie()
-        self.core.default = 50
+        self.core.default_val = 50
 
         var f = fopen(filename, 'r')
 

@@ -12,20 +12,20 @@ struct Blah {
 
 func alskdfj(Test *t) {
     t->i = new int
-    t->i^ = 42
+    t->i! = 42
 }
 
 func mallocPassTest(Test^ i) {
     i->i = new int
-    i->i^ = 45
+    i->i! = 45
 }
 
 func mallocTest() {
     Test^ t = new Test
     t->i = new int
-    t->i^ = 66
+    t->i! = 66
     mallocPassTest(t)
-    puts t->i^
+    puts t->i!
 
     t->b.blob = new int
     t->j = t->b.blob
@@ -39,20 +39,20 @@ func main() {
     Test t
 
     t.i = new int
-    t.i^ = 11
+    t.i! = 11
     t.j = t.i
 
     puts t.b.blob
 
     t.b.blob = new int
    
-    puts t.j^
+    puts t.j!
     puts t.i
     Test e
     e = t
 
     alskdfj(&e)
-    puts e.i^
+    puts e.i!
 
     mallocTest()
 }

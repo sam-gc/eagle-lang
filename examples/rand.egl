@@ -34,6 +34,6 @@ func test()
         k = nil
 
     if k
-        puts k^
+        puts k!
 }
 

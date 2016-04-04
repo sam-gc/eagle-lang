@@ -1,7 +1,7 @@
 func test() : any^
 {
     int^ a = new int
-    a^ = 11
+    a! = 11
     return a
 }
 
@@ -9,6 +9,6 @@ func main()
 {
     int^ e = test()
 
-    puts e^
+    puts e!
 }
 

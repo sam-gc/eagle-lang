@@ -58,7 +58,7 @@ func __egl_set_nil(any*** vals, short ct)
 {
     for int i = 0; i < ct; i += 1
     {
-        vals[i]^ = nil
+        vals[i]! = nil
     }
 }
 
@@ -127,10 +127,10 @@ func __egl_add_weak(__egl_ptr* ptr, any** pos)
 
 func __egl_remove_weak(__egl_ptr** pos)
 {
-    if !pos || !pos^
+    if !pos || !pos!
         return
 
-    __egl_ptr* ptr = pos^
+    __egl_ptr* ptr = pos!
 
     int idx = 0-1
     for int i = 0; i < ptr->wrefct; i += 1
@@ -171,7 +171,7 @@ func __egl_array_decr_ptrs(any** arr, long ct)
 
 func __egl_lookup_method(__egl_class_indir** obj, byte* name, int index) : any*
 {
-    __egl_class_indir* cls = obj^
+    __egl_class_indir* cls = obj!
     long offset = 0-1
 
     for long i = 0; i < cls->count; i += 1

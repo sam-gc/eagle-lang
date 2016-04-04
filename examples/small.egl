@@ -2,9 +2,9 @@ func test() {
     int^ i = new int
     weak int^ j = i
     weak int^ k = i
-    j^ = 32
+    j! = 32
     k = nil
-    puts j^
+    puts j!
 }
 
 func testtwo() {
@@ -14,16 +14,16 @@ func testtwo() {
         x = new int
         puts x
         int^ y = new int
-        y^ = 101
+        y! = 101
         x = y
-        puts x^
+        puts x!
     }
     puts x
 }
 
 func testthree(int^* k) {
-    puts k^^
-    k^ = nil
+    puts k!!
+    k! = nil
 }
 
 func main() {
@@ -32,15 +32,15 @@ func main() {
     weak int^ j = i
     puts i
 
-    i^ = 11
-    puts j^
+    i! = 11
+    puts j!
     i = nil
     puts j
 
     testtwo()
 
     int^ a = new int
-    a^ = 37
+    a! = 37
     weak int^ b = a
     testthree(&a)
     puts b

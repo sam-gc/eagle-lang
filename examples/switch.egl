@@ -31,6 +31,6 @@ func main()
             puts 'You are number one!'
             if b == Medium
                 fallthrough
-            puts num^
+            puts num!
     }
 }

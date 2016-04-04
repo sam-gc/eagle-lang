@@ -25,9 +25,9 @@ func main(int argc, byte **argv)
         puts j
     }
 
-    puts i^
+    puts i!
 
     var k = alternator() ?: new int(45)
     k = alternator() ?: new int(45)
-    puts k^
+    puts k!
 }

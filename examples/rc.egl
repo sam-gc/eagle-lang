@@ -1,15 +1,15 @@
 func test(int^ a)
 {
-    a^ = 32
-    puts a^
+    a! = 32
+    puts a!
 }
 
 func creation(int ct)
 {
     if ct {
         int^ t = new int(ct)
-        puts t^
-        creation(t^ - 1)
+        puts t!
+        creation(t! - 1)
     }
 }
 
@@ -21,7 +21,7 @@ func rettest() : int^
 
 func otest(int^ a) : int^
 {
-    a^ = 11
+    a! = 11
     return a
 }
 
@@ -29,10 +29,10 @@ func ptest()
 {
     int^ a = new int
     int^ b = otest(a)
-    puts b^
+    puts b!
 
     b = otest(new int)
-    puts b^
+    puts b!
 
     otest(new int)
 }
@@ -45,7 +45,7 @@ func main() : int
 
     creation(1000)
 
-    puts rettest()^
+    puts rettest()!
 
     int^ o = rettest()
 

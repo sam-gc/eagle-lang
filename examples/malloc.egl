@@ -10,8 +10,8 @@ func main() : int
     ptrs[0] = &i
     ptrs[1] = &j
 
-    puts ptrs[0]^
-    puts ptrs[1]^
+    puts ptrs[0]!
+    puts ptrs[1]!
 
     free(ptrs)
 

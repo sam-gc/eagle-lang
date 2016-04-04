@@ -1,7 +1,7 @@
 func test(weak int^ a, int^* b)
 {
     puts a
-    b^ = nil
+    b! = nil
     puts a
 }
 

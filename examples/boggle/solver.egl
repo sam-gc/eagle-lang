@@ -1,7 +1,7 @@
 import dictionary.egl
 import linkedlist.egl
 
-export *
+export '*'
 
 extern func strdup(byte*) : byte*
 extern func malloc(long) : any*

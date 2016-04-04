@@ -7,7 +7,7 @@ func main()
 {
     Test ^t = new Test
     t->x = new int
-    t->x^ = 42
+    t->x! = 42
 
     Test^ head = t
 
@@ -15,7 +15,7 @@ func main()
         Test^ temp = new Test
         t->next = temp;
         temp->x = new int
-        temp->x^ = i
+        temp->x! = i
 
         t = temp
     }

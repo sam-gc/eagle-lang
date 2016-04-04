@@ -19,15 +19,15 @@ func testor(int i, int j) : bool
 func not(int i) : bool
 {
     var j = new int
-    j^ = i
+    j! = i
     
-    return !j^
+    return !j!
 }
 
 func allocate(int i) : int^
 {
     var j = new int
-    j^ = i
+    j! = i
 
     return j
 }
@@ -41,7 +41,7 @@ func main() : int
 
     puts 0 || new int
 
-    puts allocate(11) && allocate(12)^ && 0
+    puts allocate(11) && allocate(12)! && 0
 
     return 0
 }

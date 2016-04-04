@@ -18,7 +18,7 @@ func main()
 
     j /= 2
     j -= 10
-    k^ *= 3.5
+    k! *= 3.5
 
     puts i
     puts test
@@ -27,12 +27,12 @@ func main()
     puts '========================='
 
     int e = 42
-    retref(&e)^ = retref(&e)^ + 1
+    retref(&e)! = retref(&e)! + 1
 
     puts e
 
     puts '=-======================='
-    retref(&e)^ += 1
+    retref(&e)! += 1
 
     puts e
 

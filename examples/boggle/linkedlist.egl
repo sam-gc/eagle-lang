@@ -1,4 +1,4 @@
-export *
+export '*'
 
 interface Queue
 {
@@ -150,8 +150,8 @@ class LinkedListRaw
 
         if !head || !head.next
         {
-            front^ = head
-            back^ = nil
+            front! = head
+            back! = nil
             return
         }
 
@@ -169,8 +169,8 @@ class LinkedListRaw
             }
         }
 
-        front^ = head
-        back^ = slow.next
+        front! = head
+        back! = slow.next
 
         slow.next = nil
     }

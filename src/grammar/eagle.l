@@ -82,7 +82,7 @@ charlit `[^`]`
 "<"         DISCARD_NL; return SET(TLT);
 "<="        DISCARD_NL; return SET(TLTE);
 "!="        DISCARD_NL; return SET(TNE);
-"!"         DISCARD_NL; return SET(TNOT);
+"!"         SAVE_NL; return SET(TNOT);
 "="         DISCARD_NL; return SET(TEQUALS);
 "&&"        DISCARD_NL; return SET(TLOGAND);
 "&="        DISCARD_NL; return SET(TAMPE);

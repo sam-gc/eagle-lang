@@ -27,7 +27,7 @@ func update_name(Person* p, byte* fname, byte* lname)
 
 func set_owner_name(Pet* pet, Person* p)
 {
-    pet.owner^ = {
+    pet.owner! = {
         .name = {
             .first = p.name.first
             .last  = p.name.last

@@ -16,15 +16,15 @@ gen range(int max) : int
 gen mem() : int
 {
     var i = new int
-    i^ = 45
-    yield i^
-    i^ = 46
-    yield i^
+    i! = 45
+    yield i!
+    i! = 46
+    yield i!
 }
 
 gen memlots(int max) : int^
 {
-    for var i = new int(0); i^ < max; i = new int(i^ + 1) {
+    for var i = new int(0); i! < max; i = new int(i! + 1) {
         yield i
     }
 }
@@ -64,13 +64,13 @@ func main()
 
     int^ j
     u(&j)
-    puts j^
+    puts j!
     u(&j)
-    puts j^
+    puts j!
     u(&j)
-    puts j^
+    puts j!
     u(&j)
-    puts j^
+    puts j!
 
     u = memlots(5)
 }

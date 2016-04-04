@@ -23,10 +23,10 @@ func strct()
 func ptrtr()
 {
     double^ d = new double
-    d^ = 101
+    d! = 101
     touch d
 
-    puts d^
+    puts d!
 }
 
 func main() : int

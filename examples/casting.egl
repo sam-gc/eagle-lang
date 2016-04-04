@@ -7,7 +7,7 @@ func main() : int
     puts k
 
     int *l = int *@k
-    puts l^
+    puts l!
 
     return 0
 }

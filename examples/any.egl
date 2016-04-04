@@ -3,13 +3,13 @@ extern func malloc(long) : any *
 func test(any *i)
 {
     int *t = i
-    puts t^
+    puts t!
 }
 
 func malloc_int() : any *
 {
     int *i = malloc(4)
-    i^ = 0
+    i! = 0
     return i
 }
 
@@ -19,6 +19,6 @@ func main() : int
     test(&i)
 
     int *zeroed = malloc_int()
-    puts zeroed^ + 11
+    puts zeroed! + 11
     return 0
 }

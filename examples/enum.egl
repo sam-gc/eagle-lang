@@ -61,7 +61,7 @@ func main()
     is_sunday(Day@i)
 
     Day* p = &d
-    p^ = Tuesday
+    p! = Tuesday
     part_of_week(d)
 
     puts int@get_tuesday()

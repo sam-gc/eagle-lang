@@ -1,4 +1,4 @@
-export *
+export '*'
 
 struct TrieNode
 {
@@ -9,18 +9,18 @@ struct TrieNode
 class Trie
 {
     TrieNode^ root
-    int default
+    int default_val
 
     init()
     {
         self.root = new TrieNode
-        self.default = 0-1
+        self.default_val = 0-1
     }
 
     func put(byte* key, int val)
     {
         var n = self.root
-        for byte c = key^; c; (key += 1) && (c = key^)
+        for byte c = key!; c; (key += 1) && (c = key!)
         {
             c -= 97
             if n.children[c]
@@ -31,7 +31,7 @@ class Trie
 
             n.children[c] = new TrieNode
             n = n.children[c]
-            n.val = self.default
+            n.val = self.default_val
         }
 
         n.val = val
@@ -40,7 +40,7 @@ class Trie
     func get(byte* key) : int
     {
         var n = self.root
-        for byte c = key^; c; (key += 1) && (c = key^)
+        for byte c = key!; c; (key += 1) && (c = key!)
         {
             c -= 97
             if !n.children[c]

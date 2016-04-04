@@ -17,7 +17,7 @@
 %}
 
 %error-verbose
-%expect 4
+%expect 6
 
 %union {
     int token;
@@ -38,7 +38,7 @@
 %type <node> program declarations declaration statements statement block funcdecl ifstatement
 %type <node> variabledecl vardecllist funccall calllist funcident funcsident externdecl typelist type interfacetypelist
 %type <node> elifstatement elifblock elsestatement singif structdecl structlist blockalt classlist classdecl interfacedecl interfacelist compositetype
-%type <node> expr singexpr binexpr unexpr ounexpr forstatement clodecl genident gendecl initdecl viewdecl viewident
+%type <node> expr singexpr binexpr unexpr ounexpr forstatement clodecl genident gendecl initdecl viewdecl viewident 
 %type <node> enumitem enumlist enumdecl globalvardecl constantexpr structlitlist structlit exportdecl
 %type <node> singcase caseblock switchstatement
 
@@ -60,6 +60,7 @@
 %precedence NEG
 %left TAT;
 %left TDOT TPOW TARROW;
+%left DEREF;
 %nonassoc TSIZEOF TCOUNTOF;
 %right TLBRACKET TRBRACKET;
 %right "then" TIF TELSE TELIF %nonassoc TLPAREN;
@@ -355,7 +356,11 @@ binexpr             : expr TPLUS expr { $$ = ast_make_binary($1, $3, '+'); }
                     | expr TAMPE expr { $$ = ast_make_binary($1, $3, 'A'); }
                     ;
 
-unexpr              : ounexpr TPOW { $$ = ast_make_unary($1, '*'); }
+unexpr              :/* ounexpr TPOW { $$ = ast_make_unary($1, '*'); }
+                    | TLBRACKET ounexpr TRBRACKET { $$ = ast_make_unary($2, '*'); }
+                    |*/
+                    singexpr TNOT %prec DEREF { $$ = ast_make_unary($1, '*'); }
+                    | unexpr TNOT %prec DEREF { $$ = ast_make_unary($1, '*'); }
                     | TAMP ounexpr { $$ = ast_make_unary($2, '&'); }
                     | TNOT ounexpr { $$ = ast_make_unary($2, '!'); }
                     | TSIZEOF TLPAREN type TRPAREN { $$ = ast_make_unary($3, 's'); }
