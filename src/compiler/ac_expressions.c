@@ -22,6 +22,9 @@ LLVMValueRef ac_compile_value(AST *ast, CompilerBundle *cb)
         case ETInt32:
             a->resultantType = ett_base_type(ETInt32);
             return LLVMConstInt(LLVMInt32TypeInContext(utl_get_current_context()), a->value.i, 1);
+        case ETFloat:
+            a->resultantType = ett_base_type(ETFloat);
+            return LLVMConstReal(LLVMFloatTypeInContext(utl_get_current_context()), a->value.d);
         case ETDouble:
             a->resultantType = ett_base_type(ETDouble);
             return LLVMConstReal(LLVMDoubleTypeInContext(utl_get_current_context()), a->value.d);
@@ -901,6 +904,9 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
                 LLVMValueRef fmt = NULL;
                 switch(a->val->resultantType->type)
                 {
+                    case ETFloat:
+                        fmt = LLVMBuildGlobalStringPtr(cb->builder, "%f\n", "prfF");
+                        break;
                     case ETDouble:
                         fmt = LLVMBuildGlobalStringPtr(cb->builder, "%lf\n", "prfLF");
                         break;

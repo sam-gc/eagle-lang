@@ -134,6 +134,7 @@ EagleTypeType *et_parse_string(char *text)
     TTEST(text, "short", ETInt16);
     TTEST(text, "int", ETInt32);
     TTEST(text, "long", ETInt64);
+    TTEST(text, "float", ETFloat);
     TTEST(text, "double", ETDouble);
     TTEST(text, "void", ETVoid);
 
@@ -189,6 +190,7 @@ LLVMValueRef ett_default_value(EagleTypeType *type)
         case ETInt64:
         case ETEnum:
             return LLVMConstInt(ett_llvm_type(type), 0, 0);
+        case ETFloat:
         case ETDouble:
             return LLVMConstReal(ett_llvm_type(type), 0.0);
         case ETPointer:
@@ -225,6 +227,8 @@ LLVMTypeRef ett_llvm_type(EagleTypeType *type)
     {
         case ETVoid:
             return LLVMVoidTypeInContext(utl_get_current_context());
+        case ETFloat:
+            return LLVMFloatTypeInContext(utl_get_current_context());
         case ETDouble:
             return LLVMDoubleTypeInContext(utl_get_current_context());
         case ETInt1:
@@ -344,6 +348,7 @@ static EagleTypeType base_types[] = {
     TT(Int16),
     TT(Int32),
     TT(Int64),
+    TT(Float),
     TT(Double),
     TT(CString),
     TT(Pointer),
@@ -689,6 +694,7 @@ int ett_is_numeric(EagleTypeType *t)
         case ETInt16:
         case ETInt32:
         case ETInt64:
+        case ETFloat:
         case ETDouble:
             return 1;
         default:

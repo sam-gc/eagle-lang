@@ -18,8 +18,8 @@
 #define CLOSURE_CLOSE 2
 #define CLOSURE_RECURSE 3
 
-#define ET_IS_INT(e) ((e) == ETInt8 || (e) == ETInt32 || (e) == ETInt64)
-#define ET_IS_REAL(e) ((e) == ETDouble)
+// #define ET_IS_INT(e) ((e) == ETInt8 || (e) == ETInt32 || (e) == ETInt64)
+// #define ET_IS_REAL(e) ((e) == ETDouble)
 #define ET_IS_GEN_ARR(e) (((EagleArrayType *)(e))->ct < 0)
 #define ET_IS_COUNTED(p) ((p)->type == ETPointer && ((EaglePointerType *)(p))->counted)
 #define ET_IS_WEAK(p) ((p)->type == ETPointer && ((EaglePointerType *)(p))->weak)
@@ -43,6 +43,7 @@ typedef enum {
     ETInt16,
     ETInt32,
     ETInt64,
+    ETFloat,
     ETDouble,
     ETCString,
     ETPointer,
@@ -171,5 +172,46 @@ int ty_interface_count(char *name);
 char *ty_interface_for_method(EagleTypeType *ett, char *method);
 int ty_class_implements_interface(EagleTypeType *type, EagleTypeType *interface);
 void ett_class_set_interfaces(EagleTypeType *ett, arraylist *interfaces);
+
+static inline int ET_IS_INT(EagleType t)
+{
+    switch(t)
+    {
+        case ETInt8:
+        case ETInt16:
+        case ETInt32:
+        case ETInt64:
+            return 1;
+        default:
+            return 0;
+    }
+}
+
+static inline int ET_IS_LLVM_INT(EagleType t)
+{
+    switch(t)
+    {
+        case ETInt1:
+        case ETInt8:
+        case ETInt16:
+        case ETInt32:
+        case ETInt64:
+            return 1;
+        default:
+            return 0;
+    }
+}
+
+static inline int ET_IS_REAL(EagleType t)
+{
+    switch(t)
+    {
+        case ETFloat:
+        case ETDouble:
+            return 1;
+        default:
+            return 0;
+    }
+}
 
 #endif /* defined(__Eagle__types__) */

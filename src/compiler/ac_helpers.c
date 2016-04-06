@@ -123,17 +123,20 @@ LLVMValueRef ac_build_conversion(CompilerBundle *cb, LLVMValueRef val, EagleType
                 case ETInt32:
                 case ETInt64:
                     return LLVMBuildIntCast(builder, val, ett_llvm_type(to), "conv");
+                case ETFloat:
                 case ETDouble:
-                    return LLVMBuildSIToFP(builder, val, LLVMDoubleTypeInContext(utl_get_current_context()), "conv");
+                    return LLVMBuildSIToFP(builder, val, ett_llvm_type(to), "conv");
                 default:
                     die(lineno, "Invalid implicit conversion.");
                     break;
             }
+        case ETFloat:
         case ETDouble:
             switch(to->type)
             {
+                case ETFloat:
                 case ETDouble:
-                    return val;
+                    return LLVMBuildFPCast(builder, val, ett_llvm_type(to), "conv");
                 case ETInt1:
                     return LLVMBuildFCmp(builder, LLVMRealONE, val, LLVMConstReal(0, 0), "cmp");
                 case ETInt8:
@@ -165,6 +168,7 @@ LLVMValueRef ac_make_add(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
 {
     switch(type)
     {
+        case ETFloat:
         case ETDouble:
             return LLVMBuildFAdd(builder, left, right, "addtmp");
         case ETInt8:
@@ -182,6 +186,7 @@ LLVMValueRef ac_make_sub(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
 {
     switch(type)
     {
+        case ETFloat:
         case ETDouble:
             return LLVMBuildFSub(builder, left, right, "subtmp");
         case ETInt8:
@@ -199,6 +204,7 @@ LLVMValueRef ac_make_mul(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
 {
     switch(type)
     {
+        case ETFloat:
         case ETDouble:
             return LLVMBuildFMul(builder, left, right, "multmp");
         case ETInt8:
@@ -216,6 +222,7 @@ LLVMValueRef ac_make_div(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
 {
     switch(type)
     {
+        case ETFloat:
         case ETDouble:
             return LLVMBuildFDiv(builder, left, right, "divtmp");
         case ETInt8:
@@ -233,6 +240,7 @@ LLVMValueRef ac_make_mod(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
 {
     switch(type)
     {
+        case ETFloat:
         case ETDouble:
             return LLVMBuildFRem(builder, left, right, "modtmp");
         case ETInt8:
@@ -250,6 +258,7 @@ LLVMValueRef ac_make_bitor(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef
 {
     switch(type)
     {
+        case ETFloat:
         case ETDouble:
             die(lineno, "Bitwise OR does not apply to floating point types");
             return NULL;
@@ -268,6 +277,7 @@ LLVMValueRef ac_make_bitand(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRe
 {
     switch(type)
     {
+        case ETFloat:
         case ETDouble:
             die(lineno, "Bitwise AND does not apply to floating point types");
             return NULL;
@@ -286,6 +296,7 @@ LLVMValueRef ac_make_bitxor(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRe
 {
     switch(type)
     {
+        case ETFloat:
         case ETDouble:
             die(lineno, "Bitwise XOR does not apply to floating point types");
             return NULL;
@@ -311,6 +322,7 @@ LLVMValueRef ac_make_bitshift(LLVMValueRef left, LLVMValueRef right, LLVMBuilder
 
     switch(type)
     {
+        case ETFloat:
         case ETDouble:
             die(lineno, "Bitwise shift does not apply to floating point types");
             return NULL;
@@ -329,6 +341,7 @@ LLVMValueRef ac_make_neg(LLVMValueRef val, LLVMBuilderRef builder, EagleType typ
 {
     switch(type)
     {
+        case ETFloat:
         case ETDouble:
             return LLVMBuildFNeg(builder, val, "negtmp");
         case ETInt8:
@@ -346,6 +359,7 @@ LLVMValueRef ac_make_bitnot(LLVMValueRef val, LLVMBuilderRef builder, EagleType 
 {
     switch(type)
     {
+        case ETFloat:
         case ETDouble:
             die(lineno, "Bitwise NOT does not apply to floating point types");
             return NULL;
@@ -399,6 +413,7 @@ LLVMValueRef ac_make_comp(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef 
 
     switch(type)
     {
+        case ETFloat:
         case ETDouble:
             return LLVMBuildFCmp(builder, rp, left, right, "eqtmp");
         case ETInt1:

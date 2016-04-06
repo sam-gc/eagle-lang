@@ -522,40 +522,34 @@ void ac_compile_if(AST *ast, CompilerBundle *cb, LLVMBasicBlockRef mergeBB)
 LLVMValueRef ac_compile_ntest(AST *res, LLVMValueRef val, CompilerBundle *cb)
 {
     LLVMValueRef cmp = NULL;
-    if(res->resultantType->type == ETInt1)
-        cmp = LLVMBuildICmp(cb->builder, LLVMIntEQ, val, LLVMConstInt(LLVMInt1TypeInContext(utl_get_current_context()), 0, 0), "cmp");
-    else if(res->resultantType->type == ETInt8)
-        cmp = LLVMBuildICmp(cb->builder, LLVMIntEQ, val, LLVMConstInt(LLVMInt8TypeInContext(utl_get_current_context()), 0, 0), "cmp");
-    else if(res->resultantType->type == ETInt32)
-        cmp = LLVMBuildICmp(cb->builder, LLVMIntEQ, val, LLVMConstInt(LLVMInt32TypeInContext(utl_get_current_context()), 0, 0), "cmp");
-    else if(res->resultantType->type == ETInt64)
-        cmp = LLVMBuildICmp(cb->builder, LLVMIntEQ, val, LLVMConstInt(LLVMInt64TypeInContext(utl_get_current_context()), 0, 0), "cmp");
-    else if(res->resultantType->type == ETDouble)
-        cmp = LLVMBuildFCmp(cb->builder, LLVMRealOEQ, val, LLVMConstReal(LLVMDoubleTypeInContext(utl_get_current_context()), 0.0), "cmp");
+    EagleTypeType *rt = res->resultantType;
+
+    if(ET_IS_LLVM_INT(rt->type))
+        cmp = LLVMBuildICmp(cb->builder, LLVMIntEQ, val, LLVMConstInt(ett_llvm_type(rt), 0, 0), "cmp");
+    else if(ET_IS_REAL(rt->type))
+        cmp = LLVMBuildFCmp(cb->builder, LLVMRealOEQ, val, LLVMConstReal(ett_llvm_type(rt), 0.0), "cmp");
     else if(res->resultantType->type == ETPointer)
         cmp = LLVMBuildICmp(cb->builder, LLVMIntEQ, val, LLVMConstPointerNull(ett_llvm_type(res->resultantType)), "cmp");
     else
         die(LN(res), "Cannot test against given type.");
+
     return cmp;
 }
 
 LLVMValueRef ac_compile_test(AST *res, LLVMValueRef val, CompilerBundle *cb)
 {
     LLVMValueRef cmp = NULL;
-    if(res->resultantType->type == ETInt1)
-        cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstInt(LLVMInt1TypeInContext(utl_get_current_context()), 0, 0), "cmp");
-    else if(res->resultantType->type == ETInt8)
-        cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstInt(LLVMInt8TypeInContext(utl_get_current_context()), 0, 0), "cmp");
-    else if(res->resultantType->type == ETInt32)
-        cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstInt(LLVMInt32TypeInContext(utl_get_current_context()), 0, 0), "cmp");
-    else if(res->resultantType->type == ETInt64)
-        cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstInt(LLVMInt64TypeInContext(utl_get_current_context()), 0, 0), "cmp");
-    else if(res->resultantType->type == ETDouble)
-        cmp = LLVMBuildFCmp(cb->builder, LLVMRealONE, val, LLVMConstReal(LLVMDoubleTypeInContext(utl_get_current_context()), 0.0), "cmp");
+    EagleTypeType *rt = res->resultantType;
+
+    if(ET_IS_LLVM_INT(rt->type))
+        cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstInt(ett_llvm_type(rt), 0, 0), "cmp");
+    else if(ET_IS_REAL(rt->type))
+        cmp = LLVMBuildFCmp(cb->builder, LLVMRealONE, val, LLVMConstReal(ett_llvm_type(rt), 0.0), "cmp");
     else if(res->resultantType->type == ETPointer)
         cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstPointerNull(ett_llvm_type(res->resultantType)), "cmp");
     else
         die(LN(res), "Cannot test against given type.");
+
     return cmp;
 }
 
