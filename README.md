@@ -45,7 +45,7 @@ func main()
 func main()
 {
     var i = new int(5) -- Allocate new integer
-    puts i^ -- Dereference the pointer
+    puts i! -- Dereference the pointer
 } -- Memory automatically freed
 ```
 
@@ -73,7 +73,7 @@ func main()
 | Code compilation | 32-bit code generation | Reference counting in class contexts | Nested geneerators |
 | Basic reference counting | Static variables | Counted variables in loops | Reference counting in generators |
 | Multiple file compilation | Imports and exports | | Debug information |
-| Control flow (if/elif/else, for, etc) | Type system (missing unsigned numeric types) |
+| Control flow (if/elif/else, for, etc) | Type system |
 | Optimization (with levels) | C-ABI compatibility (no passing `structs` by value) |
 | Functions, closures, generators | Errors and warnings |
 | Object orientation (classes, interfaces, views) |
