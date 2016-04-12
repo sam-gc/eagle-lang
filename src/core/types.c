@@ -131,9 +131,13 @@ EagleTypeType *et_parse_string(char *text)
     TTEST(text, "any", ETAny);
     TTEST(text, "bool", ETInt1);
     TTEST(text, "byte", ETInt8);
+    TTEST(text, "ubyte", ETUInt8);
     TTEST(text, "short", ETInt16);
+    TTEST(text, "ushort", ETUInt16);
     TTEST(text, "int", ETInt32);
+    TTEST(text, "uint", ETUInt32);
     TTEST(text, "long", ETInt64);
+    TTEST(text, "ulong", ETUInt64);
     TTEST(text, "float", ETFloat);
     TTEST(text, "double", ETDouble);
     TTEST(text, "void", ETVoid);
@@ -185,9 +189,13 @@ LLVMValueRef ett_default_value(EagleTypeType *type)
     {
         case ETInt1:
         case ETInt8:
+        case ETUInt8:
         case ETInt16:
+        case ETUInt16:
         case ETInt32:
+        case ETUInt32:
         case ETInt64:
+        case ETUInt64:
         case ETEnum:
             return LLVMConstInt(ett_llvm_type(type), 0, 0);
         case ETFloat:
@@ -235,12 +243,16 @@ LLVMTypeRef ett_llvm_type(EagleTypeType *type)
             return LLVMInt1TypeInContext(utl_get_current_context());
         case ETAny:
         case ETInt8:
+        case ETUInt8:
             return LLVMInt8TypeInContext(utl_get_current_context());
         case ETInt16:
+        case ETUInt16:
             return LLVMInt16TypeInContext(utl_get_current_context());
         case ETInt32:
+        case ETUInt32:
             return LLVMInt32TypeInContext(utl_get_current_context());
         case ETInt64:
+        case ETUInt64:
             return LLVMInt64TypeInContext(utl_get_current_context());
         case ETCString:
             return LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0);
@@ -327,6 +339,7 @@ LLVMTypeRef ett_llvm_type(EagleTypeType *type)
     }
 }
 
+/*
 EagleType et_eagle_type(LLVMTypeRef ty)
 {
     ETEST(ETDouble, ty, LLVMDoubleTypeInContext(utl_get_current_context()));
@@ -336,6 +349,7 @@ EagleType et_eagle_type(LLVMTypeRef ty)
 
     return ETNone;
 }
+*/
 
 #define TT(t) {ET ## t }
 static EagleTypeType base_types[] = {
@@ -350,6 +364,10 @@ static EagleTypeType base_types[] = {
     TT(Int64),
     TT(Float),
     TT(Double),
+    TT(UInt8),
+    TT(UInt16),
+    TT(UInt32),
+    TT(UInt64),
     TT(CString),
     TT(Pointer),
     TT(Array),
@@ -682,24 +700,6 @@ int ett_pointer_depth(EagleTypeType *t)
     int i;
     for(i = 0; pt->type == ETPointer; pt = (EaglePointerType *)pt->to, i++);
     return i;
-}
-
-int ett_is_numeric(EagleTypeType *t)
-{
-    EagleType type = t->type;
-    switch(type)
-    {
-        case ETInt1:
-        case ETInt8:
-        case ETInt16:
-        case ETInt32:
-        case ETInt64:
-        case ETFloat:
-        case ETDouble:
-            return 1;
-        default:
-            return 0;
-    }
 }
 
 int ett_size_of_type(EagleTypeType *t)

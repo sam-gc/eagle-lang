@@ -114,6 +114,10 @@ LLVMValueRef ac_build_conversion(CompilerBundle *cb, LLVMValueRef val, EagleType
         case ETInt16:
         case ETInt32:
         case ETInt64:
+        case ETUInt8:
+        case ETUInt16:
+        case ETUInt32:
+        case ETUInt64:
             switch(to->type)
             {
                 case ETInt1:
@@ -122,6 +126,10 @@ LLVMValueRef ac_build_conversion(CompilerBundle *cb, LLVMValueRef val, EagleType
                 case ETInt16:
                 case ETInt32:
                 case ETInt64:
+                case ETUInt8:
+                case ETUInt16:
+                case ETUInt32:
+                case ETUInt64:
                     return LLVMBuildIntCast(builder, val, ett_llvm_type(to), "conv");
                 case ETFloat:
                 case ETDouble:
@@ -143,6 +151,11 @@ LLVMValueRef ac_build_conversion(CompilerBundle *cb, LLVMValueRef val, EagleType
                 case ETInt16:
                 case ETInt32:
                 case ETInt64:
+                    return LLVMBuildFPToSI(builder, val, ett_llvm_type(to), "conv");
+                case ETUInt8:
+                case ETUInt16:
+                case ETUInt32:
+                case ETUInt64:
                     return LLVMBuildFPToSI(builder, val, ett_llvm_type(to), "conv");
                 default:
                     die(lineno, "Invalid implicit conversion from double.");
@@ -175,6 +188,10 @@ LLVMValueRef ac_make_add(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
         case ETInt16:
         case ETInt32:
         case ETInt64:
+        case ETUInt8:
+        case ETUInt16:
+        case ETUInt32:
+        case ETUInt64:
             return LLVMBuildAdd(builder, left, right, "addtmp");
         default:
             die(lineno, "The given types may not be summed.");
@@ -193,6 +210,10 @@ LLVMValueRef ac_make_sub(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
         case ETInt16:
         case ETInt32:
         case ETInt64:
+        case ETUInt8:
+        case ETUInt16:
+        case ETUInt32:
+        case ETUInt64:
             return LLVMBuildSub(builder, left, right, "subtmp");
         default:
             die(lineno, "The given types may not be subtracted.");
@@ -211,6 +232,10 @@ LLVMValueRef ac_make_mul(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
         case ETInt16:
         case ETInt32:
         case ETInt64:
+        case ETUInt8:
+        case ETUInt16:
+        case ETUInt32:
+        case ETUInt64:
             return LLVMBuildMul(builder, left, right, "multmp");
         default:
             die(lineno, "The given types may not be multiplied.");
@@ -230,6 +255,11 @@ LLVMValueRef ac_make_div(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
         case ETInt32:
         case ETInt64:
             return LLVMBuildSDiv(builder, left, right, "divtmp");
+        case ETUInt8:
+        case ETUInt16:
+        case ETUInt32:
+        case ETUInt64:
+            return LLVMBuildUDiv(builder, left, right, "divtmp");
         default:
             die(lineno, "The given types may not be divided.");
             return NULL;
@@ -248,6 +278,11 @@ LLVMValueRef ac_make_mod(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
         case ETInt32:
         case ETInt64:
             return LLVMBuildSRem(builder, left, right, "modtmp");
+        case ETUInt8:
+        case ETUInt16:
+        case ETUInt32:
+        case ETUInt64:
+            return LLVMBuildURem(builder, left, right, "modtmp");
         default:
             die(lineno, "The given types may not have modulo applied.");
             return NULL;
@@ -266,6 +301,10 @@ LLVMValueRef ac_make_bitor(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef
         case ETInt16:
         case ETInt32:
         case ETInt64:
+        case ETUInt8:
+        case ETUInt16:
+        case ETUInt32:
+        case ETUInt64:
             return LLVMBuildOr(builder, left, right, "OR");
         default:
             die(lineno, "The given types may not be OR'd");
@@ -285,6 +324,10 @@ LLVMValueRef ac_make_bitand(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRe
         case ETInt16:
         case ETInt32:
         case ETInt64:
+        case ETUInt8:
+        case ETUInt16:
+        case ETUInt32:
+        case ETUInt64:
             return LLVMBuildAnd(builder, left, right, "AND");
         default:
             die(lineno, "The given types may not be AND'd");
@@ -304,6 +347,10 @@ LLVMValueRef ac_make_bitxor(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRe
         case ETInt16:
         case ETInt32:
         case ETInt64:
+        case ETUInt8:
+        case ETUInt16:
+        case ETUInt32:
+        case ETUInt64:
             return LLVMBuildXor(builder, left, right, "XOR");
         default:
             die(lineno, "The given types may not be XOR'd");
@@ -330,6 +377,10 @@ LLVMValueRef ac_make_bitshift(LLVMValueRef left, LLVMValueRef right, LLVMBuilder
         case ETInt16:
         case ETInt32:
         case ETInt64:
+        case ETUInt8:
+        case ETUInt16:
+        case ETUInt32:
+        case ETUInt64:
             return shift_func(builder, left, right, "shift");
         default:
             die(lineno, "The given types may not be shifted");
@@ -348,6 +399,10 @@ LLVMValueRef ac_make_neg(LLVMValueRef val, LLVMBuilderRef builder, EagleType typ
         case ETInt16:
         case ETInt32:
         case ETInt64:
+        case ETUInt8:
+        case ETUInt16:
+        case ETUInt32:
+        case ETUInt64:
             return LLVMBuildNeg(builder, val, "negtmp");
         default:
             die(lineno, "The given type may not have negation applied (%d).", type);
@@ -367,6 +422,10 @@ LLVMValueRef ac_make_bitnot(LLVMValueRef val, LLVMBuilderRef builder, EagleType 
         case ETInt16:
         case ETInt32:
         case ETInt64:
+        case ETUInt8:
+        case ETUInt16:
+        case ETUInt32:
+        case ETUInt64:
             return LLVMBuildNot(builder, val, "NOT");
         default:
             die(lineno, "The given type may not be NOT'd");

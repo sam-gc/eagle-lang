@@ -914,8 +914,17 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
                         fmt = LLVMBuildGlobalStringPtr(cb->builder, "(Bool) %d\n", "prfB");
                         break;
                     case ETInt8:
+                    case ETInt16:
                     case ETInt32:
                         fmt = LLVMBuildGlobalStringPtr(cb->builder, "%d\n", "prfI");
+                        break;
+                    case ETUInt8:
+                    case ETUInt16:
+                    case ETUInt32:
+                        fmt = LLVMBuildGlobalStringPtr(cb->builder, "%u\n", "prfU");
+                        break;
+                    case ETUInt64:
+                        fmt = LLVMBuildGlobalStringPtr(cb->builder, "%lu\n", "prfU");
                         break;
                     case ETInt64:
                         fmt = LLVMBuildGlobalStringPtr(cb->builder, "%ld\n", "prfLI");

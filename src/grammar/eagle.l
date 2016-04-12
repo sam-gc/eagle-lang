@@ -150,9 +150,13 @@ charlit `[^`]`
 "var"       DISCARD_NL; return SET(TVAR);
 "bool"      SAVE_NL; SAVE_TOKEN; return TTYPE;
 "byte"      SAVE_NL; SAVE_TOKEN; return TTYPE;
+"ubyte"     SAVE_NL; SAVE_TOKEN; return TTYPE;
 "short"     SAVE_NL; SAVE_TOKEN; return TTYPE;
+"ushort"     SAVE_NL; SAVE_TOKEN; return TTYPE;
 "int"       { SAVE_NL; SAVE_TOKEN; return TTYPE; }
+"uint"       { SAVE_NL; SAVE_TOKEN; return TTYPE; }
 "long"      { SAVE_NL; SAVE_TOKEN; return TTYPE; }
+"ulong"      { SAVE_NL; SAVE_TOKEN; return TTYPE; }
 "double"    { SAVE_NL; SAVE_TOKEN; return TTYPE; }
 "float"     { SAVE_NL; SAVE_TOKEN; return TTYPE; }
 "any"       { SAVE_NL; SAVE_TOKEN; return TTYPE; }

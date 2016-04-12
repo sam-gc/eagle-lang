@@ -45,6 +45,10 @@ typedef enum {
     ETInt64,
     ETFloat,
     ETDouble,
+    ETUInt8,
+    ETUInt16,
+    ETUInt32,
+    ETUInt64,
     ETCString,
     ETPointer,
     ETArray,
@@ -131,7 +135,6 @@ LLVMTypeRef ett_llvm_type(EagleTypeType *type);
 LLVMValueRef ett_default_value(EagleTypeType *type);
 int ett_are_same(EagleTypeType *left, EagleTypeType *right);
 int ett_pointer_depth(EagleTypeType *t);
-int ett_is_numeric(EagleTypeType *t);
 int ett_size_of_type(EagleTypeType *t);
 int ett_array_has_counted(EagleTypeType *t);
 int ett_array_count(EagleTypeType *t);
@@ -181,6 +184,10 @@ static inline int ET_IS_INT(EagleType t)
         case ETInt16:
         case ETInt32:
         case ETInt64:
+        case ETUInt8:
+        case ETUInt16:
+        case ETUInt32:
+        case ETUInt64:
             return 1;
         default:
             return 0;
@@ -196,6 +203,10 @@ static inline int ET_IS_LLVM_INT(EagleType t)
         case ETInt16:
         case ETInt32:
         case ETInt64:
+        case ETUInt8:
+        case ETUInt16:
+        case ETUInt32:
+        case ETUInt64:
             return 1;
         default:
             return 0;
@@ -208,6 +219,28 @@ static inline int ET_IS_REAL(EagleType t)
     {
         case ETFloat:
         case ETDouble:
+            return 1;
+        default:
+            return 0;
+    }
+}
+
+static inline int ett_is_numeric(EagleTypeType *t)
+{
+    EagleType type = t->type;
+    switch(type)
+    {
+        case ETInt1:
+        case ETInt8:
+        case ETInt16:
+        case ETInt32:
+        case ETInt64:
+        case ETFloat:
+        case ETDouble:
+        case ETUInt8:
+        case ETUInt16:
+        case ETUInt32:
+        case ETUInt64:
             return 1;
         default:
             return 0;

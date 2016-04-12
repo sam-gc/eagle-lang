@@ -135,8 +135,13 @@ int ac_type_is_valid_for_switch(EagleTypeType *type)
     {
         case ETInt1:
         case ETInt8:
+        case ETInt16:
         case ETInt32:
         case ETInt64:
+        case ETUInt8:
+        case ETUInt16:
+        case ETUInt32:
+        case ETUInt64:
         case ETEnum:
             return 1;
         default:

@@ -57,6 +57,10 @@ LLVMValueRef ac_convert_const(LLVMValueRef val, EagleTypeType *to, EagleTypeType
         case ETInt16:
         case ETInt32:
         case ETInt64:
+        case ETUInt8:
+        case ETUInt16:
+        case ETUInt32:
+        case ETUInt64:
         {
             switch(to->type)
             {
@@ -67,6 +71,11 @@ LLVMValueRef ac_convert_const(LLVMValueRef val, EagleTypeType *to, EagleTypeType
                 case ETInt32:
                 case ETInt64:
                     return LLVMConstIntCast(val, ett_llvm_type(to), 1);
+                case ETUInt8:
+                case ETUInt16:
+                case ETUInt32:
+                case ETUInt64:
+                    return LLVMConstIntCast(val, ett_llvm_type(to), 0);
                 case ETDouble:
                     return LLVMConstSIToFP(val, ett_llvm_type(to));
                 default:
@@ -86,6 +95,11 @@ LLVMValueRef ac_convert_const(LLVMValueRef val, EagleTypeType *to, EagleTypeType
                 case ETInt32:
                 case ETInt64:
                     return LLVMConstFPToSI(val, ett_llvm_type(to));
+                case ETUInt8:
+                case ETUInt16:
+                case ETUInt32:
+                case ETUInt64:
+                    return LLVMConstFPToUI(val, ett_llvm_type(to));
                 default:
                     return NULL;
             }
