@@ -1,4 +1,4 @@
-AC_INIT(Eagle, 0.5.0, shorlbec@macalester.edu)
+AC_INIT(Eagle, 0.6.0, shorlbec@macalester.edu)
 
 AC_PROG_CC
 AC_PROG_CXX
