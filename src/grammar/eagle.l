@@ -162,6 +162,7 @@ charlit `[^`]`
 "any"       { SAVE_NL; SAVE_TOKEN; return TTYPE; }
 {nvar}       { SAVE_NL; SAVE_TOKEN; if(skip_type_check) return TIDENTIFIER; else return ty_is_name(yytext) ? TTYPE : TIDENTIFIER; }
 {cstr}      SAVE_NL; yylval.string = utl_gen_escaped_string((char *)yytext, yylineno); return TCSTR;
+<<EOF>>     {static int seen_eof; if(seen_eof) { seen_eof = 0; return 0; } else {seen_eof = 1; return TSEMI; }}
 "-*"        {
 // Adapted from https://www.cs.princeton.edu/~appel/modern/c/software/flex/flex.html
 char c;

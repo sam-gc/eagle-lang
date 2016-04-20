@@ -74,8 +74,8 @@
 
 program             : declarations { ast_root = $1; };
 
-declarations        : declaration { if($1) $$ = $1; else $$ = ast_make(); }
-                    | declaration declarations { if($1) $1->next = $2; $$ = $1 ? $1 : $2; };
+declarations        : declaration { if($1) $$ = $1; else $$ = NULL; }
+                    | declaration declarations { if($1) $1->next = $2; $$ = ($1 ? $1 : $2); };
 
 declaration         : externdecl TSEMI { $$ = $1; }
                     | funcdecl { $$ = $1; }
@@ -91,6 +91,7 @@ declaration         : externdecl TSEMI { $$ = $1; }
                     | TEXPORT TTYPEDEF type TTYPE TSEMI { $$ = NULL; ty_set_typedef($4, ((ASTTypeDecl *)$3)->etype); }
                     | TEXPORT enumdecl TSEMI { $$ = $2; }
                     | TEXPORT interfacedecl TSEMI { $$ = $2; }
+                    | TSEMI { $$ = NULL; }
                     ;
 
 exportdecl          : TEXPORT TCSTR TSEMI { $$ = ast_make_export($2, 0); }
