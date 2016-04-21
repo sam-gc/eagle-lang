@@ -18,21 +18,26 @@ int ac_compile_block(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
             switch(un->op)
             {
                 case 'r': // Return
+                    ac_guard_deferment(cb, ALN);
                     ac_compile_return(ast, block, cb);
                     return 1;
                 case 'y': // Yield
+                    ac_guard_deferment(cb, ALN);
                     ac_compile_yield(ast, block, cb);
                     continue;
                 case 'b': // Break
+                    vs_run_deferments_through(cb->varScope, cb->currentLoopScope, cb);
                     LLVMBuildBr(cb->builder, cb->currentLoopExit);
                     return 1;
                 case 'c': // Continue
+                    // vs_run_deferments(cb->varScope, cb);
                     LLVMBuildBr(cb->builder, cb->currentLoopEntry);
                     return 1;
                 case 'f': // Fallthrough
                     if(!cb->nextCaseBlock)
                         die(un->lineno, "Attempting a fallthrough outside of switch statement");
-                    vs_run_callbacks_through(cb->varScope, cb->currentFunctionScope);
+                    vs_run_deferments_through(cb->varScope, cb->currentCaseScope, cb);
+                    vs_run_callbacks_through(cb->varScope, cb->currentCaseScope);
                     LLVMBuildBr(cb->builder, cb->nextCaseBlock);
                     return 1;
             }
@@ -81,6 +86,7 @@ void ac_compile_return(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
         }
     }
 
+    vs_run_deferments_through(cb->varScope, cb->currentFunctionScope, cb);
     vs_run_callbacks_through(cb->varScope, cb->currentFunctionScope);
 
     if(val) LLVMBuildRet(cb->builder, val);
@@ -235,12 +241,14 @@ void ac_compile_switch(AST *ast, CompilerBundle *cb)
         }
 
         vs_push(cb->varScope);
+        cb->currentCaseScope = cb->varScope->scope;
         LLVMPositionBuilderAtEnd(cb->builder, caseBlocks[i]);
 
         cb->nextCaseBlock = i == case_count - 1 ? mergeBB : caseBlocks[i + 1];
 
         if(!ac_compile_block(((ASTCaseBlock *)cblock)->body, caseBlocks[i], cb))
         {
+            vs_run_deferments(cb->varScope, cb);
             vs_run_callbacks_through(cb->varScope, cb->varScope->scope);
             LLVMBuildBr(cb->builder, mergeBB);
         }
@@ -368,6 +376,7 @@ void ac_compile_loop(AST *ast, CompilerBundle *cb)
     EagleTypeType *ypt = NULL;
 
     vs_push(cb->varScope);
+    cb->currentLoopScope = cb->varScope->scope;
     if(a->setup)
     {
         iterator = ac_dispatch_expression(a->setup, cb);
@@ -444,6 +453,7 @@ void ac_compile_loop(AST *ast, CompilerBundle *cb)
         if(a->update)
             ac_dispatch_expression(a->update, cb);
 
+        vs_run_deferments(cb->varScope, cb);
         vs_run_callbacks_through(cb->varScope, cb->varScope->scope);
         LLVMBuildBr(cb->builder, testBB);
         //LLVMDumpValue(LLVMBasicBlockAsValue(incrBB));
@@ -491,6 +501,7 @@ void ac_compile_if(AST *ast, CompilerBundle *cb, LLVMBasicBlockRef mergeBB)
     vs_push(cb->varScope);
     if(!ac_compile_block(a->block, ifBB, cb))
     {
+        vs_run_deferments(cb->varScope, cb);
         vs_run_callbacks_through(cb->varScope, cb->varScope->scope);
         LLVMBuildBr(cb->builder, mergeBB);
     }
@@ -504,6 +515,7 @@ void ac_compile_if(AST *ast, CompilerBundle *cb, LLVMBasicBlockRef mergeBB)
         vs_push(cb->varScope);
         if(!ac_compile_block(el->block, elseBB, cb))
         {
+            vs_run_deferments(cb->varScope, cb);
             vs_run_callbacks_through(cb->varScope, cb->varScope->scope);
             LLVMBuildBr(cb->builder, mergeBB);
         }

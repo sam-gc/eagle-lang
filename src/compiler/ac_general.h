@@ -21,5 +21,6 @@ LLVMValueRef ac_dispatch_expression(AST *ast, CompilerBundle *cb);
 void ac_dispatch_statement(AST *ast, CompilerBundle *cb);
 void ac_dispatch_declaration(AST *ast, CompilerBundle *cb);
 void ac_flush_transients(CompilerBundle *cb);
+void ac_guard_deferment(CompilerBundle *cb, int lineno);
 
 #endif

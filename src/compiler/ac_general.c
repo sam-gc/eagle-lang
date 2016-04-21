@@ -16,6 +16,8 @@
 extern hashtable global_args;
 extern char *current_file_name;
 
+static void ac_deferment_callback(AST *ast, void *data);
+
 #ifdef RELEASE
 void die(int lineno, const char *fmt, ...)
 {
@@ -137,6 +139,7 @@ LLVMModuleRef ac_compile(AST *ast, int include_rc)
     cb.td = LLVMCreateTargetData("");
 
     VarScopeStack vs = vs_make();
+    vs.deferCallback = &ac_deferment_callback;
     cb.varScope = &vs;
     cb.enum_lookup = NULL;
 
@@ -463,6 +466,10 @@ void ac_dispatch_statement(AST *ast, CompilerBundle *cb)
         case ATERNARY:
             ac_compile_ternary(ast, cb);
             break;
+        case ADEFER:
+            ac_guard_deferment(cb, ALN);
+            vs_add_deferment(cb->varScope, ((ASTDefer *)ast)->block);
+            break;
         default:
             die(ALN, "Invalid statement type.");
     }
@@ -492,3 +499,23 @@ void ac_dispatch_declaration(AST *ast, CompilerBundle *cb)
             return;
     }
 }
+
+void ac_guard_deferment(CompilerBundle *cb, int lineno)
+{
+    if(cb->inDeferment)
+        die(lineno, "Invalid statement in deferment");
+}
+
+static void ac_deferment_callback(AST *ast, void *data)
+{
+    CompilerBundle *cb = data;
+    cb->inDeferment = 1;
+
+    for(; ast; ast = ast->next)
+    {
+        ac_dispatch_statement(ast, cb);
+    }
+
+    cb->inDeferment = 0;
+}
+

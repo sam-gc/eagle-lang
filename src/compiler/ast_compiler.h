@@ -41,12 +41,15 @@ typedef struct {
     LLVMBasicBlockRef currentLoopExit;
     LLVMValueRef currentFunction;
     VarScope *currentFunctionScope;
+    VarScope *currentLoopScope;
+    VarScope *currentCaseScope;
 
     VarScopeStack *varScope;
     hashtable transients;
     hashtable loadedTransients;
 
     int compilingMethod;
+    int inDeferment;
     EagleTypeType *enum_lookup;
 
     export_control *exports;

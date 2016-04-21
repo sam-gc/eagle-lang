@@ -42,6 +42,7 @@ typedef enum {
     AEXPORT,
     ASWITCH,
     ACASE,
+    ADEFER,
     ATERNARY
 } ASTType;
 
@@ -323,6 +324,15 @@ typedef struct {
     int kind;
 } ASTExportSymbol;
 
+typedef struct {
+    ASTType type;
+    EagleTypeType *resultantType;
+    struct AST *next;
+    long lineno;
+
+    AST *block;
+} ASTDefer;
+
 AST *ast_make();
 void ast_append(AST *old, AST *n);
 AST *ast_make_binary(AST *left, AST *right, char op);
@@ -376,6 +386,7 @@ AST *ast_make_switch(AST *test, AST *cases);
 AST *ast_make_case(AST *targ, AST *body);
 AST *ast_make_loop(AST *setup, AST *test, AST *update, AST *block);
 AST *ast_make_ternary(AST *test, AST *ifyes, AST *ifno);
+AST *ast_make_defer(AST *block);
 AST *ast_make_cast(AST *type, AST *val);
 AST *ast_make_enum(char *type, AST *items);
 AST *ast_make_enumitem(char *name, char *def);

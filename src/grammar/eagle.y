@@ -31,7 +31,7 @@
 %token <token> TOR TTILDE TRSHIFT TLSHIFT
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TLBRACKET TRBRACKET
 %token <token> TFUNC TRETURN TYIELD TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF TFOR TIN TWEAK TUNWRAP TSWITCH
-%token <token> TBREAK TCONTINUE TVAR TGEN  TELLIPSES TVIEW TFALLTHROUGH TCASE TDEFAULT
+%token <token> TBREAK TCONTINUE TVAR TGEN  TELLIPSES TVIEW TFALLTHROUGH TCASE TDEFAULT TDEFER
 %token <token> TCOLON TSEMI TNEWLINE TCOMMA TDOT TAMP TAT TARROW T__DEC T__INC TQUESTION TQUESTIONCOLON
 %token <token> TYES TNO TNIL TIMPORT TTYPEDEF TENUM TSTATIC TINTERFACE TCLASS TSTRUCT
 %type <token> exportable 
@@ -273,6 +273,8 @@ statement           : expr TSEMI { $$ = $1; }
                     | forstatement { $$ = $1; }
                     | switchstatement { $$ = $1; }
                     | TTOUCH expr TSEMI { $$ = ast_make_unary($2, 't'); }
+                    | TDEFER block { $$ = ast_make_defer($2); }
+                    | TDEFER statement { $$ = ast_make_defer($2); }
                     /*| funcdecl { $$ = $1; }*/
                     ;
 

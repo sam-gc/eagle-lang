@@ -10,11 +10,14 @@
 #define VARIABLE_MANAGER_H
 
 #include "core/hashtable.h"
+#include "core/arraylist.h"
 #include "core/mempool.h"
 #include "core/llvm_headers.h"
 #include "core/types.h"
+#include "compiler/ast.h"
 
 typedef void(*LostScopeCallback)(LLVMValueRef, EagleTypeType *, void *);
+typedef void(*DefermentCallback)(AST *, void *);
 
 typedef struct {
     LLVMValueRef value;
@@ -37,6 +40,7 @@ typedef struct VarScope {
     struct VarScope *next;
 
     hashtable table;
+    arraylist deferments;
 } VarScope;
 
 typedef struct {
@@ -53,6 +57,8 @@ typedef struct {
     hashtable modules;
 
     unsigned warnunused : 1;
+
+    DefermentCallback deferCallback;
 } VarScopeStack;
 
 VarScopeStack vs_make();
@@ -68,6 +74,9 @@ void vs_pop(VarScopeStack *vs);
 void vs_add_callback(VarScopeStack *vs, char *ident, LostScopeCallback callback, void *data);
 void vs_run_callbacks_through(VarScopeStack *vs, VarScope *scope);
 void vs_run_callbacks_to(VarScopeStack *vs, VarScope *targ);
+void vs_add_deferment(VarScopeStack *vs, AST *ast);
+void vs_run_deferments(VarScopeStack *vs, void *data);
+void vs_run_deferments_through(VarScopeStack *vs, VarScope *scope, void *data);
 VarScope *vs_current(VarScopeStack *vs);
 
 #endif

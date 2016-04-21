@@ -1,0 +1,91 @@
+gen blah() : int
+{
+    defer {
+        puts 'Done'
+    }
+
+    for int i = 0; i < 10; i += 1
+    {
+        yield i
+    }
+}
+
+func main(int argc, byte **argv)
+{
+    int i = 5
+    defer {
+        puts i
+    }
+
+    i = 11
+
+    if argc > 1
+    {
+        defer {
+            i += 1
+        }
+
+        puts i
+    }
+
+    loop()
+    swtch()
+
+    for int i in blah()
+    {
+        puts 0
+    }
+
+    var c = closure(100)
+    puts c()
+    puts c()
+    puts c()
+}
+
+func closure(int start) : (:int)^
+{
+    int i = start
+    return func() : int {
+        defer i += 1
+        return i
+    }
+}
+
+func loop()
+{
+    for int i = 1; i < 10; i += 1
+    {
+        defer {
+            puts 'Here!'
+        }
+
+        if i % 3 == 0
+            return
+
+        puts i
+    }
+}
+
+func swtch()
+{
+    var j = new int(35)
+    int i = 5
+    switch i
+    {
+        case 5
+            defer {
+                puts 'World'
+            }
+
+            var k = new int
+
+            if i == 5
+                fallthrough
+            puts 'Hello'
+        case 6
+            puts 'yo'
+    }
+
+    puts j!
+}
+

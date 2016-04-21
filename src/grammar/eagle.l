@@ -144,6 +144,7 @@ charlit `[^`]`
 "case"      DISCARD_NL; return SET(TCASE);
 "fallthrough" SAVE_NL; return SET(TFALLTHROUGH);
 "default"   SAVE_NL; return SET(TDEFAULT);
+"defer"     DISCARD_NL; return SET(TDEFER);
 "yes"       SAVE_NL; return SET(TYES);
 "no"        SAVE_NL; return SET(TNO);
 "nil"       SAVE_NL; return SET(TNIL);

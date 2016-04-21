@@ -231,6 +231,7 @@ void ac_compile_generator_code(AST *ast, CompilerBundle *cb)//, LLVMValueRef fun
 
     // if(retType->etype->type == ETVoid)
     // {
+    vs_run_deferments(cb->varScope, cb);
     vs_run_callbacks_through(cb->varScope, cb->varScope->scope);
     vs_pop(cb->varScope);
 

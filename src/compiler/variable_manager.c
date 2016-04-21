@@ -21,6 +21,7 @@ VarScopeStack vs_make()
     vs.modules = hst_create();
     vs.modules.duplicate_keys = 1;
     vs.warnunused = 1;
+    vs.deferCallback = NULL;
 
     return vs;
 }
@@ -47,6 +48,7 @@ void vs_push(VarScopeStack *vs)
     scope->scope = SCOPE;
 
     scope->next = vs->scope;
+    scope->deferments = arr_create(2);
 
     vs->scope = scope;
 }
@@ -78,6 +80,7 @@ void vs_pop(VarScopeStack *vs)
         if(vs->warnunused)
             hst_for_each(&s->table, vs_run_warnings, NULL);
         hst_free(&s->table);
+        arr_free(&s->deferments);
     }
     free(s);
 }
@@ -189,6 +192,41 @@ void vs_add_callback(VarScopeStack *vs, char *ident, LostScopeCallback callback,
 
     vb->scopeCallback = callback;
     vb->scopeData = data;
+}
+
+void vs_add_deferment(VarScopeStack *vs, AST *ast)
+{
+    VarScope *s = vs->scope;
+    arr_append(&s->deferments, ast);
+}
+
+void vs_run_deferments(VarScopeStack *vs, void *data)
+{
+    if(!vs->deferCallback)
+        die(-1, "Internal compiler error: deferment callback not set");
+
+    VarScope *s = vs->scope;
+    arraylist *deferments = &s->deferments;
+    for(int i = deferments->count - 1; i >= 0; i--)
+    {
+        vs->deferCallback(deferments->items[i], data);
+    }
+}
+
+void vs_run_deferments_through(VarScopeStack *vs, VarScope *scope, void *data)
+{
+    if(!vs->deferCallback)
+        die(-1, "Internal compiler error: deferment callback not set");
+
+    VarScope *s = vs->scope;
+    for(; s != scope->next; s = s->next)
+    {
+        arraylist *deferments = &s->deferments;
+        for(int i = deferments->count; i >= 0; i--)
+        {
+            vs->deferCallback(deferments->items[i], data);
+        }
+    }
 }
 
 void vs_callback_callback(void *key, void *val, void *data)

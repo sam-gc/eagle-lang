@@ -405,6 +405,8 @@ void ac_compile_function_ex(AST *ast, CompilerBundle *cb, LLVMValueRef func, Eag
     if(!ac_compile_block(a->body, entry, cb) && retType->etype->type != ETVoid)
         die(ALN, "Function must return a value.");
 
+    vs_run_deferments(cb->varScope, cb);
+
     if(retType->etype->type == ETVoid)
     {
         vs_run_callbacks_through(cb->varScope, cb->varScope->scope);
@@ -429,3 +431,4 @@ void ac_compile_function(AST *ast, CompilerBundle *cb)
     ast->resultantType = vb->type;
     ac_compile_function_ex(ast, cb, func, (EagleFunctionType *)vb->type);
 }
+

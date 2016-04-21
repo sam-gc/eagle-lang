@@ -746,6 +746,16 @@ AST *ast_make_ternary(AST *test, AST *ifyes, AST *ifno)
     return (AST *)ast;
 }
 
+AST *ast_make_defer(AST *block)
+{
+    ASTDefer *ast = ast_malloc(sizeof(ASTDefer));
+    ast->type = ADEFER;
+
+    ast->block = block;
+
+    return (AST *)ast;
+}
+
 AST *ast_make_cast(AST *type, AST *val)
 {
     ASTCast *ast = ast_malloc(sizeof(ASTCast));
