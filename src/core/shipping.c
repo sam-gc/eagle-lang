@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <libgen.h>
 #include <unistd.h>
+#include <sys/wait.h>
 #include "cpp/cpp.h"
 #include "shipping.h"
 #include "hashtable.h"
@@ -21,6 +22,8 @@
 
 extern hashtable global_args;
 typedef LLVMPassManagerBuilderRef LPMB;
+
+static void shp_spawn_process(const char *process, const char *args[]);
 
 void shp_optimize(LLVMModuleRef module)
 {
@@ -100,17 +103,17 @@ void shp_produce_binary(char *filename, char *assemblyname, char **outname)
 
     char *outfile = thr_temp_object_file(filename);
 
-    char command[500 + strlen(outfile)];
-
     if(IN(global_args, "-c"))
     {
         free(outfile);
         outfile = shp_switch_file_ext(filename, "o");
     }
 
-    sprintf(command, CC " -c %s -o %s -g -O0", assemblyname, outfile);
+    const char *command[] = {
+        SystemCC, "-c", assemblyname, "-o", outfile, "-g", "-O0", NULL
+    };
 
-    system(command);
+    shp_spawn_process(SystemCC, command);
 
     *outname = outfile;
 }
@@ -122,29 +125,37 @@ void shp_produce_executable(ShippingCrate *crate)
     if(IN(global_args, "-o"))
         outfile = hst_get(&global_args, (char *)"-o", NULL, NULL);
 
-    Strbuilder sbd;
-    sb_init(&sbd);
-    int i;
-    for(i = 0; i < crate->object_files.count; i++)
+    int arg_count = 4 + crate->object_files.count + crate->libs.count;
+    const char *args[arg_count];
+    args[0] = SystemCC;
+    args[1] = "-o";
+    args[2] = outfile;
+
+    for(int i = 0; i < crate->object_files.count; i++)
+        args[i + 3] = crate->object_files.items[i];
+
+    for(int i = 0; i < crate->libs.count; i++)
+        args[i + 3 + crate->object_files.count] = crate->libs.items[i];
+
+    args[arg_count - 1] = NULL;
+
+    shp_spawn_process(SystemCC, args);
+}
+
+static void shp_spawn_process(const char *process, const char *args[])
+{
+    pid_t pid = fork();
+    if(!pid) // We are the child
     {
-        sb_append(&sbd, crate->object_files.items[i]);
-        sb_append(&sbd, " ");
+        execvp(process, (char *const*)args);
+        die(-1, "Internal compiler error: execvp() should not return!");
+    }
+    else if(pid < 0)
+    {
+        die(-1, "Internal compiler error: failed to fork process");
     }
 
-    Strbuilder libb;
-    sb_init(&libb);
-    for(i = 0; i < crate->libs.count; i++)
-    {
-        sb_append(&libb, crate->libs.items[i]);
-        sb_append(&libb, " ");
-    }
-
-    char command[500 + strlen(outfile) + strlen(sbd.buffer) + strlen(libb.buffer)];
-
-    sprintf(command, CC " %s -o %s %s", sbd.buffer, outfile, libb.buffer);
-    free(sbd.buffer);
-    free(libb.buffer);
-
-    system(command);
+    int status;
+    waitpid(pid, &status, 0);
 }
 
