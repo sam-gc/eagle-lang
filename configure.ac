@@ -59,7 +59,7 @@ then
      AC_MSG_ERROR([python missing])
 fi
 
-python AddNewLines.py > rc.egl.out
+python linequoter.py > rc.egl.out
 AC_SUBST(configcode, `cat rc.egl.out`)
 
 rm -rf rc.egl.out

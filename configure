@@ -3903,7 +3903,7 @@ then
      as_fn_error $? "python missing" "$LINENO" 5
 fi
 
-python AddNewLines.py > rc.egl.out
+python linequoter.py > rc.egl.out
 configcode=`cat rc.egl.out`
 
 
