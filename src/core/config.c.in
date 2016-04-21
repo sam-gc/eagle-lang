@@ -8,4 +8,4 @@
 
 #include "config.h"
 
-const char *rc_code = "@configcode@";
+const char *rc_code = @configcode@;
