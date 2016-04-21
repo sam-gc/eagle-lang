@@ -6,6 +6,7 @@ AC_SUBST(stuff, hello)
 AC_PROG_LEX
 AC_PROG_YACC
 AC_CHECK_PROGS([llvmconfig], [llvm-config llvm-config-3.5 llvm-config-3.6 llvm-config-3.7], no, $PATH)
+AC_CHECK_PROG(PYTHON, python, "yes")
 
 AC_CHECK_HEADER(pthread.h, have_pthread="yes")
 
@@ -53,7 +54,12 @@ else
     AC_SUBST(llvmvsn, [llvm_OLD])
 fi
 
-awk -vRS="\n" -vORS="\\\n" '1' rc.egl > rc.egl.out
+if test $PYTHON == "no"
+then
+     AC_MSG_ERROR([python missing])
+fi
+
+python linequoter.py > rc.egl.out
 AC_SUBST(configcode, `cat rc.egl.out`)
 
 rm -rf rc.egl.out
