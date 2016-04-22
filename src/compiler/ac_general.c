@@ -133,6 +133,7 @@ LLVMModuleRef ac_compile(AST *ast, int include_rc)
     cb.nextCaseBlock = NULL;
 
     cb.compilingMethod = 0;
+    cb.inDeferment = 0;
 
     cb.currentLoopEntry = cb.currentLoopExit = NULL;
 
