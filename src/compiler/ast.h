@@ -56,13 +56,13 @@ typedef enum {
 
 typedef struct AST {
     ASTType type;
-    EagleTypeType *resultantType; struct AST *next;
+    EagleComplexType *resultantType; struct AST *next;
     long lineno;
 } AST;
 
 typedef struct {
     ASTType type;
-    EagleTypeType *resultantType;
+    EagleComplexType *resultantType;
     struct AST *next;
     long lineno;
 
@@ -71,7 +71,7 @@ typedef struct {
 
 typedef struct {
     ASTType type;
-    EagleTypeType *resultantType;
+    EagleComplexType *resultantType;
     struct AST *next;
     long lineno;
 
@@ -82,7 +82,7 @@ typedef struct {
 
 typedef struct {
     ASTType type;
-    EagleTypeType *resultantType;
+    EagleComplexType *resultantType;
     struct AST *next;
     long lineno;
 
@@ -94,11 +94,11 @@ typedef struct {
 
 typedef struct {
     ASTType type;
-    EagleTypeType *resultantType;
+    EagleComplexType *resultantType;
     struct AST *next;
     long lineno;
 
-    EagleType etype;
+    EagleBasicType etype;
     union {
         int32_t i;
         double d;
@@ -108,7 +108,7 @@ typedef struct {
 
 typedef struct {
     ASTType type;
-    EagleTypeType *resultantType;
+    EagleComplexType *resultantType;
     struct AST *next;
     long lineno;
     VariableLinkage linkage;
@@ -122,7 +122,7 @@ typedef struct {
 
 typedef struct {
     ASTType type;
-    EagleTypeType *resultantType;
+    EagleComplexType *resultantType;
     struct AST *next;
     long lineno;
 
@@ -132,7 +132,7 @@ typedef struct {
 
 typedef struct {
     ASTType type;
-    EagleTypeType *resultantType;
+    EagleComplexType *resultantType;
     struct AST *next;
     long lineno;
 
@@ -152,16 +152,16 @@ typedef struct {
 
 typedef struct {
     ASTType type;
-    EagleTypeType *resultantType;
+    EagleComplexType *resultantType;
     struct AST *next;
     long lineno;
 
-    EagleTypeType *etype;
+    EagleComplexType *etype;
 } ASTTypeDecl;
 
 typedef struct {
     ASTType type;
-    EagleTypeType *resultantType;
+    EagleComplexType *resultantType;
     struct AST *next;
     long lineno;
 
@@ -172,7 +172,7 @@ typedef struct {
 
 typedef struct {
     ASTType type;
-    EagleTypeType *resultantType;
+    EagleComplexType *resultantType;
     struct AST *next;
     long lineno;
 
@@ -183,7 +183,7 @@ typedef struct {
 
 typedef struct {
     ASTType type;
-    EagleTypeType *resultantType;
+    EagleComplexType *resultantType;
     struct AST *next;
     long lineno;
 
@@ -193,7 +193,7 @@ typedef struct {
 
 typedef struct {
     ASTType type;
-    EagleTypeType *resultantType;
+    EagleComplexType *resultantType;
     struct AST *next;
 
     struct AST *setup;
@@ -204,7 +204,7 @@ typedef struct {
 
 typedef struct {
     ASTType type;
-    EagleTypeType *resultantType;
+    EagleComplexType *resultantType;
     struct AST *next;
 
     struct AST *test;
@@ -214,7 +214,7 @@ typedef struct {
 
 typedef struct {
     ASTType type;
-    EagleTypeType *resultantType;
+    EagleComplexType *resultantType;
     struct AST *next;
     long lineno;
 
@@ -224,7 +224,7 @@ typedef struct {
 
 typedef struct {
     ASTType type;
-    EagleTypeType *resultantType;
+    EagleComplexType *resultantType;
     struct AST *next;
     long lineno;
     VariableLinkage linkage;
@@ -238,7 +238,7 @@ typedef struct {
 
 typedef struct {
     ASTType type;
-    EagleTypeType *resultantType;
+    EagleComplexType *resultantType;
     struct AST *next;
     long lineno;
 
@@ -250,7 +250,7 @@ typedef struct {
 
 typedef struct {
     ASTType type;
-    EagleTypeType *resultantType;
+    EagleComplexType *resultantType;
     struct AST *next;
     long lineno;
 
@@ -260,7 +260,7 @@ typedef struct {
 
 typedef struct {
     ASTType type;
-    EagleTypeType *resultantType;
+    EagleComplexType *resultantType;
     struct AST *next;
     long lineno;
     VariableLinkage linkage;
@@ -271,8 +271,8 @@ typedef struct {
 
     struct AST *initdecl;
     struct AST *destructdecl;
-    EagleTypeType *inittype;
-    EagleTypeType *destructtype;
+    EagleComplexType *inittype;
+    EagleComplexType *destructtype;
 
     arraylist interfaces;
 
@@ -284,7 +284,7 @@ typedef struct {
 
 typedef struct {
     ASTType type;
-    EagleTypeType *resultantType;
+    EagleComplexType *resultantType;
     struct AST *next;
     long lineno;
     VariableLinkage linkage;
@@ -295,7 +295,7 @@ typedef struct {
 
 typedef struct {
     ASTType type;
-    EagleTypeType *resultantType;
+    EagleComplexType *resultantType;
     struct AST *next;
     long lineno;
 
@@ -306,7 +306,7 @@ typedef struct {
 
 typedef struct {
     ASTType type;
-    EagleTypeType *resultantType;
+    EagleComplexType *resultantType;
     struct AST *next;
     long lineno;
 
@@ -316,7 +316,7 @@ typedef struct {
 
 typedef struct {
     ASTType type;
-    EagleTypeType *resultantType;
+    EagleComplexType *resultantType;
     struct AST *next;
     long lineno;
 
@@ -326,7 +326,7 @@ typedef struct {
 
 typedef struct {
     ASTType type;
-    EagleTypeType *resultantType;
+    EagleComplexType *resultantType;
     struct AST *next;
     long lineno;
 

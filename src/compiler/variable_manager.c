@@ -138,7 +138,7 @@ void vs_push_closure(VarScopeStack *vs, ClosedCallback cb, void *data)
     vs->scope = (VarScope *)barrier;
 }
 
-static VarBundle *vs_create(char *ident, char *module, EagleTypeType *type, LLVMValueRef val, int lineno)
+static VarBundle *vs_create(char *ident, char *module, EagleComplexType *type, LLVMValueRef val, int lineno)
 {
     VarBundle *vb = malloc(sizeof(VarBundle));
     vb->type = type;
@@ -152,7 +152,7 @@ static VarBundle *vs_create(char *ident, char *module, EagleTypeType *type, LLVM
     return vb;
 }
 
-VarBundle *vs_put(VarScopeStack *vs, char *ident, LLVMValueRef val, EagleTypeType *type, int lineno)
+VarBundle *vs_put(VarScopeStack *vs, char *ident, LLVMValueRef val, EagleComplexType *type, int lineno)
 {
     VarBundle *vb = vs_create(ident, NULL, type, val, lineno);
     VarScope *s = vs->scope;
@@ -163,7 +163,7 @@ VarBundle *vs_put(VarScopeStack *vs, char *ident, LLVMValueRef val, EagleTypeTyp
     return vb;
 }
 
-VarBundle *vs_put_in_module(VarScopeStack *vs, char *ident, char *module, LLVMValueRef val, EagleTypeType *type)
+VarBundle *vs_put_in_module(VarScopeStack *vs, char *ident, char *module, LLVMValueRef val, EagleComplexType *type)
 {
     VarBundle *vb = vs_create(ident, module, type, val, -1);
 

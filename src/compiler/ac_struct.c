@@ -10,7 +10,7 @@
 #include "core/utils.h"
 #include "core/config.h"
 
-void ac_scope_leave_struct_callback(LLVMValueRef pos, EagleTypeType *ty, void *data)
+void ac_scope_leave_struct_callback(LLVMValueRef pos, EagleComplexType *ty, void *data)
 {
     CompilerBundle *cb = data;
     ac_call_destructor(cb, pos, ty);
@@ -64,7 +64,7 @@ void ac_make_struct_copy_constructor(AST *ast, CompilerBundle *cb)
     if(a->ext)
         return;
 
-    EagleTypeType *ett = ett_pointer_type(ett_struct_type(a->name));
+    EagleComplexType *ett = ett_pointer_type(ett_struct_type(a->name));
 
     LLVMBasicBlockRef entry = LLVMAppendBasicBlockInContext(utl_get_current_context(), func, "entry");
     LLVMPositionBuilderAtEnd(cb->builder, entry);
@@ -76,7 +76,7 @@ void ac_make_struct_copy_constructor(AST *ast, CompilerBundle *cb)
     int i;
     for(i = 0; i < types->count; i++)
     {
-        EagleTypeType *t = arr_get(types, i);
+        EagleComplexType *t = arr_get(types, i);
         if(ET_IS_COUNTED(t))
         {
             LLVMValueRef gep = LLVMBuildStructGEP(cb->builder, strct, i, "");
@@ -107,7 +107,7 @@ void ac_make_struct_constructor(AST *ast, CompilerBundle *cb)
     if(a->ext)
         return;
 
-    EagleTypeType *ett = ett_pointer_type(ett_struct_type(a->name));
+    EagleComplexType *ett = ett_pointer_type(ett_struct_type(a->name));
 
     LLVMBasicBlockRef entry = LLVMAppendBasicBlockInContext(utl_get_current_context(), func, "entry");
     LLVMPositionBuilderAtEnd(cb->builder, entry);
@@ -118,7 +118,7 @@ void ac_make_struct_constructor(AST *ast, CompilerBundle *cb)
     int i;
     for(i = 0; i < types->count; i++)
     {
-        EagleTypeType *t = arr_get(types, i);
+        EagleComplexType *t = arr_get(types, i);
         if(ET_IS_COUNTED(t) || ET_IS_WEAK(t))
         {
             LLVMValueRef gep = LLVMBuildStructGEP(cb->builder, strct, i, "");
@@ -153,7 +153,7 @@ void ac_make_struct_destructor(AST *ast, CompilerBundle *cb)
     LLVMPositionBuilderAtEnd(cb->builder, entry);
 
     EaglePointerType *ett = (EaglePointerType *)ett_pointer_type(ett_struct_type(a->name));
-    LLVMValueRef pos = LLVMBuildAlloca(cb->builder, ett_llvm_type((EagleTypeType *)ett), "");
+    LLVMValueRef pos = LLVMBuildAlloca(cb->builder, ett_llvm_type((EagleComplexType *)ett), "");
     LLVMValueRef cmp = LLVMBuildICmp(cb->builder, LLVMIntEQ, LLVMGetParam(func, 1), LLVMConstInt(LLVMInt1TypeInContext(utl_get_current_context()), 1, 0), "");
     LLVMBasicBlockRef ifBB = LLVMAppendBasicBlockInContext(utl_get_current_context(), func, "if");
     LLVMBasicBlockRef elseBB = LLVMAppendBasicBlockInContext(utl_get_current_context(), func, "else");
@@ -162,13 +162,13 @@ void ac_make_struct_destructor(AST *ast, CompilerBundle *cb)
     LLVMPositionBuilderAtEnd(cb->builder, ifBB);
 
     ett->counted = 1;
-    LLVMValueRef cast = LLVMBuildBitCast(cb->builder, LLVMGetParam(func, 0), ett_llvm_type((EagleTypeType *)ett), "");
+    LLVMValueRef cast = LLVMBuildBitCast(cb->builder, LLVMGetParam(func, 0), ett_llvm_type((EagleComplexType *)ett), "");
     LLVMBuildStore(cb->builder, LLVMBuildStructGEP(cb->builder, cast, 5, ""), pos);
     LLVMBuildBr(cb->builder, mergeBB);
 
     ett->counted = 0;
     LLVMPositionBuilderAtEnd(cb->builder, elseBB);
-    cast = LLVMBuildBitCast(cb->builder, LLVMGetParam(func, 0), ett_llvm_type((EagleTypeType *)ett), "");
+    cast = LLVMBuildBitCast(cb->builder, LLVMGetParam(func, 0), ett_llvm_type((EagleComplexType *)ett), "");
     LLVMBuildStore(cb->builder, cast, pos);
     LLVMBuildBr(cb->builder, mergeBB);
 
@@ -179,7 +179,7 @@ void ac_make_struct_destructor(AST *ast, CompilerBundle *cb)
     int i;
     for(i = 0; i < types->count; i++)
     {
-        EagleTypeType *t = arr_get(types, i);
+        EagleComplexType *t = arr_get(types, i);
         if(ET_IS_COUNTED(t))
         {
             LLVMValueRef gep = LLVMBuildStructGEP(cb->builder, pos, i, "");
@@ -260,7 +260,7 @@ void ac_make_struct_definitions(AST *ast, CompilerBundle *cb)
     }
 }
 
-void ac_call_copy_constructor(CompilerBundle *cb, LLVMValueRef pos, EagleTypeType *ty)
+void ac_call_copy_constructor(CompilerBundle *cb, LLVMValueRef pos, EagleComplexType *ty)
 {
     if(ET_IS_WEAK(ty) || ET_IS_COUNTED(ty))
         pos = LLVMBuildStructGEP(cb->builder, pos, 5, "");
@@ -274,7 +274,7 @@ void ac_call_copy_constructor(CompilerBundle *cb, LLVMValueRef pos, EagleTypeTyp
     LLVMBuildCall(cb->builder, func, &pos, 1, "");
 }
 
-void ac_call_constructor(CompilerBundle *cb, LLVMValueRef pos, EagleTypeType *ty)
+void ac_call_constructor(CompilerBundle *cb, LLVMValueRef pos, EagleComplexType *ty)
 {
     if(ET_IS_WEAK(ty) || ET_IS_COUNTED(ty))
         pos = LLVMBuildStructGEP(cb->builder, pos, 5, "");
@@ -288,7 +288,7 @@ void ac_call_constructor(CompilerBundle *cb, LLVMValueRef pos, EagleTypeType *ty
     LLVMBuildCall(cb->builder, func, &pos, 1, "");
 }
 
-void ac_call_destructor(CompilerBundle *cb, LLVMValueRef pos, EagleTypeType *ty)
+void ac_call_destructor(CompilerBundle *cb, LLVMValueRef pos, EagleComplexType *ty)
 {
     if(ET_IS_WEAK(ty) || ET_IS_COUNTED(ty))
         die(-1, "WEIRD ERROR");
@@ -326,9 +326,9 @@ static void ac_struct_lit_each(void *key, void *val, void *data)
     AST *exp = val;
 
     int index;
-    EagleTypeType *memtype;
-    EagleTypeType *fromtype;
-    ty_struct_member_index((EagleTypeType *)st, member, &index, &memtype);
+    EagleComplexType *memtype;
+    EagleComplexType *fromtype;
+    ty_struct_member_index((EagleComplexType *)st, member, &index, &memtype);
 
     if(index < 0)
         die(a->lineno, "struct %s has no member %s", st->name, member);
@@ -398,7 +398,7 @@ LLVMValueRef ac_compile_struct_lit(AST *ast, CompilerBundle *cb, LLVMValueRef st
     arraylist *stypes;
 
     // Set the members that are not set explicitly by the programmer
-    ty_struct_get_members((EagleTypeType *)st, &snames, &stypes);
+    ty_struct_get_members((EagleComplexType *)st, &snames, &stypes);
 
     for(int i = 0; i < stypes->count; i++)
     {
@@ -411,7 +411,7 @@ LLVMValueRef ac_compile_struct_lit(AST *ast, CompilerBundle *cb, LLVMValueRef st
         ac_safe_store(NULL, cb, pos, val, stypes->items[i], 0, 1);
     }
 
-    a->resultantType = (EagleTypeType *)st;
+    a->resultantType = (EagleComplexType *)st;
 
     hst_free(&visible);
     return strct;

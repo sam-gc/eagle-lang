@@ -420,7 +420,7 @@ AST *ast_class_set_init(AST *ast, AST *init)
         arr_append(&list, t->etype);
     }
 
-    EagleTypeType *ttype = ett_function_type(((ASTTypeDecl *)f->retType)->etype, (EagleTypeType **)list.items, list.count);
+    EagleComplexType *ttype = ett_function_type(((ASTTypeDecl *)f->retType)->etype, (EagleComplexType **)list.items, list.count);
     ((EagleFunctionType *)ttype)->closure = 0;
 
     arr_free(&list);
@@ -469,7 +469,7 @@ AST *ast_class_method_add(AST *ast, AST *func)
         arr_append(&list, t->etype);
     }
 
-    EagleTypeType *ttype = ett_function_type(((ASTTypeDecl *)f->retType)->etype, (EagleTypeType **)list.items, list.count);
+    EagleComplexType *ttype = ett_function_type(((ASTTypeDecl *)f->retType)->etype, (EagleComplexType **)list.items, list.count);
     ((EagleFunctionType *)ttype)->closure = 0;
     arr_free(&list);
 
@@ -559,7 +559,7 @@ AST *ast_make_closure_type(AST *tysList, AST *resType)
         arr_append(&list, t->etype);
     }
 
-    ast->etype = ett_function_type(((ASTTypeDecl *)resType)->etype, (EagleTypeType **)list.items, list.count);
+    ast->etype = ett_function_type(((ASTTypeDecl *)resType)->etype, (EagleComplexType **)list.items, list.count);
     ((EagleFunctionType *)ast->etype)->closure = CLOSURE_NO_CLOSE;
 
     arr_free(&list);
@@ -580,7 +580,7 @@ AST *ast_make_function_type(AST *tysList, AST *resType)
         arr_append(&list, t->etype);
     }
 
-    ast->etype = ett_function_type(((ASTTypeDecl *)resType)->etype, (EagleTypeType **)list.items, list.count);
+    ast->etype = ett_function_type(((ASTTypeDecl *)resType)->etype, (EagleComplexType **)list.items, list.count);
     ((EagleFunctionType *)ast->etype)->closure = 0;
 
     arr_free(&list);

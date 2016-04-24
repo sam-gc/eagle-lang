@@ -42,7 +42,7 @@ void ac_generate_interface_methods_each(void *key, void *val, void *data)
 {
     ASTClassDecl *cd = (ASTClassDecl *)data;
     ASTFuncDecl *fd = key;
-    EagleTypeType *ety = val;
+    EagleComplexType *ety = val;
 
     // ASTFuncDecl *fd = val;
     // EagleFunctionType *ety = (EagleFunctionType *)((EaglePointerType *)arr_get(&cd->types, idx - 1))->to;
@@ -78,14 +78,14 @@ void ac_prepare_methods_each(void *key, void *val, void *data)
 
     ety->params[0] = ett_pointer_type(ett_struct_type(cd->name));
     ((EaglePointerType *)ety->params[0])->counted = 1;
-    LLVMTypeRef ft = ett_llvm_type((EagleTypeType *)ety);
+    LLVMTypeRef ft = ett_llvm_type((EagleComplexType *)ety);
 
     LLVMValueRef func = LLVMAddFunction(h->cb->module, method_name, ft);
 
     if(h->linkage == VLLocal && !cd->ext)
         LLVMSetLinkage(func, LLVMPrivateLinkage);
 
-    ty_add_method(cd->name, fd->ident, (EagleTypeType *)ety);
+    ty_add_method(cd->name, fd->ident, (EagleComplexType *)ety);
 
     free(method_name);
 }
@@ -104,13 +104,13 @@ void ac_class_add_early_definitions(ASTClassDecl *cd, CompilerBundle *cb, ac_cla
     EagleFunctionType *ety = (EagleFunctionType *)cd->inittype;
     ety->params[0] = ett_pointer_type(ett_struct_type(cd->name));
     ((EaglePointerType *)ety->params[0])->counted = 1;
-    LLVMTypeRef ft = ett_llvm_type((EagleTypeType *)ety);
+    LLVMTypeRef ft = ett_llvm_type((EagleComplexType *)ety);
     LLVMValueRef func = LLVMAddFunction(cb->module, method_name, ft);
     if(h->linkage == VLLocal && !cd->ext)
         LLVMSetLinkage(func, LLVMPrivateLinkage);
 
-    //ty_add_method(cd->name, fd->ident, (EagleTypeType *)ety);
-    ty_add_init(cd->name, (EagleTypeType *)ety);
+    //ty_add_method(cd->name, fd->ident, (EagleComplexType *)ety);
+    ty_add_init(cd->name, (EagleComplexType *)ety);
 
     free(method_name);
 }
@@ -147,7 +147,7 @@ void ac_compile_class_destruct(ASTClassDecl *cd, CompilerBundle *cb)
     EagleFunctionType *ety = (EagleFunctionType *)cd->destructtype;
     ety->params[0] = ett_pointer_type(ett_struct_type(cd->name));
     ((EaglePointerType *)ety->params[0])->counted = 1;
-    LLVMTypeRef ft = ett_llvm_type((EagleTypeType *)ety);
+    LLVMTypeRef ft = ett_llvm_type((EagleComplexType *)ety);
     LLVMValueRef func = LLVMAddFunction(cb->module, method_name, ft);
 
     if(cd->linkage == VLLocal && !cd->ext)
@@ -172,8 +172,8 @@ void ac_check_and_register_implementation(char *method, ac_class_helper *h, char
         if(offset < 0)
             continue;
 
-        EagleTypeType *implty = ty_method_lookup(name, method);
-        EagleTypeType *clsty  = ty_method_lookup(class, method);
+        EagleComplexType *implty = ty_method_lookup(name, method);
+        EagleComplexType *clsty  = ty_method_lookup(class, method);
 
         if(!ett_are_same(implty, clsty))
             die(cd->lineno, "Implementation of method (%s) in class (%s) does not match interface", method, class);
@@ -362,7 +362,7 @@ void ac_make_class_constructor(AST *ast, CompilerBundle *cb, ac_class_helper *h)
     if(a->linkage == VLLocal)
         LLVMSetLinkage(func, LLVMPrivateLinkage);
 
-    EagleTypeType *ett = ett_pointer_type(ett_struct_type(a->name));
+    EagleComplexType *ett = ett_pointer_type(ett_struct_type(a->name));
 
     LLVMBasicBlockRef entry = LLVMAppendBasicBlockInContext(utl_get_current_context(), func, "entry");
     LLVMPositionBuilderAtEnd(cb->builder, entry);
@@ -377,7 +377,7 @@ void ac_make_class_constructor(AST *ast, CompilerBundle *cb, ac_class_helper *h)
     int i;
     for(i = 0; i < types->count; i++)
     {
-        EagleTypeType *t = arr_get(types, i);
+        EagleComplexType *t = arr_get(types, i);
         if(ET_IS_COUNTED(t) || ET_IS_WEAK(t))
         {
             LLVMValueRef gep = LLVMBuildStructGEP(cb->builder, strct, i + 1, "");
@@ -410,12 +410,12 @@ void ac_make_class_destructor(AST *ast, CompilerBundle *cb)
     LLVMPositionBuilderAtEnd(cb->builder, entry);
 
     EaglePointerType *ett = (EaglePointerType *)ett_pointer_type(ett_struct_type(a->name));
-    LLVMValueRef pos = LLVMBuildAlloca(cb->builder, ett_llvm_type((EagleTypeType *)ett), "");
+    LLVMValueRef pos = LLVMBuildAlloca(cb->builder, ett_llvm_type((EagleComplexType *)ett), "");
 
     if(a->destructdecl)
     {
         ett->counted = 1;
-        LLVMValueRef me = LLVMBuildBitCast(cb->builder, LLVMGetParam(func, 0), ett_llvm_type((EagleTypeType *)ett), "");
+        LLVMValueRef me = LLVMBuildBitCast(cb->builder, LLVMGetParam(func, 0), ett_llvm_type((EagleComplexType *)ett), "");
         ett->counted = 0;
         char *destruct_name = ac_gen_method_name(a->name, (char *)"__destruct__");
         LLVMBuildCall(cb->builder, LLVMGetNamedFunction(cb->module, destruct_name), &me, 1, "");
@@ -430,13 +430,13 @@ void ac_make_class_destructor(AST *ast, CompilerBundle *cb)
     LLVMPositionBuilderAtEnd(cb->builder, ifBB);
 
     ett->counted = 1;
-    LLVMValueRef cast = LLVMBuildBitCast(cb->builder, LLVMGetParam(func, 0), ett_llvm_type((EagleTypeType *)ett), "");
+    LLVMValueRef cast = LLVMBuildBitCast(cb->builder, LLVMGetParam(func, 0), ett_llvm_type((EagleComplexType *)ett), "");
     LLVMBuildStore(cb->builder, LLVMBuildStructGEP(cb->builder, cast, 5, ""), pos);
     LLVMBuildBr(cb->builder, mergeBB);
 
     ett->counted = 0;
     LLVMPositionBuilderAtEnd(cb->builder, elseBB);
-    cast = LLVMBuildBitCast(cb->builder, LLVMGetParam(func, 0), ett_llvm_type((EagleTypeType *)ett), "");
+    cast = LLVMBuildBitCast(cb->builder, LLVMGetParam(func, 0), ett_llvm_type((EagleComplexType *)ett), "");
     LLVMBuildStore(cb->builder, cast, pos);
     LLVMBuildBr(cb->builder, mergeBB);
 
@@ -447,7 +447,7 @@ void ac_make_class_destructor(AST *ast, CompilerBundle *cb)
     int i;
     for(i = 0; i < types->count; i++)
     {
-        EagleTypeType *t = arr_get(types, i);
+        EagleComplexType *t = arr_get(types, i);
         if(ET_IS_COUNTED(t))
         {
             LLVMValueRef gep = LLVMBuildStructGEP(cb->builder, pos, i + 1, "");

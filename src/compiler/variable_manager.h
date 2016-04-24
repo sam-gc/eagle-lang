@@ -16,12 +16,12 @@
 #include "core/types.h"
 #include "compiler/ast.h"
 
-typedef void(*LostScopeCallback)(LLVMValueRef, EagleTypeType *, void *);
+typedef void(*LostScopeCallback)(LLVMValueRef, EagleComplexType *, void *);
 typedef void(*DefermentCallback)(AST *, void *);
 
 typedef struct {
     LLVMValueRef value;
-    EagleTypeType *type;
+    EagleComplexType *type;
     LostScopeCallback scopeCallback;
     void *scopeData;
 
@@ -65,8 +65,8 @@ VarScopeStack vs_make();
 void vs_free(VarScopeStack *vs);
 VarBundle *vs_get(VarScopeStack *vs, char *ident);
 VarBundle *vs_get_from_module(VarScopeStack *vs, char *ident, char *mod_name);
-VarBundle *vs_put(VarScopeStack *vs, char *ident, LLVMValueRef val, EagleTypeType *type, int lineno);
-VarBundle *vs_put_in_module(VarScopeStack *vs, char *ident, char *module, LLVMValueRef val, EagleTypeType *type);
+VarBundle *vs_put(VarScopeStack *vs, char *ident, LLVMValueRef val, EagleComplexType *type, int lineno);
+VarBundle *vs_put_in_module(VarScopeStack *vs, char *ident, char *module, LLVMValueRef val, EagleComplexType *type);
 void vs_push_closure(VarScopeStack *vs, ClosedCallback cb, void *data);
 void vs_push(VarScopeStack *vs);
 void vs_pop(VarScopeStack *vs);

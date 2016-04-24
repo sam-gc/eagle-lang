@@ -12,11 +12,11 @@
 LLVMValueRef ac_compile_value(AST *ast, CompilerBundle *cb);
 LLVMValueRef ac_compile_identifier(AST *ast, CompilerBundle *cb);
 LLVMValueRef ac_compile_var_decl(AST *ast, CompilerBundle *cb);
-LLVMValueRef ac_compile_var_decl_ext(EagleTypeType *type, char *ident, CompilerBundle *cb, int noSetNil);
+LLVMValueRef ac_compile_var_decl_ext(EagleComplexType *type, char *ident, CompilerBundle *cb, int noSetNil);
 LLVMValueRef ac_compile_struct_member(AST *ast, CompilerBundle *cb, int keepPointer);
 LLVMValueRef ac_compile_type_lookup(AST *ast, CompilerBundle *cb);
 LLVMValueRef ac_compile_malloc_counted_raw(LLVMTypeRef rt, LLVMTypeRef *out, CompilerBundle *cb);
-LLVMValueRef ac_compile_malloc_counted(EagleTypeType *type, EagleTypeType **res, LLVMValueRef ib, CompilerBundle *cb);
+LLVMValueRef ac_compile_malloc_counted(EagleComplexType *type, EagleComplexType **res, LLVMValueRef ib, CompilerBundle *cb);
 LLVMValueRef ac_compile_new_decl(AST *ast, CompilerBundle *cb);
 LLVMValueRef ac_compile_cast(AST *ast, CompilerBundle *cb);
 LLVMValueRef ac_compile_index(AST *ast, int keepPointer, CompilerBundle *cb);
@@ -33,10 +33,10 @@ LLVMValueRef ac_generic_unary(ASTUnary *a, LLVMValueRef val, CompilerBundle *cb)
  * CompilerBundle *cb       : The compiler bundle for the current module
  * LLVMValueRef pos         : The position to which to store
  * LLVMValueRef val         : The value to store
- * EagleTypeType *totype    : The type of the storage position
+ * EagleComplexType *totype    : The type of the storage position
  * int staticInitializer    : Are we dealing with a static initializer or a normal storage container?
  * int deStruct             : Are we dealing with a struct literal or an actual struct assignment? (Should we run constructors/destructors?)
  */
-void ac_safe_store(AST *expr, CompilerBundle *cb, LLVMValueRef pos, LLVMValueRef val, EagleTypeType *totype, int staticInitializer, int deStruct);
+void ac_safe_store(AST *expr, CompilerBundle *cb, LLVMValueRef pos, LLVMValueRef val, EagleComplexType *totype, int staticInitializer, int deStruct);
 
 #endif

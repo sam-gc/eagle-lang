@@ -258,7 +258,7 @@ void ac_add_global_variable_declarations(AST *ast, CompilerBundle *cb)
     ASTVarDecl *a = (ASTVarDecl *)ast;
     ASTTypeDecl *t = (ASTTypeDecl *)a->atype;
 
-    EagleTypeType *et = t->etype;
+    EagleComplexType *et = t->etype;
 
     LLVMValueRef glob = LLVMAddGlobal(cb->module, ett_llvm_type(et), a->ident); 
 
@@ -266,7 +266,7 @@ void ac_add_global_variable_declarations(AST *ast, CompilerBundle *cb)
     if(a->staticInit)
     {
         init = ac_dispatch_constant(a->staticInit, cb);
-        EagleTypeType *f = a->staticInit->resultantType;
+        EagleComplexType *f = a->staticInit->resultantType;
         if(!ett_are_same(f, et))
         {
             init = ac_convert_const(init, et, f);
@@ -304,7 +304,7 @@ void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
     ct = i;
 
     LLVMTypeRef param_types[ct];
-    EagleTypeType *eparam_types[ct];
+    EagleComplexType *eparam_types[ct];
     for(i = 0, p = a->params; p; p = p->next, i++)
     {
         ASTTypeDecl *type = (ASTTypeDecl *)((ASTVarDecl *)p)->atype;
@@ -320,7 +320,7 @@ void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
     if(strcmp(a->ident, "printf") == 0)
     {
         LLVMValueRef func = LLVMGetNamedFunction(cb->module, "printf");
-        EagleTypeType *ftype = ett_function_type(retType->etype, eparam_types, ct);
+        EagleComplexType *ftype = ett_function_type(retType->etype, eparam_types, ct);
         ((EagleFunctionType *)ftype)->variadic = 1;
         vs_put(cb->varScope, a->ident, func, ftype, -1);
         return;
@@ -344,7 +344,7 @@ void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
     if(retType->etype->type == ETStruct)
         die(ALN, "Returning struct by value not supported. (%s)\n", a->ident);
 
-    EagleTypeType *ftype = ett_function_type(retType->etype, eparam_types, ct);
+    EagleComplexType *ftype = ett_function_type(retType->etype, eparam_types, ct);
     ((EagleFunctionType *)ftype)->variadic = a->vararg;
 
     vs_put(cb->varScope, a->ident, func, ftype, -1);

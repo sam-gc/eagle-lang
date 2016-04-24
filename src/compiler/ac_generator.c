@@ -86,7 +86,7 @@ LLVMValueRef ac_compile_generator_init(AST *ast, CompilerBundle *cb, GeneratorBu
     LLVMBasicBlockRef entry = LLVMAppendBasicBlockInContext(utl_get_current_context(), func, "entry");
     LLVMPositionBuilderAtEnd(cb->builder, entry);
 
-    EagleTypeType **eparam_types = gb->eparam_types;
+    EagleComplexType **eparam_types = gb->eparam_types;
 
     cb->currentFunctionEntry = entry;
     cb->currentFunction = func;
@@ -132,7 +132,7 @@ LLVMValueRef ac_compile_generator_init(AST *ast, CompilerBundle *cb, GeneratorBu
         AST *p = a->params;
         for(i = 0; p; p = p->next, i++)
         {
-            EagleTypeType *ty = eparam_types[i];
+            EagleComplexType *ty = eparam_types[i];
             // LLVMValueRef pos = ac_compile_var_decl(p, cb);
             LLVMValueRef pos = LLVMBuildStructGEP(cb->builder, ctx, (int)(uintptr_t)hst_get(gb->params, (void *)(uintptr_t)(i + 1), ahhd, ahed), "");
 
@@ -180,7 +180,7 @@ void ac_compile_generator_code(AST *ast, CompilerBundle *cb)//, LLVMValueRef fun
 
     int ct = i;
 
-    EagleTypeType *eparam_types[ct];
+    EagleComplexType *eparam_types[ct];
     for(i = 0, p = a->params; i < ct; p = p->next, i++)
     {
         ASTTypeDecl *type = (ASTTypeDecl *)((ASTVarDecl *)p)->atype;
@@ -205,7 +205,7 @@ void ac_compile_generator_code(AST *ast, CompilerBundle *cb)//, LLVMValueRef fun
         AST *p = a->params;
         for(i = 0; p; p = p->next, i++)
         {
-            // EagleTypeType *ty = eparam_types[i];
+            // EagleComplexType *ty = eparam_types[i];
             ((ASTVarDecl *)p)->noSetNil = 1;
             LLVMValueRef pos = ac_compile_var_decl(p, cb);
 
@@ -274,7 +274,7 @@ void ac_compile_generator_code(AST *ast, CompilerBundle *cb)//, LLVMValueRef fun
 
     cb->currentFunctionEntry = NULL;
 
-    // EagleTypeType *types[] = {ett_pointer_type(ett_base_type(ETInt8)), ett_pointer_type(ett_base_type(ETInt32))};
+    // EagleComplexType *types[] = {ett_pointer_type(ett_base_type(ETInt8)), ett_pointer_type(ett_base_type(ETInt32))};
     // vs_put(cb->varScope, "__gen_test_code", func, ett_function_type(ett_base_type(ETInt1), types, 2));
 }
 
@@ -399,7 +399,7 @@ void ac_add_gen_declaration(AST *ast, CompilerBundle *cb)
     ct = i;
 
     LLVMTypeRef param_types[ct];
-    EagleTypeType *eparam_types[ct];
+    EagleComplexType *eparam_types[ct];
     for(i = 0, p = a->params; p; p = p->next, i++)
     {
         ASTTypeDecl *type = (ASTTypeDecl *)((ASTVarDecl *)p)->atype;
@@ -413,7 +413,7 @@ void ac_add_gen_declaration(AST *ast, CompilerBundle *cb)
 
     ASTTypeDecl *genType = (ASTTypeDecl *)a->retType;
 
-    EagleTypeType *ty = ett_pointer_type(ett_gen_type(genType->etype));
+    EagleComplexType *ty = ett_pointer_type(ett_gen_type(genType->etype));
     ((EaglePointerType *)ty)->counted = 1;
 
     LLVMTypeRef func_type = LLVMFunctionType(ett_llvm_type(ty), param_types, ct, a->vararg);

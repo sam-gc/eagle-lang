@@ -229,7 +229,7 @@ LLVMValueRef ac_compile_closure(AST *ast, CompilerBundle *cb)
     for(i = 0; p; p = p->next, i++);
 
     int ct = i + 1;
-    EagleTypeType *eparam_types[ct];
+    EagleComplexType *eparam_types[ct];
     LLVMTypeRef param_types[ct];
     for(i = 1, p = a->params; i < ct; p = p->next, i++)
     {
@@ -242,7 +242,7 @@ LLVMValueRef ac_compile_closure(AST *ast, CompilerBundle *cb)
 
     ASTTypeDecl *retType = (ASTTypeDecl *)a->retType;
 
-    EagleTypeType *ultimateEType = ett_function_type(retType->etype, eparam_types + 1, ct - 1);
+    EagleComplexType *ultimateEType = ett_function_type(retType->etype, eparam_types + 1, ct - 1);
 
     LLVMTypeRef funcType = LLVMFunctionType(ett_llvm_type(retType->etype), param_types, ct, 0);
 
@@ -272,7 +272,7 @@ LLVMValueRef ac_compile_closure(AST *ast, CompilerBundle *cb)
         AST *p = a->params;
         for(i = 1; p; p = p->next, i++)
         {
-            EagleTypeType *ty = eparam_types[i];
+            EagleComplexType *ty = eparam_types[i];
             LLVMValueRef pos = ac_compile_var_decl(p, cb);
             LLVMBuildStore(cb->builder, LLVMGetParam(func, i), pos);
             if(ET_IS_COUNTED(ty))
@@ -283,7 +283,7 @@ LLVMValueRef ac_compile_closure(AST *ast, CompilerBundle *cb)
     }
 
     ((EagleFunctionType *)ultimateEType)->closure = CLOSURE_RECURSE;
-    EagleTypeType *penultEType = ultimateEType;
+    EagleComplexType *penultEType = ultimateEType;
     LLVMValueRef pos = LLVMBuildAlloca(cb->builder, ett_llvm_type(penultEType), "recur");
 
     LLVMValueRef posa = LLVMBuildStructGEP(cb->builder, pos, 0, "");
@@ -355,7 +355,7 @@ void ac_compile_function_ex(AST *ast, CompilerBundle *cb, LLVMValueRef func, Eag
 
     int ct = i;
 
-    EagleTypeType *eparam_types[ct];
+    EagleComplexType *eparam_types[ct];
     for(i = 0, p = a->params; i < ct; p = p->next, i++)
     {
         ASTTypeDecl *type = (ASTTypeDecl *)((ASTVarDecl *)p)->atype;
@@ -382,7 +382,7 @@ void ac_compile_function_ex(AST *ast, CompilerBundle *cb, LLVMValueRef func, Eag
         AST *p = a->params;
         for(i = 0; p; p = p->next, i++)
         {
-            EagleTypeType *ty = eparam_types[i];
+            EagleComplexType *ty = eparam_types[i];
             LLVMValueRef pos = ac_compile_var_decl(p, cb);
             LLVMBuildStore(cb->builder, LLVMGetParam(func, i), pos);
 

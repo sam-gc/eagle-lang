@@ -21,7 +21,7 @@ typedef struct {
     LLVMTypeRef contextType;
     LLVMTypeRef countedContextType;
 
-    EagleTypeType **eparam_types;
+    EagleComplexType **eparam_types;
     int epct;
 
     LLVMBasicBlockRef last_block;

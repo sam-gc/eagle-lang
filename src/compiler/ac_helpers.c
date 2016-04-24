@@ -31,7 +31,7 @@ LLVMValueRef ac_make_floating_string(CompilerBundle *cb, const char *text, const
     return str;
 }
 
-LLVMValueRef ac_try_view_conversion(CompilerBundle *cb, LLVMValueRef val, EagleTypeType *from, EagleTypeType *to)
+LLVMValueRef ac_try_view_conversion(CompilerBundle *cb, LLVMValueRef val, EagleComplexType *from, EagleComplexType *to)
 {
     EaglePointerType *pt = (EaglePointerType *)from;
     if(pt->to->type != ETStruct && pt->to->type != ETClass)
@@ -60,7 +60,7 @@ LLVMValueRef ac_try_view_conversion(CompilerBundle *cb, LLVMValueRef val, EagleT
     return call;
 }
 
-LLVMValueRef ac_build_conversion(CompilerBundle *cb, LLVMValueRef val, EagleTypeType *from, EagleTypeType *to, int try_view, int lineno)
+LLVMValueRef ac_build_conversion(CompilerBundle *cb, LLVMValueRef val, EagleComplexType *from, EagleComplexType *to, int try_view, int lineno)
 {
     LLVMBuilderRef builder = cb->builder;
     switch(from->type)
@@ -177,7 +177,7 @@ LLVMValueRef ac_build_conversion(CompilerBundle *cb, LLVMValueRef val, EagleType
     return NULL;
 }
 
-LLVMValueRef ac_make_add(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type, int lineno)
+LLVMValueRef ac_make_add(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleBasicType type, int lineno)
 {
     switch(type)
     {
@@ -199,7 +199,7 @@ LLVMValueRef ac_make_add(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
     }
 }
 
-LLVMValueRef ac_make_sub(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type, int lineno)
+LLVMValueRef ac_make_sub(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleBasicType type, int lineno)
 {
     switch(type)
     {
@@ -221,7 +221,7 @@ LLVMValueRef ac_make_sub(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
     }
 }
 
-LLVMValueRef ac_make_mul(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type, int lineno)
+LLVMValueRef ac_make_mul(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleBasicType type, int lineno)
 {
     switch(type)
     {
@@ -243,7 +243,7 @@ LLVMValueRef ac_make_mul(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
     }
 }
 
-LLVMValueRef ac_make_div(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type, int lineno)
+LLVMValueRef ac_make_div(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleBasicType type, int lineno)
 {
     switch(type)
     {
@@ -266,7 +266,7 @@ LLVMValueRef ac_make_div(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
     }
 }
 
-LLVMValueRef ac_make_mod(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type, int lineno)
+LLVMValueRef ac_make_mod(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleBasicType type, int lineno)
 {
     switch(type)
     {
@@ -289,7 +289,7 @@ LLVMValueRef ac_make_mod(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
     }
 }
 
-LLVMValueRef ac_make_bitor(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type, int lineno)
+LLVMValueRef ac_make_bitor(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleBasicType type, int lineno)
 {
     switch(type)
     {
@@ -312,7 +312,7 @@ LLVMValueRef ac_make_bitor(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef
     }
 }
 
-LLVMValueRef ac_make_bitand(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type, int lineno)
+LLVMValueRef ac_make_bitand(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleBasicType type, int lineno)
 {
     switch(type)
     {
@@ -335,7 +335,7 @@ LLVMValueRef ac_make_bitand(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRe
     }
 }
 
-LLVMValueRef ac_make_bitxor(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type, int lineno)
+LLVMValueRef ac_make_bitxor(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleBasicType type, int lineno)
 {
     switch(type)
     {
@@ -358,7 +358,7 @@ LLVMValueRef ac_make_bitxor(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRe
     }
 }
 
-LLVMValueRef ac_make_bitshift(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type, int lineno, int dir)
+LLVMValueRef ac_make_bitshift(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleBasicType type, int lineno, int dir)
 {
     LLVMValueRef (*shift_func)(LLVMBuilderRef, LLVMValueRef, LLVMValueRef, const char*);
 
@@ -388,7 +388,7 @@ LLVMValueRef ac_make_bitshift(LLVMValueRef left, LLVMValueRef right, LLVMBuilder
     }
 }
 
-LLVMValueRef ac_make_neg(LLVMValueRef val, LLVMBuilderRef builder, EagleType type, int lineno)
+LLVMValueRef ac_make_neg(LLVMValueRef val, LLVMBuilderRef builder, EagleBasicType type, int lineno)
 {
     switch(type)
     {
@@ -410,7 +410,7 @@ LLVMValueRef ac_make_neg(LLVMValueRef val, LLVMBuilderRef builder, EagleType typ
     }
 }
 
-LLVMValueRef ac_make_bitnot(LLVMValueRef val, LLVMBuilderRef builder, EagleType type, int lineno)
+LLVMValueRef ac_make_bitnot(LLVMValueRef val, LLVMBuilderRef builder, EagleBasicType type, int lineno)
 {
     switch(type)
     {
@@ -433,7 +433,7 @@ LLVMValueRef ac_make_bitnot(LLVMValueRef val, LLVMBuilderRef builder, EagleType 
     }
 }
 
-LLVMValueRef ac_make_comp(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleType type, char comp, int lineno)
+LLVMValueRef ac_make_comp(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef builder, EagleBasicType type, char comp, int lineno)
 {
     LLVMIntPredicate ip;
     LLVMRealPredicate rp;

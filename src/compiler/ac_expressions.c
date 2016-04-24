@@ -40,7 +40,7 @@ LLVMValueRef ac_compile_value(AST *ast, CompilerBundle *cb)
     }
 }
 
-LLVMValueRef ac_lookup_enum(EagleTypeType *et, char *item)
+LLVMValueRef ac_lookup_enum(EagleComplexType *et, char *item)
 {
     int valid;
     long enum_val = ty_lookup_enum_item(et, item, &valid);
@@ -104,7 +104,7 @@ LLVMValueRef ac_compile_identifier(AST *ast, CompilerBundle *cb)
     return LLVMBuildLoad(cb->builder, b->value, "loadtmp");
 }
 
-LLVMValueRef ac_compile_var_decl_ext(EagleTypeType *type, char *ident, CompilerBundle *cb, int noSetNil)
+LLVMValueRef ac_compile_var_decl_ext(EagleComplexType *type, char *ident, CompilerBundle *cb, int noSetNil)
 {
 
     LLVMBasicBlockRef curblock = LLVMGetInsertBlock(cb->builder);
@@ -164,7 +164,7 @@ LLVMValueRef ac_compile_var_decl(AST *ast, CompilerBundle *cb)
 
     if(a->linkage == VLStatic)
     {
-        EagleTypeType *et = type->etype;
+        EagleComplexType *et = type->etype;
 
         LLVMValueRef glob = LLVMAddGlobal(cb->module, ett_llvm_type(et), a->ident); 
         LLVMValueRef init = ett_default_value(et);
@@ -189,7 +189,7 @@ LLVMValueRef ac_compile_struct_member(AST *ast, CompilerBundle *cb, int keepPoin
     LLVMValueRef left = ac_dispatch_expression(a->left, cb);
 
 
-    EagleTypeType *ty = a->left->resultantType;
+    EagleComplexType *ty = a->left->resultantType;
 
     if(ty->type != ETPointer && ty->type != ETStruct && ty->type != ETClass && ty->type != ETInterface)
         die(ALN, "Attempting to access member of non-struct type (%s).", a->ident);
@@ -216,7 +216,7 @@ LLVMValueRef ac_compile_struct_member(AST *ast, CompilerBundle *cb, int keepPoin
 
         a->leftCompiled = lcw; // a->left->type == AUNARY ? ((ASTUnary *)a->left)->savedWrapped : left;
         a->leftCompiled = LLVMBuildBitCast(cb->builder, a->leftCompiled, LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), "");
-        EagleTypeType *ut = ty_method_lookup(interface, a->ident);
+        EagleComplexType *ut = ty_method_lookup(interface, a->ident);
         LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_lookup_method");
 
         LLVMValueRef params[] = {left, //LLVMBuildStructGEP(cb->builder, left, 0, "vtable"),
@@ -231,7 +231,7 @@ LLVMValueRef ac_compile_struct_member(AST *ast, CompilerBundle *cb, int keepPoin
     }
 
     // Only save the value of the instance if we have a class and a method.
-    EagleTypeType *functionType = NULL;
+    EagleComplexType *functionType = NULL;
     if((ty->type == ETClass || ty->type == ETStruct) && (functionType = ty_method_lookup(((EagleStructType *)ty)->name, a->ident)))
     {
         a->leftCompiled = lcw; // a->left->type == AUNARY ? ((ASTUnary *)a->left)->savedWrapped : left;
@@ -245,7 +245,7 @@ LLVMValueRef ac_compile_struct_member(AST *ast, CompilerBundle *cb, int keepPoin
         //a->leftCompiled = a->left->type == AUNARY ? ((ASTUnary *)a->left)->savedWrapped : left;
 
     int index;
-    EagleTypeType *type;
+    EagleComplexType *type;
     ty_struct_member_index(ty, a->ident, &index, &type);
 
     if(index < -1)
@@ -268,7 +268,7 @@ LLVMValueRef ac_compile_type_lookup(AST *ast, CompilerBundle *cb)
     if(!ty_is_enum(a->name))
         die(ALN, "Trying to lookup item of non-enum type %s.", a->name);
 
-    EagleTypeType *et = ett_enum_type(a->name);
+    EagleComplexType *et = ett_enum_type(a->name);
     int valid;
     long enum_val = ty_lookup_enum_item(et, a->item, &valid);
 
@@ -305,7 +305,7 @@ LLVMValueRef ac_compile_malloc_counted_raw(LLVMTypeRef rt, LLVMTypeRef *out, Com
     return mal;
 }
 
-LLVMValueRef ac_compile_malloc_counted(EagleTypeType *type, EagleTypeType **res, LLVMValueRef ib, CompilerBundle *cb)
+LLVMValueRef ac_compile_malloc_counted(EagleComplexType *type, EagleComplexType **res, LLVMValueRef ib, CompilerBundle *cb)
 {
     LLVMTypeRef ptmp[2];
     ptmp[0] = LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0);
@@ -332,7 +332,7 @@ LLVMValueRef ac_compile_malloc_counted(EagleTypeType *type, EagleTypeType **res,
 
     EaglePointerType *pt = (EaglePointerType *)ett_pointer_type(type);
     pt->counted = 1;
-    EagleTypeType *resultantType = (EagleTypeType *)pt;
+    EagleComplexType *resultantType = (EagleComplexType *)pt;
     if(res)
         *res = resultantType;
 
@@ -372,7 +372,7 @@ LLVMValueRef ac_compile_new_decl(AST *ast, CompilerBundle *cb)
     LLVMValueRef val = ac_compile_malloc_counted(type->etype, &ast->resultantType, NULL, cb);
     hst_put(&cb->transients, ast, val, ahhd, ahed);
 
-    EagleTypeType *to = ((EaglePointerType *)ast->resultantType)->to;
+    EagleComplexType *to = ((EaglePointerType *)ast->resultantType)->to;
     if(a->right && to->type != ETClass)
     {
         // Do we have a structure literal?
@@ -417,7 +417,7 @@ LLVMValueRef ac_compile_new_decl(AST *ast, CompilerBundle *cb)
         for(p = a->right, i = 1; p; p = p->next, i++)
         {
             LLVMValueRef val = ac_dispatch_expression(p, cb);
-            EagleTypeType *rt = p->resultantType;
+            EagleComplexType *rt = p->resultantType;
 
             if(i < ett->pct)
             {
@@ -447,8 +447,8 @@ LLVMValueRef ac_compile_cast(AST *ast, CompilerBundle *cb)
 
     LLVMValueRef val = ac_dispatch_expression(a->val, cb);
 
-    EagleTypeType *to = ty->etype;
-    EagleTypeType *from = a->val->resultantType;
+    EagleComplexType *to = ty->etype;
+    EagleComplexType *from = a->val->resultantType;
 
     ast->resultantType = to;
 
@@ -495,8 +495,8 @@ LLVMValueRef ac_compile_index(AST *ast, int keepPointer, CompilerBundle *cb)
     LLVMValueRef l = ac_dispatch_expression(left, cb);
     LLVMValueRef r = ac_dispatch_expression(right, cb);
 
-    EagleTypeType *lt = left->resultantType;
-    EagleTypeType *rt = right->resultantType;
+    EagleComplexType *lt = left->resultantType;
+    EagleComplexType *rt = right->resultantType;
 
     if(lt->type != ETPointer && lt->type != ETArray)
         die(LN(left), "Only pointer types may be indexed.");
@@ -698,7 +698,7 @@ LLVMValueRef ac_generic_unary(ASTUnary *a, LLVMValueRef val, CompilerBundle *cb)
 
 LLVMValueRef
 ac_generic_binary(ASTBinary *a, LLVMValueRef l, LLVMValueRef r,
-                  char save_left, EagleTypeType *fromtype, EagleTypeType *totype, CompilerBundle *cb)
+                  char save_left, EagleComplexType *fromtype, EagleComplexType *totype, CompilerBundle *cb)
 {
     if(
     (!save_left && (fromtype->type == ETPointer || totype->type == ETPointer)) ||
@@ -716,8 +716,8 @@ ac_generic_binary(ASTBinary *a, LLVMValueRef l, LLVMValueRef r,
             return LLVMBuildICmp(cb->builder, p, l, r, "");
         }
 
-        EagleTypeType *lt = totype;
-        EagleTypeType *rt = fromtype;
+        EagleComplexType *lt = totype;
+        EagleComplexType *rt = fromtype;
         if(a->op != '+' && a->op != '-' && a->op != 'e' && a->op !='P' && a->op != 'n')
             die(a->lineno, "Operation '%c' not valid for pointer types.", a->op);
         if(lt->type == ETPointer && !ET_IS_INT(rt->type))
@@ -739,10 +739,10 @@ ac_generic_binary(ASTBinary *a, LLVMValueRef l, LLVMValueRef r,
         EaglePointerType *pt = lt->type == ETPointer ?
             (EaglePointerType *)lt : (EaglePointerType *)rt;
 
-        a->resultantType = (EagleTypeType *)pt;
+        a->resultantType = (EagleComplexType *)pt;
 
         LLVMValueRef gep = LLVMBuildInBoundsGEP(cb->builder, ptr, &indexer, 1, "arith");
-        return LLVMBuildBitCast(cb->builder, gep, ett_llvm_type((EagleTypeType *)pt), "cast");
+        return LLVMBuildBitCast(cb->builder, gep, ett_llvm_type((EagleComplexType *)pt), "cast");
     }
 
     switch(a->op)
@@ -811,7 +811,7 @@ LLVMValueRef ac_compile_binary(AST *ast, CompilerBundle *cb)
     if(a->left->resultantType->type == ETPointer || a->right->resultantType->type == ETPointer)
         return ac_generic_binary(a, l, r, 0, a->right->resultantType, a->left->resultantType, cb);
 
-    EagleType promo = et_promotion(a->left->resultantType->type, a->right->resultantType->type);
+    EagleBasicType promo = et_promotion(a->left->resultantType->type, a->right->resultantType->type);
     a->resultantType = ett_base_type(promo);
 
     if(a->left->resultantType->type != promo)
@@ -935,7 +935,7 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
                         {
                             EaglePointerType *pt = (EaglePointerType *)a->val->resultantType;
                             EaglePointerType *bytet = (EaglePointerType *)ett_pointer_type(ett_base_type(ETInt8));
-                            LLVMValueRef cv = ac_try_view_conversion(cb, v, (EagleTypeType *)pt, (EagleTypeType *)bytet);
+                            LLVMValueRef cv = ac_try_view_conversion(cb, v, (EagleComplexType *)pt, (EagleComplexType *)bytet);
 
                             // We have a successful view conversion
                             if(cv)
@@ -1054,7 +1054,7 @@ LLVMValueRef ac_compile_generator_call(AST *ast, LLVMValueRef gen, CompilerBundl
     LLVMValueRef func = LLVMBuildLoad(cb->builder, clo, "");
 
     EagleGenType *ett = (EagleGenType *)((EaglePointerType *)a->callee->resultantType)->to;
-    EagleTypeType *ypt = ett_pointer_type(ett->ytype);
+    EagleComplexType *ypt = ett_pointer_type(ett->ytype);
 
     LLVMTypeRef callee_types[] = {LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), ett_llvm_type(ypt)};
     func = LLVMBuildBitCast(cb->builder, func, LLVMPointerType(LLVMFunctionType(LLVMInt1TypeInContext(utl_get_current_context()), callee_types, 2, 0), 0), "");
@@ -1062,7 +1062,7 @@ LLVMValueRef ac_compile_generator_call(AST *ast, LLVMValueRef gen, CompilerBundl
     AST *p = a->params;
 
     LLVMValueRef val = ac_dispatch_expression(p, cb);
-    EagleTypeType *rt = p->resultantType;
+    EagleComplexType *rt = p->resultantType;
 
     if(!ett_are_same(rt, ett_pointer_type(ett->ytype)))
         val = ac_build_conversion(cb, val, rt, ett_pointer_type(ett->ytype), STRICT_CONVERSION, ALN);
@@ -1105,7 +1105,7 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
         asmg->leftCompiled = NULL;
     }
 
-    EagleTypeType *orig = a->callee->resultantType;
+    EagleComplexType *orig = a->callee->resultantType;
 
     EagleFunctionType *ett;
     if(orig->type == ETFunction)
@@ -1136,7 +1136,7 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
             cb->enum_lookup = ett->params[i];
 
         LLVMValueRef val = ac_dispatch_expression(p, cb);
-        EagleTypeType *rt = p->resultantType;
+        EagleComplexType *rt = p->resultantType;
 
         cb->enum_lookup = NULL;
 
@@ -1168,7 +1168,7 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
 
         func = LLVMBuildStructGEP(cb->builder, func, 0, "");
         func = LLVMBuildLoad(cb->builder, func, "");
-        func = LLVMBuildBitCast(cb->builder, func, LLVMPointerType(ett_closure_type((EagleTypeType *)ett), 0), "");
+        func = LLVMBuildBitCast(cb->builder, func, LLVMPointerType(ett_closure_type((EagleComplexType *)ett), 0), "");
 
         out = LLVMBuildCall(cb->builder, func, args, ct + 1, "");
     }
@@ -1201,7 +1201,7 @@ void ac_set_static_initializer(int lineno, LLVMValueRef glob, LLVMValueRef init)
 LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update)
 {
     ASTBinary *a = (ASTBinary *)ast;
-    EagleTypeType *totype;
+    EagleComplexType *totype;
     LLVMValueRef pos;
 
     VarBundle *storageBundle = NULL;
@@ -1309,7 +1309,7 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update)
         cb->enum_lookup = totype;
     LLVMValueRef r = ac_dispatch_expression(a->right, cb);
     cb->enum_lookup = NULL;
-    EagleTypeType *fromtype = a->right->resultantType;
+    EagleComplexType *fromtype = a->right->resultantType;
 
     // When pulling structure values out of arrays, we save the pointer so that the syntax
     // array[a][b].member = 5 works. But if we want to actually store that struct member
@@ -1353,7 +1353,7 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update)
     return LLVMBuildLoad(cb->builder, pos, "loadtmp");
 }
 
-void ac_safe_store(AST *expr, CompilerBundle *cb, LLVMValueRef pos, LLVMValueRef val, EagleTypeType *totype, int staticInitializer, int deStruct)
+void ac_safe_store(AST *expr, CompilerBundle *cb, LLVMValueRef pos, LLVMValueRef val, EagleComplexType *totype, int staticInitializer, int deStruct)
 {
     int transient = 0;
     if(ET_IS_COUNTED(totype))

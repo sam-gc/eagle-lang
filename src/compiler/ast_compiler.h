@@ -50,7 +50,7 @@ typedef struct {
 
     int compilingMethod;
     int inDeferment;
-    EagleTypeType *enum_lookup;
+    EagleComplexType *enum_lookup;
 
     export_control *exports;
 } CompilerBundle;

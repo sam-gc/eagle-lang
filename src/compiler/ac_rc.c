@@ -8,19 +8,19 @@
 
 #include "ast_compiler.h"
 
-void ac_scope_leave_callback(LLVMValueRef pos, EagleTypeType *ty, void *data)
+void ac_scope_leave_callback(LLVMValueRef pos, EagleComplexType *ty, void *data)
 {
     CompilerBundle *cb = data;
     ac_decr_pointer(cb, &pos, ty);
 }
 
-void ac_scope_leave_array_callback(LLVMValueRef pos, EagleTypeType *ty, void *data)
+void ac_scope_leave_array_callback(LLVMValueRef pos, EagleComplexType *ty, void *data)
 {
     CompilerBundle *cb = data;
     ac_decr_in_array(cb, pos, ett_array_count(ty));
 }
 
-void ac_scope_leave_weak_callback(LLVMValueRef pos, EagleTypeType *ty, void *data)
+void ac_scope_leave_weak_callback(LLVMValueRef pos, EagleComplexType *ty, void *data)
 {
     CompilerBundle *cb = data;
     ac_remove_weak_pointer(cb, pos, ty);
@@ -47,7 +47,7 @@ void ac_decr_transients(void *key, void *val, void *data)
     ac_check_pointer(cb, &pos, ast->resultantType);
 }
 
-void ac_unwrap_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty, int keepptr)
+void ac_unwrap_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleComplexType *ty, int keepptr)
 {
     if(ty)
     {
@@ -63,7 +63,7 @@ void ac_unwrap_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty,
     *ptr = pos;
 }
 
-void ac_incr_val_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty)
+void ac_incr_val_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleComplexType *ty)
 {
     LLVMBuilderRef builder = cb->builder;
 
@@ -81,7 +81,7 @@ void ac_incr_val_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *t
     LLVMBuildCall(builder, func, &tptr, 1, "");
 }
 
-void ac_incr_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty)
+void ac_incr_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleComplexType *ty)
 {
     LLVMBuilderRef builder = cb->builder;
 
@@ -99,7 +99,7 @@ void ac_incr_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty)
     LLVMBuildCall(builder, func, &tptr, 1, "");
 }
 
-void ac_check_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty)
+void ac_check_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleComplexType *ty)
 {
     EaglePointerType *pt = (EaglePointerType *)ty;
     if(!pt->counted)
@@ -110,7 +110,7 @@ void ac_check_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty)
     LLVMBuildCall(cb->builder, func, &tptr, 1, "");
 }
 
-void ac_prepare_pointer(CompilerBundle *cb, LLVMValueRef ptr, EagleTypeType *ty)
+void ac_prepare_pointer(CompilerBundle *cb, LLVMValueRef ptr, EagleComplexType *ty)
 {
     if(ty && !ET_IS_COUNTED(ty))
         return;
@@ -120,7 +120,7 @@ void ac_prepare_pointer(CompilerBundle *cb, LLVMValueRef ptr, EagleTypeType *ty)
     LLVMBuildCall(cb->builder, func, &tptr, 1, "");
 }
 
-void ac_add_weak_pointer(CompilerBundle *cb, LLVMValueRef ptr, LLVMValueRef weak, EagleTypeType *ty)
+void ac_add_weak_pointer(CompilerBundle *cb, LLVMValueRef ptr, LLVMValueRef weak, EagleComplexType *ty)
 {
     if(!ET_IS_WEAK(ty))
         return;
@@ -132,7 +132,7 @@ void ac_add_weak_pointer(CompilerBundle *cb, LLVMValueRef ptr, LLVMValueRef weak
     LLVMBuildCall(cb->builder, func, vals, 2, "");
 }
 
-void ac_remove_weak_pointer(CompilerBundle *cb, LLVMValueRef weak, EagleTypeType *ty)
+void ac_remove_weak_pointer(CompilerBundle *cb, LLVMValueRef weak, EagleComplexType *ty)
 {
     if(!ET_IS_WEAK(ty))
         return;
@@ -142,7 +142,7 @@ void ac_remove_weak_pointer(CompilerBundle *cb, LLVMValueRef weak, EagleTypeType
     LLVMBuildCall(cb->builder, func, &val, 1, "");
 }
 
-void ac_decr_val_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty)
+void ac_decr_val_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleComplexType *ty)
 {
     LLVMBuilderRef builder = cb->builder;
     EaglePointerType *pt = (EaglePointerType *)ty;
@@ -159,7 +159,7 @@ void ac_decr_val_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *t
     LLVMBuildCall(builder, func, &tptr, 1, "");
 }
 
-void ac_decr_val_pointer_no_free(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty)
+void ac_decr_val_pointer_no_free(CompilerBundle *cb, LLVMValueRef *ptr, EagleComplexType *ty)
 {
     LLVMBuilderRef builder = cb->builder;
     EaglePointerType *pt = (EaglePointerType *)ty;
@@ -196,7 +196,7 @@ void ac_decr_in_array(CompilerBundle *cb, LLVMValueRef arr, int ct)
     LLVMBuildCall(builder, func, vals, 2, "");
 }
 
-void ac_decr_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleTypeType *ty)
+void ac_decr_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleComplexType *ty)
 {
     LLVMBuilderRef builder = cb->builder;
 

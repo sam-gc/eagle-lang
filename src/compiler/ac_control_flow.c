@@ -62,8 +62,8 @@ void ac_compile_return(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
 
         val = ac_dispatch_expression(reta->val, cb);
         cb->enum_lookup = NULL;
-        EagleTypeType *t = reta->val->resultantType;
-        EagleTypeType *o = cb->currentFunctionType->retType;
+        EagleComplexType *t = reta->val->resultantType;
+        EagleComplexType *o = cb->currentFunctionType->retType;
 
         if(!ett_are_same(t, o))
             val = ac_build_conversion(cb, val, t, o, LOOSE_CONVERSION, ALN);
@@ -111,8 +111,8 @@ void ac_compile_yield(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
 
     val = ac_dispatch_expression(ya->val, cb);
     cb->enum_lookup = NULL;
-    EagleTypeType *t = ya->val->resultantType;
-    EagleTypeType *o = cb->currentGenType->ytype;
+    EagleComplexType *t = ya->val->resultantType;
+    EagleComplexType *o = cb->currentGenType->ytype;
 
     if(!ett_are_same(t, o))
         val = ac_build_conversion(cb, val, t, o, LOOSE_CONVERSION, ya->val->lineno);
@@ -123,7 +123,7 @@ void ac_compile_yield(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
     }
 
     LLVMValueRef ctx = LLVMBuildBitCast(cb->builder, LLVMGetParam(cb->currentFunction, 0),
-        LLVMPointerType(ett_llvm_type((EagleTypeType *)cb->currentGenType), 0), "");
+        LLVMPointerType(ett_llvm_type((EagleComplexType *)cb->currentGenType), 0), "");
 
     LLVMBuildStore(cb->builder, val, LLVMGetParam(cb->currentFunction, 1));
 
@@ -135,7 +135,7 @@ void ac_compile_yield(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
     LLVMPositionBuilderAtEnd(cb->builder, nblock);
 }
 
-int ac_type_is_valid_for_switch(EagleTypeType *type)
+int ac_type_is_valid_for_switch(EagleComplexType *type)
 {
     switch(type->type)
     {
@@ -172,7 +172,7 @@ static LLVMValueRef ac_compile_case_label(AST *ast, CompilerBundle *cb)
 
     LLVMValueRef label = ac_dispatch_expression(cblock->targ, cb);
     
-    EagleTypeType *rt = cblock->targ->resultantType;
+    EagleComplexType *rt = cblock->targ->resultantType;
     if(!ac_type_is_valid_for_switch(rt))
         die(ALN, "Case branch not constant");
     if(!LLVMIsConstant(label))
@@ -213,7 +213,7 @@ void ac_compile_switch(AST *ast, CompilerBundle *cb)
     LLVMValueRef test = ac_dispatch_expression(a->test, cb);
     ac_flush_transients(cb);
 
-    EagleTypeType *test_type = a->test->resultantType;
+    EagleComplexType *test_type = a->test->resultantType;
     if(!ac_type_is_valid_for_switch(test_type))
         die(ALN, "Cannot switch over given type");
 
@@ -291,8 +291,8 @@ LLVMValueRef ac_compile_ternary(AST *ast, CompilerBundle *cb)
     LLVMPositionBuilderAtEnd(cb->builder, ifnoBB);
     LLVMValueRef valB = ac_dispatch_expression(tree_ifNo, cb);
 
-    EagleTypeType *ytype = tree_ifYes ? tree_ifYes->resultantType : a->test->resultantType;
-    EagleTypeType *ntype = tree_ifNo->resultantType;
+    EagleComplexType *ytype = tree_ifYes ? tree_ifYes->resultantType : a->test->resultantType;
+    EagleComplexType *ntype = tree_ifNo->resultantType;
 
     // If the types are not the same, we will try to run a conversion. The resultant
     // type is assumed to be the type of the _yes_ branch. As such, we will build any
@@ -373,7 +373,7 @@ void ac_compile_loop(AST *ast, CompilerBundle *cb)
     LLVMValueRef gen, rawGen;
     gen = rawGen = NULL;
     LLVMValueRef iterator = NULL;
-    EagleTypeType *ypt = NULL;
+    EagleComplexType *ypt = NULL;
 
     vs_push(cb->varScope);
     cb->currentLoopScope = cb->varScope->scope;
@@ -392,7 +392,7 @@ void ac_compile_loop(AST *ast, CompilerBundle *cb)
                 && ((EaglePointerType *)a->test->resultantType)->to->type != ETClass))
                 die(ALN, "Range-based for-loops only work with generators.");
 
-            EagleTypeType *setupt = ((EaglePointerType *)a->test->resultantType)->to;
+            EagleComplexType *setupt = ((EaglePointerType *)a->test->resultantType)->to;
             if(setupt->type == ETGenerator)
             {
                 EagleGenType *gt = (EagleGenType *)setupt;
@@ -402,8 +402,8 @@ void ac_compile_loop(AST *ast, CompilerBundle *cb)
             }
             else
             {
-                EagleTypeType *gt = ett_gen_type(a->setup->resultantType);
-                EagleTypeType *pt = ett_pointer_type(gt);
+                EagleComplexType *gt = ett_gen_type(a->setup->resultantType);
+                EagleComplexType *pt = ett_pointer_type(gt);
                 ((EaglePointerType *)pt)->counted = 1;
                 rawGen = gen = ac_try_view_conversion(cb, gen, a->test->resultantType, pt);
                 ypt = ett_pointer_type(a->setup->resultantType);
@@ -539,7 +539,7 @@ void ac_compile_if(AST *ast, CompilerBundle *cb, LLVMBasicBlockRef mergeBB)
 LLVMValueRef ac_compile_ntest(AST *res, LLVMValueRef val, CompilerBundle *cb)
 {
     LLVMValueRef cmp = NULL;
-    EagleTypeType *rt = res->resultantType;
+    EagleComplexType *rt = res->resultantType;
 
     if(ET_IS_LLVM_INT(rt->type))
         cmp = LLVMBuildICmp(cb->builder, LLVMIntEQ, val, LLVMConstInt(ett_llvm_type(rt), 0, 0), "cmp");
@@ -556,7 +556,7 @@ LLVMValueRef ac_compile_ntest(AST *res, LLVMValueRef val, CompilerBundle *cb)
 LLVMValueRef ac_compile_test(AST *res, LLVMValueRef val, CompilerBundle *cb)
 {
     LLVMValueRef cmp = NULL;
-    EagleTypeType *rt = res->resultantType;
+    EagleComplexType *rt = res->resultantType;
 
     if(ET_IS_LLVM_INT(rt->type))
         cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstInt(ett_llvm_type(rt), 0, 0), "cmp");

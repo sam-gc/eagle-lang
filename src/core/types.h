@@ -6,8 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#ifndef __Eagle__types__
-#define __Eagle__types__
+#ifndef TYPES_H
+#define TYPES_H
 
 #include <stdio.h>
 #include "llvm_headers.h"
@@ -59,30 +59,30 @@ typedef enum {
     ETClass,
     ETInterface,
     ETEnum
-} EagleType;
+} EagleBasicType;
 
 typedef struct {
-    EagleType type;
-} EagleTypeType;
+    EagleBasicType type;
+} EagleComplexType;
 
 typedef struct {
-    EagleType type;
-    EagleTypeType *to;
+    EagleBasicType type;
+    EagleComplexType *to;
     int counted;
     int weak;
     int closed;
 } EaglePointerType;
 
 typedef struct {
-    EagleType type;
-    EagleTypeType *of;
+    EagleBasicType type;
+    EagleComplexType *of;
     int ct;
 } EagleArrayType;
 
 typedef struct {
-    EagleType type;
-    EagleTypeType *retType;
-    EagleTypeType **params;
+    EagleBasicType type;
+    EagleComplexType *retType;
+    EagleComplexType **params;
     int pct;
     int variadic;
 
@@ -91,12 +91,12 @@ typedef struct {
 } EagleFunctionType;
 
 typedef struct {
-    EagleType type;
-    EagleTypeType *ytype;
+    EagleBasicType type;
+    EagleComplexType *ytype;
 } EagleGenType;
 
 typedef struct {
-    EagleType type;
+    EagleBasicType type;
     arraylist types;
     arraylist names;
     arraylist interfaces;
@@ -104,45 +104,45 @@ typedef struct {
 } EagleStructType;
 
 typedef struct {
-    EagleType type;
+    EagleBasicType type;
     arraylist names;
 } EagleInterfaceType;
 
 typedef struct {
-    EagleType type;
+    EagleBasicType type;
     char *name;
 } EagleEnumType;
 
-EagleTypeType *et_parse_string(char *text);
-EagleType et_promotion(EagleType left, EagleType right);
-EagleType et_eagle_type(LLVMTypeRef ty);
+EagleComplexType *et_parse_string(char *text);
+EagleBasicType et_promotion(EagleBasicType left, EagleBasicType right);
+EagleBasicType et_eagle_type(LLVMTypeRef ty);
 
-EagleTypeType *ett_base_type(EagleType type);
-EagleTypeType *ett_pointer_type(EagleTypeType *to);
-EagleTypeType *ett_array_type(EagleTypeType *of, int ct);
-EagleTypeType *ett_function_type(EagleTypeType *retVal, EagleTypeType **params, int pct);
-EagleTypeType *ett_gen_type(EagleTypeType *ytype);
-EagleTypeType *ett_struct_type(char *name);
-EagleTypeType *ett_class_type(char *name);
-EagleTypeType *ett_interface_type(char *name);
-EagleTypeType *ett_enum_type(char *name);
-void ett_composite_interface(EagleTypeType *ett, char *name);
+EagleComplexType *ett_base_type(EagleBasicType type);
+EagleComplexType *ett_pointer_type(EagleComplexType *to);
+EagleComplexType *ett_array_type(EagleComplexType *of, int ct);
+EagleComplexType *ett_function_type(EagleComplexType *retVal, EagleComplexType **params, int pct);
+EagleComplexType *ett_gen_type(EagleComplexType *ytype);
+EagleComplexType *ett_struct_type(char *name);
+EagleComplexType *ett_class_type(char *name);
+EagleComplexType *ett_interface_type(char *name);
+EagleComplexType *ett_enum_type(char *name);
+void ett_composite_interface(EagleComplexType *ett, char *name);
 
-LLVMTypeRef ett_closure_type(EagleTypeType *type);
-EagleType ett_get_base_type(EagleTypeType *type);
-EagleTypeType *ett_get_root_pointee(EagleTypeType *type);
-LLVMTypeRef ett_llvm_type(EagleTypeType *type);
-LLVMValueRef ett_default_value(EagleTypeType *type);
-int ett_are_same(EagleTypeType *left, EagleTypeType *right);
-int ett_pointer_depth(EagleTypeType *t);
-int ett_size_of_type(EagleTypeType *t);
-int ett_array_has_counted(EagleTypeType *t);
-int ett_array_count(EagleTypeType *t);
-char *ett_unique_type_name(EagleTypeType *t);
+LLVMTypeRef ett_closure_type(EagleComplexType *type);
+EagleBasicType ett_get_base_type(EagleComplexType *type);
+EagleComplexType *ett_get_root_pointee(EagleComplexType *type);
+LLVMTypeRef ett_llvm_type(EagleComplexType *type);
+LLVMValueRef ett_default_value(EagleComplexType *type);
+int ett_are_same(EagleComplexType *left, EagleComplexType *right);
+int ett_pointer_depth(EagleComplexType *t);
+int ett_size_of_type(EagleComplexType *t);
+int ett_array_has_counted(EagleComplexType *t);
+int ett_array_count(EagleComplexType *t);
+char *ett_unique_type_name(EagleComplexType *t);
 
 LLVMTypeRef ty_class_indirect();
 
-void ett_debug_print(EagleTypeType *t);
+void ett_debug_print(EagleComplexType *t);
 
 void ty_prepare();
 void ty_add_name(char *name);
@@ -156,27 +156,27 @@ void ty_register_interface(char *name);
 void ty_register_class(char *name);
 void ty_register_typedef(char *name);
 void ty_register_enum(char *name);
-void ty_add_init(char *name, EagleTypeType *ty);
-EagleTypeType *ty_get_init(char *name);
-void ty_add_method(char *name, char *method, EagleTypeType *ty);
-EagleTypeType *ty_method_lookup(char *name, char *method);
+void ty_add_init(char *name, EagleComplexType *ty);
+EagleComplexType *ty_get_init(char *name);
+void ty_add_method(char *name, char *method, EagleComplexType *ty);
+EagleComplexType *ty_method_lookup(char *name, char *method);
 void ty_add_struct_def(char *name, arraylist *names, arraylist *types);
-void ty_struct_member_index(EagleTypeType *ett, char *member, int *index, EagleTypeType **type);
-void ty_struct_get_members(EagleTypeType *ett, arraylist **names, arraylist **types);
-int ty_needs_destructor(EagleTypeType *ett);
+void ty_struct_member_index(EagleComplexType *ett, char *member, int *index, EagleComplexType **type);
+void ty_struct_get_members(EagleComplexType *ett, arraylist **names, arraylist **types);
+int ty_needs_destructor(EagleComplexType *ett);
 LLVMTypeRef ty_get_counted(LLVMTypeRef in);
-void ty_set_typedef(char *name, EagleTypeType *type);
+void ty_set_typedef(char *name, EagleComplexType *type);
 void ty_add_enum_item(char *name, char *item, long val);
-long ty_lookup_enum_item(EagleTypeType *ty, char *item, int *valid);
+long ty_lookup_enum_item(EagleComplexType *ty, char *item, int *valid);
 
-void ty_add_interface_method(char *name, char *method, EagleTypeType *ty);
+void ty_add_interface_method(char *name, char *method, EagleComplexType *ty);
 int ty_interface_offset(char *name, char *method);
 int ty_interface_count(char *name);
-char *ty_interface_for_method(EagleTypeType *ett, char *method);
-int ty_class_implements_interface(EagleTypeType *type, EagleTypeType *interface);
-void ett_class_set_interfaces(EagleTypeType *ett, arraylist *interfaces);
+char *ty_interface_for_method(EagleComplexType *ett, char *method);
+int ty_class_implements_interface(EagleComplexType *type, EagleComplexType *interface);
+void ett_class_set_interfaces(EagleComplexType *ett, arraylist *interfaces);
 
-static inline int ET_IS_INT(EagleType t)
+static inline int ET_IS_INT(EagleBasicType t)
 {
     switch(t)
     {
@@ -194,7 +194,7 @@ static inline int ET_IS_INT(EagleType t)
     }
 }
 
-static inline int ET_IS_LLVM_INT(EagleType t)
+static inline int ET_IS_LLVM_INT(EagleBasicType t)
 {
     switch(t)
     {
@@ -213,7 +213,7 @@ static inline int ET_IS_LLVM_INT(EagleType t)
     }
 }
 
-static inline int ET_IS_REAL(EagleType t)
+static inline int ET_IS_REAL(EagleBasicType t)
 {
     switch(t)
     {
@@ -225,9 +225,9 @@ static inline int ET_IS_REAL(EagleType t)
     }
 }
 
-static inline int ett_is_numeric(EagleTypeType *t)
+static inline int ett_is_numeric(EagleComplexType *t)
 {
-    EagleType type = t->type;
+    EagleBasicType type = t->type;
     switch(type)
     {
         case ETInt1:
@@ -247,4 +247,4 @@ static inline int ett_is_numeric(EagleTypeType *t)
     }
 }
 
-#endif /* defined(__Eagle__types__) */
+#endif

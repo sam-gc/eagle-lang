@@ -48,7 +48,7 @@ LLVMValueRef ac_const_value(AST *ast, CompilerBundle *cb)
     }
 }
 
-LLVMValueRef ac_convert_const(LLVMValueRef val, EagleTypeType *to, EagleTypeType *from)
+LLVMValueRef ac_convert_const(LLVMValueRef val, EagleComplexType *to, EagleComplexType *from)
 {
     switch(from->type)
     {
