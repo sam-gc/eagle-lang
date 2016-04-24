@@ -14,6 +14,13 @@
 #define EQU_CHECK(a, b, f) (f ? (f(a, b)) : (!strcmp(a, b)))
 #define NO_RESIZE
 
+struct HSTNode_s {
+    long hash;
+    void *key;
+    void *val;
+    struct HSTNode_s *next;
+};
+
 long hst_djb2(void *val, void *data)
 {
     char *str = (char *)val;
@@ -26,18 +33,18 @@ long hst_djb2(void *val, void *data)
     return hash;
 }
 
-hashtable hst_create()
+Hashtable hst_create()
 {
-    hst_node **buckets = calloc(8, sizeof(hst_node *));
+    HSTNode **buckets = calloc(8, sizeof(HSTNode *));
 
-    hashtable ht = {0, 8, 0, buckets};
+    Hashtable ht = {0, 8, 0, buckets};
 
     return ht;
 }
 
-hst_node *hst_make_node(long hash, void *key, void *val, char dup)
+HSTNode *hst_make_node(long hash, void *key, void *val, char dup)
 {
-    hst_node *n = malloc(sizeof(hst_node));
+    HSTNode *n = malloc(sizeof(HSTNode));
 
     if(dup)
     {
@@ -53,14 +60,14 @@ hst_node *hst_make_node(long hash, void *key, void *val, char dup)
     return n;
 }
 
-void hst_resize(hashtable *ht)
+void hst_resize(Hashtable *ht)
 {
     int ns = ht->size > 1000 ? ht->size + 1000 : ht->size * 2;
-    hst_node **buckets = calloc(ns, sizeof(hst_node *));
+    HSTNode **buckets = calloc(ns, sizeof(HSTNode *));
 
     int i;
-    hst_node *n;
-    hst_node *p;
+    HSTNode *n;
+    HSTNode *p;
     for(i = 0; i < ht->size; i++)
     {
         for(n = ht->buckets[i]; n;)
@@ -75,7 +82,7 @@ void hst_resize(hashtable *ht)
                 continue;
             }
 
-            hst_node *x = buckets[mod];
+            HSTNode *x = buckets[mod];
             for(; x->next; x = x->next);
             x->next = n;
             n->next = NULL;
@@ -89,7 +96,7 @@ void hst_resize(hashtable *ht)
     ht->size = ns;
 }
 
-void hst_put(hashtable *ht, void *key, void *val, hst_hash_function hashfunc, hst_equa_function equfunc)
+void hst_put(Hashtable *ht, void *key, void *val, hst_hash_function hashfunc, hst_equa_function equfunc)
 {
 #ifndef NO_RESIZE
     if(ht->count + 1 > ht->size * (0.66))
@@ -109,8 +116,8 @@ void hst_put(hashtable *ht, void *key, void *val, hst_hash_function hashfunc, hs
         return;
     }
 
-    hst_node *last;
-    hst_node *prev = NULL;
+    HSTNode *last;
+    HSTNode *prev = NULL;
     for(last = ht->buckets[mod]; last; last = last->next)
     {
         if(EQU_CHECK(last->key, key, equfunc))
@@ -126,7 +133,7 @@ void hst_put(hashtable *ht, void *key, void *val, hst_hash_function hashfunc, hs
     prev->next = hst_make_node(hash, key, val, ht->duplicate_keys);
 }
 
-void *hst_get(hashtable *ht, void *key, hst_hash_function hashfunc, hst_equa_function equfunc)
+void *hst_get(Hashtable *ht, void *key, hst_hash_function hashfunc, hst_equa_function equfunc)
 {
     if(!hashfunc)
         hashfunc = hst_djb2;
@@ -134,14 +141,14 @@ void *hst_get(hashtable *ht, void *key, hst_hash_function hashfunc, hst_equa_fun
     long hash = hashfunc(key, NULL);
     long mod = (unsigned long)hash % ht->size;
 
-    hst_node *n = ht->buckets[mod];
+    HSTNode *n = ht->buckets[mod];
 
     for(; n; n = n->next) if(EQU_CHECK(n->key, key, equfunc)) return n->val;
 
     return NULL;
 }
 
-char *hst_retrieve_duped_key(hashtable *ht, char *key)
+char *hst_retrieve_duped_key(Hashtable *ht, char *key)
 {
     if(!ht->duplicate_keys)
         return NULL;
@@ -149,14 +156,14 @@ char *hst_retrieve_duped_key(hashtable *ht, char *key)
     long hash = hst_djb2(key, NULL);
     long mod = (unsigned long)hash % ht->size;
 
-    hst_node *n = ht->buckets[mod];
+    HSTNode *n = ht->buckets[mod];
 
     for(; n; n = n->next) if(!strcmp(key, n->key)) return n->key;
 
     return NULL;
 }
 
-void hst_add_all_from(hashtable *ht, hashtable *ot, hst_hash_function hashfunc, hst_equa_function equfunc)
+void hst_add_all_from(Hashtable *ht, Hashtable *ot, hst_hash_function hashfunc, hst_equa_function equfunc)
 {
     if(!hashfunc)
         hashfunc = hst_djb2;
@@ -164,13 +171,13 @@ void hst_add_all_from(hashtable *ht, hashtable *ot, hst_hash_function hashfunc, 
     int i;
     for(i = 0; i < ot->size; i++)
     {
-        hst_node *n;
+        HSTNode *n;
         for(n = ot->buckets[i]; n; n = n->next)
             hst_put(ht, n->key, n->val, hashfunc, equfunc);
     }
 }
 
-int hst_contains_key(hashtable *ht, void *key, hst_hash_function hashfunc, hst_equa_function equfunc)
+int hst_contains_key(Hashtable *ht, void *key, hst_hash_function hashfunc, hst_equa_function equfunc)
 {
     if(!hashfunc)
         hashfunc = hst_djb2;
@@ -178,17 +185,17 @@ int hst_contains_key(hashtable *ht, void *key, hst_hash_function hashfunc, hst_e
     long hash = hashfunc(key, NULL);
     long mod = (unsigned long)hash % ht->size;
 
-    hst_node *n = ht->buckets[mod];
+    HSTNode *n = ht->buckets[mod];
 
     for(; n; n = n->next) if(EQU_CHECK(n->key, key, equfunc)) return 1;
 
     return 0;
 }
 
-int hst_contains_value(hashtable *ht, void *val, hst_equa_function equfunc)
+int hst_contains_value(Hashtable *ht, void *val, hst_equa_function equfunc)
 {
     int i;
-    hst_node *n = NULL;
+    HSTNode *n = NULL;
     for(i = 0; i < ht->size; i++)
         for(n = ht->buckets[i]; n; n = n->next)
             if(EQU_CHECK(n->val, val, equfunc))
@@ -197,7 +204,7 @@ int hst_contains_value(hashtable *ht, void *val, hst_equa_function equfunc)
     return 0;
 }
 
-void *hst_remove_key(hashtable *ht, void *key, hst_hash_function hashfunc, hst_equa_function equfunc)
+void *hst_remove_key(Hashtable *ht, void *key, hst_hash_function hashfunc, hst_equa_function equfunc)
 {
     void *ret = NULL;
 
@@ -207,8 +214,8 @@ void *hst_remove_key(hashtable *ht, void *key, hst_hash_function hashfunc, hst_e
     long hash = hashfunc(key, NULL);
     long mod = (unsigned long)hash % ht->size;
 
-    hst_node *n = ht->buckets[mod];
-    hst_node *p = NULL;
+    HSTNode *n = ht->buckets[mod];
+    HSTNode *p = NULL;
 
     for(; n; n = n->next)
     {
@@ -233,13 +240,13 @@ void *hst_remove_key(hashtable *ht, void *key, hst_hash_function hashfunc, hst_e
     return ret;
 }
 
-void hst_remove_val(hashtable *ht, void *val, hst_equa_function equfunc)
+void hst_remove_val(Hashtable *ht, void *val, hst_equa_function equfunc)
 {
     int i;
-    hst_node *n = NULL;
+    HSTNode *n = NULL;
     for(i = 0; i < ht->size; i++)
     {
-        hst_node *p = NULL;
+        HSTNode *p = NULL;
         for(n = ht->buckets[i]; n; n = n->next)
         {
             if(EQU_CHECK(n->val, val, equfunc))
@@ -260,15 +267,15 @@ void hst_remove_val(hashtable *ht, void *val, hst_equa_function equfunc)
     }
 }
 
-void hst_free(hashtable *ht)
+void hst_free(Hashtable *ht)
 {
     int i;
     for(i = 0; i < ht->size; i++)
     {
-        hst_node *n = ht->buckets[i];
+        HSTNode *n = ht->buckets[i];
         while(n)
         {
-            hst_node *next = n->next;
+            HSTNode *next = n->next;
             if(ht->duplicate_keys)
                 free(n->key);
             free(n);
@@ -279,10 +286,10 @@ void hst_free(hashtable *ht)
     free(ht->buckets);
 }
 
-void hst_for_each(hashtable *ht, hst_each_function func, void *data)
+void hst_for_each(Hashtable *ht, hst_each_function func, void *data)
 {
     int i;
-    hst_node *n;
+    HSTNode *n;
     for(i = 0; i < ht->size; i++)
         for(n = ht->buckets[i]; n; n = n->next)
             func(n->key, n->val, data);

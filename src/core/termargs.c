@@ -19,7 +19,7 @@ typedef struct
     ta_rule_callback callback;
 } TermBundle;
 
-TermArgs *ta_new(hashtable *argdump, void *data)
+TermArgs *ta_new(Hashtable *argdump, void *data)
 {
     TermArgs *ta = malloc(sizeof(*ta));
     ta->rules = hst_create();

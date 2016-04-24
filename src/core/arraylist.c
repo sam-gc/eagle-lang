@@ -11,9 +11,9 @@
 #include <stdio.h>
 #include <string.h>
 
-arraylist arr_create(long count)
+Arraylist arr_create(long count)
 {
-    arraylist list;
+    Arraylist list;
     list.items = malloc(sizeof(void *) * count);
     list.count = 0;
     list.allocated = count;
@@ -27,7 +27,7 @@ arraylist arr_create(long count)
     return list;
 }
 
-void arr_manage_size(arraylist *list)
+void arr_manage_size(Arraylist *list)
 {
     long count = list->count;
     long alloc = list->allocated;
@@ -39,7 +39,7 @@ void arr_manage_size(arraylist *list)
     }
 }
 
-void arr_append(arraylist *list, void *item)
+void arr_append(Arraylist *list, void *item)
 {
     arr_manage_size(list);
 
@@ -50,7 +50,7 @@ void arr_append(arraylist *list, void *item)
     list->count = count;
 }
 
-void arr_insert(arraylist *list, void *item, long idx)
+void arr_insert(Arraylist *list, void *item, long idx)
 {
     arr_manage_size(list);
 
@@ -64,17 +64,17 @@ void arr_insert(arraylist *list, void *item, long idx)
     list->count++;
 }
 
-void *arr_get(arraylist *list, long idx)
+void *arr_get(Arraylist *list, long idx)
 {
     return list->items[idx];
 }
 
-void arr_set(arraylist *list, void *item, long idx)
+void arr_set(Arraylist *list, void *item, long idx)
 {
     list->items[idx] = item;
 }
 
-void remove_at_index(arraylist *list, long idx)
+void remove_at_index(Arraylist *list, long idx)
 {
     long i;
     for(i = idx; i < list->count; i++)
@@ -85,13 +85,13 @@ void remove_at_index(arraylist *list, long idx)
     list->count--;
 }
 
-void arr_clear(arraylist *list)
+void arr_clear(Arraylist *list)
 {
     memset(list->items, 0, sizeof(void *) * list->count);
     list->count = 0;
 }
 
-void arr_remove(arraylist *list, void *item, long idx)
+void arr_remove(Arraylist *list, void *item, long idx)
 {
     if(!item)
     {
@@ -103,7 +103,7 @@ void arr_remove(arraylist *list, void *item, long idx)
     remove_at_index(list, idx);
 }
 
-long arr_index_of(arraylist *list, void *obj)
+long arr_index_of(Arraylist *list, void *obj)
 {
     long i;
     for(i = 0; i < list->count; i++)
@@ -115,7 +115,7 @@ long arr_index_of(arraylist *list, void *obj)
     return -1;
 }
 
-void arr_for_each(arraylist *list, arr_pointer_function callback)
+void arr_for_each(Arraylist *list, arr_pointer_function callback)
 {
     if(!callback)
         return;
@@ -129,12 +129,12 @@ void arr_for_each(arraylist *list, arr_pointer_function callback)
     }
 }
 
-long arr_length(arraylist *list)
+long arr_length(Arraylist *list)
 {
     return list->count;
 }
 
-void arr_free(arraylist *list)
+void arr_free(Arraylist *list)
 {
     free(list->items);
 }
@@ -192,7 +192,7 @@ void arr_heapsort(void *arr[], int length, arr_sort_function sf, void *data)
     }
 }
 
-void arr_sort(arraylist *list, arr_sort_function sf, void *data)
+void arr_sort(Arraylist *list, arr_sort_function sf, void *data)
 {
     arr_heapsort(list->items, list->count, sf, data);
 }

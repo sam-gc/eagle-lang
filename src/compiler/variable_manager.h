@@ -39,8 +39,8 @@ typedef struct VarScope {
     int scope;
     struct VarScope *next;
 
-    hashtable table;
-    arraylist deferments;
+    Hashtable table;
+    Arraylist deferments;
 } VarScope;
 
 typedef struct {
@@ -52,9 +52,9 @@ typedef struct {
 } VarBarrier;
 
 typedef struct {
-    mempool pool;
+    Mempool pool;
     VarScope *scope;
-    hashtable modules;
+    Hashtable modules;
 
     unsigned warnunused : 1;
 

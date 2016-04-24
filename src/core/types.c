@@ -28,26 +28,26 @@ LLVMTargetDataRef etTargetData = NULL;
 void ty_method_free(void *k, void *v, void *d);
 void ty_struct_def_free(void *k, void *v, void *d);
 
-static mempool type_mempool;
-static mempool list_mempool;
+static Mempool type_mempool;
+static Mempool list_mempool;
 
-static hashtable name_table;
-static hashtable typedef_table;
-static hashtable enum_table;
-static hashtable struct_table;
-static hashtable types_table;
-static hashtable counted_table;
-static hashtable method_table;
-static hashtable type_named_table;
-static hashtable enum_named_table;
-static hashtable init_table;
-static hashtable interface_table;
+static Hashtable name_table;
+static Hashtable typedef_table;
+static Hashtable enum_table;
+static Hashtable struct_table;
+static Hashtable types_table;
+static Hashtable counted_table;
+static Hashtable method_table;
+static Hashtable type_named_table;
+static Hashtable enum_named_table;
+static Hashtable init_table;
+static Hashtable interface_table;
 static LLVMTypeRef indirect_struct_type = NULL;
 static LLVMTypeRef generator_type = NULL;
 
 void list_mempool_free(void *datum)
 {
-    arraylist *list = datum;
+    Arraylist *list = datum;
     arr_free(list);
 }
 
@@ -205,7 +205,7 @@ LLVMValueRef ett_default_value(EagleComplexType *type)
             return LLVMConstPointerNull(ett_llvm_type(type));
         case ETStruct:
         {
-            arraylist *types;
+            Arraylist *types;
 
             ty_struct_get_members(type, NULL, &types);
             LLVMValueRef vals[types->count];
@@ -530,10 +530,10 @@ void ett_struct_add(EagleComplexType *ett, EagleComplexType *ty, char *name)
     arr_append(&e->names, name);
 }
 
-void ett_class_set_interfaces(EagleComplexType *ett, arraylist *interfaces)
+void ett_class_set_interfaces(EagleComplexType *ett, Arraylist *interfaces)
 {
     EagleStructType *st = (EagleStructType *)ett;
-    memcpy(&st->interfaces, interfaces, sizeof(arraylist));
+    memcpy(&st->interfaces, interfaces, sizeof(Arraylist));
 }
 
 EagleComplexType *ett_get_root_pointee(EagleComplexType *type)
@@ -822,24 +822,24 @@ void ty_struct_def_free(void *k, void *v, void *d)
     free(v);
 }
 
-void ty_add_struct_def(char *name, arraylist *names, arraylist *types)
+void ty_add_struct_def(char *name, Arraylist *names, Arraylist *types)
 {
-    arraylist *copy = malloc(sizeof(arraylist));
-    memcpy(copy, names, sizeof(arraylist));
+    Arraylist *copy = malloc(sizeof(Arraylist));
+    memcpy(copy, names, sizeof(Arraylist));
     hst_put(&struct_table, name, copy, NULL, NULL);
 
-    copy = malloc(sizeof(arraylist));
-    memcpy(copy, types, sizeof(arraylist));
+    copy = malloc(sizeof(Arraylist));
+    memcpy(copy, types, sizeof(Arraylist));
     hst_put(&types_table, name, copy, NULL, NULL);
 }
 
 void ty_register_class(char *name)
 {
-    hashtable *lst = hst_get(&method_table, name, NULL, NULL);
+    Hashtable *lst = hst_get(&method_table, name, NULL, NULL);
     if(lst)
         die(-1, "Redeclaring class with name: %s", name);
 
-    lst = malloc(sizeof(hashtable));
+    lst = malloc(sizeof(Hashtable));
     *lst = hst_create();
     lst->duplicate_keys = 1;
     hst_put(&method_table, name, lst, NULL, NULL);
@@ -852,7 +852,7 @@ void ty_register_interface(char *name)
     if(hst_get(&method_table, name, NULL, NULL))
         die(-1, "Interface declaration %s clashes with previously named class.", name);
 
-    arraylist *list = malloc(sizeof(arraylist));
+    Arraylist *list = malloc(sizeof(Arraylist));
     *list = arr_create(10);
 
     hst_put(&interface_table, name, list, NULL, NULL);
@@ -860,7 +860,7 @@ void ty_register_interface(char *name)
 
 void ty_register_enum(char *name)
 {
-    hashtable *en = hst_get(&enum_table, name, NULL, NULL);
+    Hashtable *en = hst_get(&enum_table, name, NULL, NULL);
     if(en)
         die(-1, "Redeclaring enum with name: %s", name);
 
@@ -874,7 +874,7 @@ long ty_lookup_enum_item(EagleComplexType *ty, char *item, int *valid)
 {
     EagleEnumType *et = (EagleEnumType *)ty;
 
-    hashtable *en = hst_get(&enum_table, et->name, NULL, NULL);
+    Hashtable *en = hst_get(&enum_table, et->name, NULL, NULL);
     if(!en)
         die(__LINE__, "Internal compiler error could not find enum item %s.%s", et->name, item);
 
@@ -890,7 +890,7 @@ long ty_lookup_enum_item(EagleComplexType *ty, char *item, int *valid)
 
 void ty_add_enum_item(char *name, char *item, long val)
 {
-    hashtable *en = hst_get(&enum_table, name, NULL, NULL);
+    Hashtable *en = hst_get(&enum_table, name, NULL, NULL);
     if(!en)
         die(__LINE__, "Internal compiler error declaring enum item %s.%s", name, item);
 
@@ -944,7 +944,7 @@ void ty_set_typedef(char *name, EagleComplexType *type)
 
 int ty_interface_offset(char *name, char *method)
 {
-    arraylist *names = hst_get(&interface_table, name, NULL, NULL);
+    Arraylist *names = hst_get(&interface_table, name, NULL, NULL);
     if(!names)
         return -1;
 
@@ -957,7 +957,7 @@ int ty_interface_offset(char *name, char *method)
 
 int ty_interface_count(char *name)
 {
-    arraylist *names = hst_get(&interface_table, name, NULL, NULL);
+    Arraylist *names = hst_get(&interface_table, name, NULL, NULL);
     if(!names)
         return -1;
 
@@ -976,7 +976,7 @@ EagleComplexType *ty_get_init(char *name)
 
 void ty_add_interface_method(char *name, char *method, EagleComplexType *ty)
 {
-    arraylist *names = hst_get(&interface_table, name, NULL, NULL);
+    Arraylist *names = hst_get(&interface_table, name, NULL, NULL);
     arr_append(names, method);
     ty_add_method(name, method, ty);
 }
@@ -984,7 +984,7 @@ void ty_add_interface_method(char *name, char *method, EagleComplexType *ty)
 char *ty_interface_for_method(EagleComplexType *ett, char *method)
 {
     EagleInterfaceType *it = (EagleInterfaceType *)ett;
-    arraylist *names = &it->names;
+    Arraylist *names = &it->names;
 
     int i;
     for(i = 0; i < names->count; i++)
@@ -1007,7 +1007,7 @@ int ty_class_implements_interface(EagleComplexType *type, EagleComplexType *inte
 
     EagleStructType *st = (EagleStructType *)type;
 
-    arraylist *ifcs = &st->interfaces;
+    Arraylist *ifcs = &st->interfaces;
     EagleInterfaceType *ie = (EagleInterfaceType *)interface;
 
     int j;
@@ -1031,10 +1031,10 @@ int ty_class_implements_interface(EagleComplexType *type, EagleComplexType *inte
 
 void ty_add_method(char *name, char *method, EagleComplexType *ty)
 {
-    hashtable *lst = hst_get(&method_table, name, NULL, NULL);
+    Hashtable *lst = hst_get(&method_table, name, NULL, NULL);
     if(!lst)
     {
-        lst = malloc(sizeof(hashtable));
+        lst = malloc(sizeof(Hashtable));
         *lst = hst_create();
         lst->duplicate_keys = 1;
         hst_put(&method_table, name, lst, NULL, NULL);
@@ -1045,7 +1045,7 @@ void ty_add_method(char *name, char *method, EagleComplexType *ty)
 
 EagleComplexType *ty_method_lookup(char *name, char *method)
 {
-    hashtable *lst = hst_get(&method_table, name, NULL, NULL);
+    Hashtable *lst = hst_get(&method_table, name, NULL, NULL);
     if(!lst)
         return NULL;
 
@@ -1055,8 +1055,8 @@ EagleComplexType *ty_method_lookup(char *name, char *method)
 void ty_struct_member_index(EagleComplexType *ett, char *member, int *index, EagleComplexType **type)
 {
     EagleStructType *st = (EagleStructType *)ett;
-    arraylist *names = hst_get(&struct_table, st->name, NULL, NULL);
-    arraylist *types = hst_get(&types_table, st->name, NULL, NULL);
+    Arraylist *names = hst_get(&struct_table, st->name, NULL, NULL);
+    Arraylist *types = hst_get(&types_table, st->name, NULL, NULL);
 
     if(!names)
     {
@@ -1083,7 +1083,7 @@ void ty_struct_member_index(EagleComplexType *ett, char *member, int *index, Eag
     *index = -1;
 }
 
-void ty_struct_get_members(EagleComplexType *ett, arraylist **names, arraylist **types)
+void ty_struct_get_members(EagleComplexType *ett, Arraylist **names, Arraylist **types)
 {
     EagleStructType *st = (EagleStructType *)ett;
 
@@ -1097,7 +1097,7 @@ void ty_struct_get_members(EagleComplexType *ett, arraylist **names, arraylist *
 int ty_needs_destructor(EagleComplexType *ett)
 {
     EagleStructType *st = (EagleStructType *)ett;
-    arraylist *types = hst_get(&types_table, st->name, NULL, NULL);
+    Arraylist *types = hst_get(&types_table, st->name, NULL, NULL);
 
     if(!types)
         return -2;

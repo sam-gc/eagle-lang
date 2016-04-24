@@ -18,7 +18,7 @@
 #include "hashtable.h"
 #include "colors.h"
 
-extern hashtable global_args;
+extern Hashtable global_args;
 
 #define IN(x, chr) (hst_get(&x, (char *)chr, NULL, NULL))
 
@@ -58,7 +58,7 @@ static th_mutex obj_lock;
 static th_mutex llvm_lock;
 #endif
 
-static mempool unlink_pool;
+static Mempool unlink_pool;
 
 typedef struct {
     ShippingCrate *crate;

@@ -34,8 +34,8 @@ extern int yylineno;
 
 extern AST *ast_root;
 
-hashtable global_args;
-multibuffer *ymultibuffer = NULL;
+Hashtable global_args;
+Multibuffer *ymultibuffer = NULL;
 
 typedef void * YY_BUFFER_STATE;
 extern YY_BUFFER_STATE yy_create_buffer(FILE*, size_t);
@@ -110,7 +110,7 @@ static void first_pass()
     //rewind(yyin);
     mb_rewind(ymultibuffer);
     //mb_free(ymultibuffer);
-    //ymultibuffer = nbuffer;
+    //yMultibuffer = nbuffer;
     yylineno = 0;
 }
 

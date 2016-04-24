@@ -65,7 +65,7 @@ void ac_generate_interface_definitions(AST *ast, CompilerBundle *cb)
 
 void ac_prepare_methods_each(void *key, void *val, void *data)
 {
-    ac_class_helper *h = (ac_class_helper *)data;
+    ClassHelper *h = (ClassHelper *)data;
     ASTClassDecl *cd = (ASTClassDecl *)h->ast;
 
     ASTFuncDecl *fd = key;
@@ -90,7 +90,7 @@ void ac_prepare_methods_each(void *key, void *val, void *data)
     free(method_name);
 }
 
-void ac_class_add_early_definitions(ASTClassDecl *cd, CompilerBundle *cb, ac_class_helper *h)
+void ac_class_add_early_definitions(ASTClassDecl *cd, CompilerBundle *cb, ClassHelper *h)
 {
     hst_for_each(&cd->method_types, ac_prepare_methods_each, h);
     ASTFuncDecl *fd = (ASTFuncDecl *)cd->initdecl;
@@ -161,10 +161,10 @@ void ac_compile_class_destruct(ASTClassDecl *cd, CompilerBundle *cb)
     ety->params[0] = ett_pointer_type(ett_base_type(ETAny));
 }
 
-void ac_check_and_register_implementation(char *method, ac_class_helper *h, char *class, LLVMValueRef func, ASTClassDecl *cd)
+void ac_check_and_register_implementation(char *method, ClassHelper *h, char *class, LLVMValueRef func, ASTClassDecl *cd)
 {
     int i, sidx;
-    arraylist *ifcs = &cd->interfaces;
+    Arraylist *ifcs = &cd->interfaces;
     for(i = sidx = 0; i < ifcs->count; sidx += ty_interface_count(arr_get(ifcs, i)), i++)
     {
         char *name = arr_get(ifcs, i);
@@ -189,7 +189,7 @@ void ac_check_and_register_implementation(char *method, ac_class_helper *h, char
 
 void ac_compile_class_methods_each(void *key, void *val, void *data)
 {
-    ac_class_helper *h = (ac_class_helper *)data;
+    ClassHelper *h = (ClassHelper *)data;
     ASTClassDecl *cd = (ASTClassDecl *)h->ast;
 
     ASTFuncDecl *fd = key;
@@ -245,7 +245,7 @@ void ac_make_class_definitions(AST *ast, CompilerBundle *cb)
 
         ASTClassDecl *a = (ASTClassDecl *)ast;
 
-        ac_class_helper h;
+        ClassHelper h;
         h.ast = ast;
         h.cb = cb;
 
@@ -351,7 +351,7 @@ void ac_make_class_definitions(AST *ast, CompilerBundle *cb)
     }
 }
 
-void ac_make_class_constructor(AST *ast, CompilerBundle *cb, ac_class_helper *h)
+void ac_make_class_constructor(AST *ast, CompilerBundle *cb, ClassHelper *h)
 {
     ASTClassDecl *a = (ASTClassDecl *)ast;
     LLVMValueRef func = ac_gen_struct_constructor_func(a->name, cb, 0); // This just generates a name
@@ -373,7 +373,7 @@ void ac_make_class_constructor(AST *ast, CompilerBundle *cb, ac_class_helper *h)
 
     LLVMBuildStore(cb->builder, h->vtable ? h->vtable : LLVMConstPointerNull(LLVMPointerType(ty_class_indirect(), 0)), gep);
 
-    arraylist *types = &a->types;
+    Arraylist *types = &a->types;
     int i;
     for(i = 0; i < types->count; i++)
     {
@@ -443,7 +443,7 @@ void ac_make_class_destructor(AST *ast, CompilerBundle *cb)
     LLVMPositionBuilderAtEnd(cb->builder, mergeBB);
     pos = LLVMBuildLoad(cb->builder, pos, "");
 
-    arraylist *types = &a->types;
+    Arraylist *types = &a->types;
     int i;
     for(i = 0; i < types->count; i++)
     {

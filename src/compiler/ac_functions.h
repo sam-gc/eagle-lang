@@ -14,9 +14,9 @@ typedef struct {
     CompilerBundle *cb;
     LLVMValueRef context;
 
-    arraylist *contextTypes;
-    arraylist *contextVals;
-    arraylist *outerContextVals;
+    Arraylist *contextTypes;
+    Arraylist *contextVals;
+    Arraylist *outerContextVals;
 
     LLVMTypeRef contextType;
 

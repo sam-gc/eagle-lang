@@ -72,7 +72,7 @@ void ac_make_struct_copy_constructor(AST *ast, CompilerBundle *cb)
     LLVMValueRef strct = LLVMBuildBitCast(cb->builder, in, ett_llvm_type(ett), "");
 
 
-    arraylist *types = &a->types;
+    Arraylist *types = &a->types;
     int i;
     for(i = 0; i < types->count; i++)
     {
@@ -114,7 +114,7 @@ void ac_make_struct_constructor(AST *ast, CompilerBundle *cb)
     LLVMValueRef in = LLVMGetParam(func, 0);
     LLVMValueRef strct = LLVMBuildBitCast(cb->builder, in, ett_llvm_type(ett), "");
 
-    arraylist *types = &a->types;
+    Arraylist *types = &a->types;
     int i;
     for(i = 0; i < types->count; i++)
     {
@@ -175,7 +175,7 @@ void ac_make_struct_destructor(AST *ast, CompilerBundle *cb)
     LLVMPositionBuilderAtEnd(cb->builder, mergeBB);
     pos = LLVMBuildLoad(cb->builder, pos, "");
 
-    arraylist *types = &a->types;
+    Arraylist *types = &a->types;
     int i;
     for(i = 0; i < types->count; i++)
     {
@@ -309,7 +309,7 @@ typedef struct {
     ASTStructLit *a;
     EagleStructType *st;
     LLVMValueRef strct;
-    hashtable *set;
+    Hashtable *set;
 } LiteralHelper;
 
 static void ac_struct_lit_each(void *key, void *val, void *data)
@@ -381,8 +381,8 @@ LLVMValueRef ac_compile_struct_lit(AST *ast, CompilerBundle *cb, LLVMValueRef st
 
     EagleStructType *st = (EagleStructType *)ett_struct_type(a->name);
 
-    hashtable *dict = &a->exprs;
-    hashtable visible = hst_create();
+    Hashtable *dict = &a->exprs;
+    Hashtable visible = hst_create();
 
     LiteralHelper lh = {
         .cb = cb,
@@ -394,8 +394,8 @@ LLVMValueRef ac_compile_struct_lit(AST *ast, CompilerBundle *cb, LLVMValueRef st
 
     hst_for_each(dict, &ac_struct_lit_each, &lh);
 
-    arraylist *snames;
-    arraylist *stypes;
+    Arraylist *snames;
+    Arraylist *stypes;
 
     // Set the members that are not set explicitly by the programmer
     ty_struct_get_members((EagleComplexType *)st, &snames, &stypes);

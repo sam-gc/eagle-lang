@@ -119,7 +119,7 @@ VarBundle *vs_get(VarScopeStack *vs, char *ident)
 
 VarBundle *vs_get_from_module(VarScopeStack *vs, char *ident, char *mod_name)
 {
-    hashtable *module = hst_get(&vs->modules, mod_name, NULL, NULL);
+    Hashtable *module = hst_get(&vs->modules, mod_name, NULL, NULL);
     if(!module)
         return NULL;
 
@@ -167,10 +167,10 @@ VarBundle *vs_put_in_module(VarScopeStack *vs, char *ident, char *module, LLVMVa
 {
     VarBundle *vb = vs_create(ident, module, type, val, -1);
 
-    hashtable *mod = hst_get(&vs->modules, module, NULL, NULL);
+    Hashtable *mod = hst_get(&vs->modules, module, NULL, NULL);
     if(!mod)
     {
-        mod = malloc(sizeof(hashtable));
+        mod = malloc(sizeof(Hashtable));
         *mod = hst_create();
         mod->duplicate_keys = 1;
 
@@ -206,7 +206,7 @@ void vs_run_deferments(VarScopeStack *vs, void *data)
         die(-1, "Internal compiler error: deferment callback not set");
 
     VarScope *s = vs->scope;
-    arraylist *deferments = &s->deferments;
+    Arraylist *deferments = &s->deferments;
     for(int i = deferments->count - 1; i >= 0; i--)
     {
         vs->deferCallback(deferments->items[i], data);
@@ -221,7 +221,7 @@ void vs_run_deferments_through(VarScopeStack *vs, VarScope *scope, void *data)
     VarScope *s = vs->scope;
     for(; s != scope->next; s = s->next)
     {
-        arraylist *deferments = &s->deferments;
+        Arraylist *deferments = &s->deferments;
         for(int i = deferments->count; i >= 0; i--)
         {
             vs->deferCallback(deferments->items[i], data);

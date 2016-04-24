@@ -25,7 +25,7 @@
     int override = 0;
     int in_interface = 0;
     int skip_type_check = 0;
-    extern multibuffer *ymultibuffer;
+    extern Multibuffer *ymultibuffer;
 
     extern int yyerror(const char *);
     #define YY_INPUT(buf, result, max_size) if(skip_type_check) result = fread( buf, 1, max_size, yyin ); else result = mb_buffer(ymultibuffer, buf, max_size)

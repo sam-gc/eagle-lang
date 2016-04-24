@@ -13,15 +13,15 @@
 
 typedef void (*mb_callback)(void *);
 
-typedef struct multibuffer multibuffer;
+typedef struct Multibuffer Multibuffer;
 
-multibuffer *mb_alloc();
-void mb_add_file(multibuffer *buf, const char *filename);
-void mb_add_str(multibuffer *buf, const char *c);
-int mb_buffer(multibuffer *buf, char *dest, size_t max_size);
-void mb_rewind(multibuffer *buf);
-void mb_free(multibuffer *buf);
-char *mb_get_first_str(multibuffer *buf);
-void mb_print_all(multibuffer *buf);
+Multibuffer *mb_alloc();
+void mb_add_file(Multibuffer *buf, const char *filename);
+void mb_add_str(Multibuffer *buf, const char *c);
+int mb_buffer(Multibuffer *buf, char *dest, size_t max_size);
+void mb_rewind(Multibuffer *buf);
+void mb_free(Multibuffer *buf);
+char *mb_get_first_str(Multibuffer *buf);
+void mb_print_all(Multibuffer *buf);
 
 #endif

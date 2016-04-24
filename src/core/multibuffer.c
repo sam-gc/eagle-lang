@@ -15,8 +15,8 @@
 
 #define BUFLEN 500
 
-typedef struct mbnode {
-    struct mbnode *next;
+typedef struct Mbnode {
+    struct Mbnode *next;
     char type;
     union {
         FILE *f;
@@ -27,25 +27,25 @@ typedef struct mbnode {
     size_t slen;
     size_t bufpt;
 
-} mbnode;
+} Mbnode;
 
-struct multibuffer {
-    mbnode *head;
-    mbnode *cur;
+struct Multibuffer {
+    Mbnode *head;
+    Mbnode *cur;
 };
 
-multibuffer *mb_alloc()
+Multibuffer *mb_alloc()
 {
-    multibuffer *buf = malloc(sizeof(multibuffer));
+    Multibuffer *buf = malloc(sizeof(Multibuffer));
     buf->head = NULL;
     buf->cur = NULL;
 
     return buf;
 }
 
-mbnode *mb_create_node(char type, const char *data)
+Mbnode *mb_create_node(char type, const char *data)
 {
-    mbnode *node = malloc(sizeof(mbnode));
+    Mbnode *node = malloc(sizeof(Mbnode));
     node->next = NULL;
     node->type = type;
 
@@ -64,21 +64,21 @@ mbnode *mb_create_node(char type, const char *data)
     return node;
 }
 
-void mb_append_node(mbnode *head, mbnode *next)
+void mb_append_node(Mbnode *head, Mbnode *next)
 {
     for(; head->next; head = head->next);
     head->next = next;
 }
 
-void mb_add_reset(multibuffer *buf)
+void mb_add_reset(Multibuffer *buf)
 {
-    mbnode *next = mb_create_node(MBSTR, "=== RESET ===");
+    Mbnode *next = mb_create_node(MBSTR, "=== RESET ===");
     mb_append_node(buf->head, next);
 }
 
-void mb_add_file(multibuffer *buf, const char *filename)
+void mb_add_file(Multibuffer *buf, const char *filename)
 {
-    mbnode *next = mb_create_node(MBFILE, filename);
+    Mbnode *next = mb_create_node(MBFILE, filename);
 
     if(buf->head)
     {
@@ -92,9 +92,9 @@ void mb_add_file(multibuffer *buf, const char *filename)
     }
 }
 
-void mb_add_str(multibuffer *buf, const char *c)
+void mb_add_str(Multibuffer *buf, const char *c)
 {
-    mbnode *next = mb_create_node(MBSTR, c);
+    Mbnode *next = mb_create_node(MBSTR, c);
 
     if(buf->head)
     {
@@ -108,7 +108,7 @@ void mb_add_str(multibuffer *buf, const char *c)
     }
 }
 
-char *mb_get_first_str(multibuffer *buf)
+char *mb_get_first_str(Multibuffer *buf)
 {
     if(!buf->head)
         return NULL;
@@ -124,9 +124,9 @@ size_t min(size_t a, size_t b)
 }
 
 extern int yylineno;
-int mb_buffer(multibuffer *buf, char *dest, size_t max_size)
+int mb_buffer(Multibuffer *buf, char *dest, size_t max_size)
 {
-    mbnode *n = buf->cur;
+    Mbnode *n = buf->cur;
     if(!n)
         return 0;
 
@@ -170,9 +170,9 @@ int mb_buffer(multibuffer *buf, char *dest, size_t max_size)
     return 1;
 }
 
-void mb_rewind(multibuffer *buf)
+void mb_rewind(Multibuffer *buf)
 {
-    mbnode *n = buf->head;
+    Mbnode *n = buf->head;
     buf->cur = n;
 
     for(; n; n = n->next)
@@ -190,9 +190,9 @@ void mb_rewind(multibuffer *buf)
 
 }
 
-void mb_print_all(multibuffer *buf)
+void mb_print_all(Multibuffer *buf)
 {
-    mbnode *n = buf->head;
+    Mbnode *n = buf->head;
 
     char fbuf[BUFLEN];
 
@@ -211,12 +211,12 @@ void mb_print_all(multibuffer *buf)
     }
 }
 
-void mb_free(multibuffer *buf)
+void mb_free(Multibuffer *buf)
 {
-    mbnode *n = buf->head;
+    Mbnode *n = buf->head;
     while(n)
     {
-        mbnode *o = n->next;
+        Mbnode *o = n->next;
         switch(n->type)
         {
             case MBFILE:

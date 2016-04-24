@@ -17,11 +17,11 @@ typedef void (*ta_rule_callback)(char *arg, char *next, int *skip, void *data);
 
 typedef struct
 {
-    hashtable rules;
-    hashtable extra_help;
-    arraylist rule_order;
+    Hashtable rules;
+    Hashtable extra_help;
+    Arraylist rule_order;
 
-    hashtable *argdump;
+    Hashtable *argdump;
     void *data;
 
     ta_rule_callback seive;
@@ -29,7 +29,7 @@ typedef struct
     size_t maxlen;
 } TermArgs;
 
-TermArgs *ta_new(hashtable *argdump, void *data);
+TermArgs *ta_new(Hashtable *argdump, void *data);
 void ta_rule(TermArgs *args, const char *rule, const char *fmt, ta_rule_callback callback, const char *help);
 void ta_extra(TermArgs *args, const char *fmt, const char *help);
 void ta_run(TermArgs *args, const char *argv[]);

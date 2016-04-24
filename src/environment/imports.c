@@ -38,8 +38,8 @@ extern YY_BUFFER_STATE yy_create_buffer(FILE*, size_t);
 extern void yypush_buffer_state(YY_BUFFER_STATE);
 extern void yypop_buffer_state();
 
-static hashtable all_imports;
-static hashtable imports_exports;
+static Hashtable all_imports;
+static Hashtable imports_exports;
 extern char *current_file_name;
 
 typedef struct {
@@ -254,7 +254,7 @@ static char *imp_scan_file(const char *filename)
     int token, is_extern = 0, save_next = 0;
     ImportUnit iu;
 
-    export_control *ec = hst_get(&imports_exports, (char *)filename, NULL, NULL);
+    ExportControl *ec = hst_get(&imports_exports, (char *)filename, NULL, NULL);
 
     while((token = yylex()) != 0)
     {
@@ -316,7 +316,7 @@ static char *imp_scan_file(const char *filename)
 
 void imp_build_buffer(void *k, void *v, void *data)
 {
-    multibuffer *mb = data;
+    Multibuffer *mb = data;
     char *filename = k;
 
     char *debgname = malloc(100 + strlen(filename));
@@ -328,7 +328,7 @@ void imp_build_buffer(void *k, void *v, void *data)
     free(text);
 }
 
-multibuffer *imp_generate_imports(const char *filename)
+Multibuffer *imp_generate_imports(const char *filename)
 {
     all_imports = hst_create();
     imports_exports = hst_create();
@@ -336,7 +336,7 @@ multibuffer *imp_generate_imports(const char *filename)
 
     skip_type_check = 1;
 
-    arraylist work = arr_create(10);
+    Arraylist work = arr_create(10);
     int offset = 0;
     arr_append(&work, realpath(filename, NULL));
 
@@ -355,7 +355,7 @@ multibuffer *imp_generate_imports(const char *filename)
     {
         filename = arr_get(&work, offset++);
 
-        export_control *ec = ec_alloc();
+        ExportControl *ec = ec_alloc();
 
         FILE *f = fopen(filename, "r");
 
@@ -418,7 +418,7 @@ multibuffer *imp_generate_imports(const char *filename)
     free(cwd);
     free(current_realpath);
 
-    multibuffer *buf = mb_alloc();
+    Multibuffer *buf = mb_alloc();
     hst_for_each(&all_imports, imp_build_buffer, buf);
     skip_type_check = 0;
 

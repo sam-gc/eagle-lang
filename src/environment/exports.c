@@ -26,28 +26,28 @@ typedef struct node
 
     union
     {
-        rgx_regex *rgx;
+        Regex *rgx;
         char *wild;
     } pattern;
 
 } rgxnode;
 
-struct export_control
+struct ExportControl
 {
     rgxnode *head;
     rgxnode *tail;
 };
 
-export_control *ec_alloc()
+ExportControl *ec_alloc()
 {
-    export_control *ec = malloc(sizeof(export_control));
+    ExportControl *ec = malloc(sizeof(ExportControl));
     ec->head = NULL;
     ec->tail = NULL;
 
     return ec;
 }
 
-void ec_add_str(export_control *ec, const char *str, int token)
+void ec_add_str(ExportControl *ec, const char *str, int token)
 {
     rgxnode *node = malloc(sizeof(rgxnode));
     node->next = NULL;
@@ -66,7 +66,7 @@ void ec_add_str(export_control *ec, const char *str, int token)
     ec->tail = node;
 }
 
-void ec_add_wcard(export_control *ec, const char *str, int token)
+void ec_add_wcard(ExportControl *ec, const char *str, int token)
 {
     rgxnode *node = malloc(sizeof(rgxnode));
     node->next = NULL;
@@ -85,7 +85,7 @@ void ec_add_wcard(export_control *ec, const char *str, int token)
     ec->tail = node;
 }
 
-int ec_allow(export_control *ec, const char *str, int token)
+int ec_allow(ExportControl *ec, const char *str, int token)
 {
     rgxnode *node;
     for(node = ec->head; node; node = node->next)
@@ -102,7 +102,7 @@ int ec_allow(export_control *ec, const char *str, int token)
     return 0;
 }
 
-void ec_free(export_control *ec)
+void ec_free(ExportControl *ec)
 {
     rgxnode *node = ec->head;
     while(node)

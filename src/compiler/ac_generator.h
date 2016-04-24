@@ -13,9 +13,9 @@
 #include "core/hashtable.h"
 
 typedef struct {
-    arraylist *elems;
-    hashtable *param_mapping;
-    hashtable *params;
+    Arraylist *elems;
+    Hashtable *param_mapping;
+    Hashtable *params;
     char *ident;
     LLVMValueRef func;
     LLVMTypeRef contextType;

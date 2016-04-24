@@ -97,15 +97,15 @@ typedef struct {
 
 typedef struct {
     EagleBasicType type;
-    arraylist types;
-    arraylist names;
-    arraylist interfaces;
+    Arraylist types;
+    Arraylist names;
+    Arraylist interfaces;
     char *name;
 } EagleStructType;
 
 typedef struct {
     EagleBasicType type;
-    arraylist names;
+    Arraylist names;
 } EagleInterfaceType;
 
 typedef struct {
@@ -160,9 +160,9 @@ void ty_add_init(char *name, EagleComplexType *ty);
 EagleComplexType *ty_get_init(char *name);
 void ty_add_method(char *name, char *method, EagleComplexType *ty);
 EagleComplexType *ty_method_lookup(char *name, char *method);
-void ty_add_struct_def(char *name, arraylist *names, arraylist *types);
+void ty_add_struct_def(char *name, Arraylist *names, Arraylist *types);
 void ty_struct_member_index(EagleComplexType *ett, char *member, int *index, EagleComplexType **type);
-void ty_struct_get_members(EagleComplexType *ett, arraylist **names, arraylist **types);
+void ty_struct_get_members(EagleComplexType *ett, Arraylist **names, Arraylist **types);
 int ty_needs_destructor(EagleComplexType *ett);
 LLVMTypeRef ty_get_counted(LLVMTypeRef in);
 void ty_set_typedef(char *name, EagleComplexType *type);
@@ -174,7 +174,7 @@ int ty_interface_offset(char *name, char *method);
 int ty_interface_count(char *name);
 char *ty_interface_for_method(EagleComplexType *ett, char *method);
 int ty_class_implements_interface(EagleComplexType *type, EagleComplexType *interface);
-void ett_class_set_interfaces(EagleComplexType *ett, arraylist *interfaces);
+void ett_class_set_interfaces(EagleComplexType *ett, Arraylist *interfaces);
 
 static inline int ET_IS_INT(EagleBasicType t)
 {

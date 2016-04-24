@@ -11,6 +11,6 @@
 
 #include "core/multibuffer.h"
 
-multibuffer *imp_generate_imports(const char *filename);
+Multibuffer *imp_generate_imports(const char *filename);
 
 #endif

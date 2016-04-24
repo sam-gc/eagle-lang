@@ -13,9 +13,9 @@
 #include "core/arraylist.h"
 #include "core/mempool.h"
 
-static mempool ast_mempool;
-static mempool ast_lst_mempool;
-static mempool ast_hst_mempool;
+static Mempool ast_mempool;
+static Mempool ast_lst_mempool;
+static Mempool ast_hst_mempool;
 static int init_pool = 0;
 
 void ast_free_nodes()
@@ -320,7 +320,7 @@ void ast_struct_set_extern(AST *ast)
 
 AST *ast_make_struct_lit_dict()
 {
-    hashtable *hst = malloc(sizeof(*hst));
+    Hashtable *hst = malloc(sizeof(*hst));
     *hst = hst_create();
 
     // Pretend this is a tree node even though it is not
@@ -337,7 +337,7 @@ AST *ast_make_struct_lit(char *name, AST *dict)
     ASTStructLit *ast = ast_malloc(sizeof(ASTStructLit));
     ast->type = ASTRUCTLIT;
 
-    hashtable *hst = (hashtable *)dict;
+    Hashtable *hst = (Hashtable *)dict;
     ast->exprs = *hst;
     ast->name = name;
 
@@ -412,7 +412,7 @@ AST *ast_class_set_init(AST *ast, AST *init)
     impl->next = f->params;
     f->params = impl;
 
-    arraylist list = arr_create(10);
+    Arraylist list = arr_create(10);
     ASTVarDecl *vd = (ASTVarDecl *)f->params;
     for(; vd; vd = (ASTVarDecl *)vd->next)
     {
@@ -461,7 +461,7 @@ AST *ast_class_method_add(AST *ast, AST *func)
     impl->next = f->params;
     f->params = impl;
 
-    arraylist list = arr_create(10);
+    Arraylist list = arr_create(10);
     ASTVarDecl *vd = (ASTVarDecl *)f->params;
     for(; vd; vd = (ASTVarDecl *)vd->next)
     {
@@ -551,7 +551,7 @@ AST *ast_make_closure_type(AST *tysList, AST *resType)
     ASTTypeDecl *ast = ast_malloc(sizeof(ASTTypeDecl));
     ast->type = ATYPE;
 
-    arraylist list = arr_create(10);
+    Arraylist list = arr_create(10);
     ASTVarDecl *vd = (ASTVarDecl *)tysList;
     for(; vd; vd = (ASTVarDecl *)vd->next)
     {
@@ -572,7 +572,7 @@ AST *ast_make_function_type(AST *tysList, AST *resType)
     ASTTypeDecl *ast = ast_malloc(sizeof(ASTTypeDecl));
     ast->type = ATYPE;
 
-    arraylist list = arr_create(10);
+    Arraylist list = arr_create(10);
     ASTVarDecl *vd = (ASTVarDecl *)tysList;
     for(; vd; vd = (ASTVarDecl *)vd->next)
     {

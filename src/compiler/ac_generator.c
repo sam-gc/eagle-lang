@@ -156,8 +156,8 @@ void ac_compile_generator_code(AST *ast, CompilerBundle *cb)//, LLVMValueRef fun
 {
     ASTFuncDecl *a = (ASTFuncDecl *)ast;
 
-    arraylist param_values = arr_create(10);
-    arraylist yield_blocks = arr_create(10);
+    Arraylist param_values = arr_create(10);
+    Arraylist yield_blocks = arr_create(10);
 
     ASTTypeDecl *genType = (ASTTypeDecl *)a->retType;
     cb->currentGenType = (EagleGenType *)ett_gen_type(genType->etype);
@@ -197,7 +197,7 @@ void ac_compile_generator_code(AST *ast, CompilerBundle *cb)//, LLVMValueRef fun
     cb->currentFunctionScope = cb->varScope->scope;
     cb->yieldBlocks = &yield_blocks;
 
-    hashtable param_mapping = hst_create();
+    Hashtable param_mapping = hst_create();
 
     if(a->params)
     {
@@ -239,8 +239,8 @@ void ac_compile_generator_code(AST *ast, CompilerBundle *cb)//, LLVMValueRef fun
     LLVMTypeRef ctx = LLVMStructCreateNamed(utl_get_current_context(), ctxname);
     free(ctxname);
 
-    // arraylist param_indices = arr_create(10);
-    hashtable prms = hst_create();
+    // Arraylist param_indices = arr_create(10);
+    Hashtable prms = hst_create();
 
     GeneratorBundle gb;
     gb.ident = a->ident;
@@ -282,7 +282,7 @@ void ac_generator_replace_allocas(CompilerBundle *cb, GeneratorBundle *gb)
 {
     LLVMBasicBlockRef entry = cb->currentFunctionEntry;
 
-    arraylist elems = arr_create(10);
+    Arraylist elems = arr_create(10);
     arr_append(&elems, LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0));
     arr_append(&elems, LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0));
 
@@ -311,8 +311,8 @@ void ac_generator_replace_allocas(CompilerBundle *cb, GeneratorBundle *gb)
 
         // LLVMDumpType(ctx);
 
-        hashtable *pm = gb->param_mapping;
-        hashtable *po = gb->params;
+        Hashtable *pm = gb->param_mapping;
+        Hashtable *po = gb->params;
 
         gb->elems = &elems;
 
@@ -374,7 +374,7 @@ void ac_null_out_counted(CompilerBundle *cb, GeneratorBundle *gb, LLVMValueRef b
 {
     LLVMBasicBlockRef curr = LLVMGetInsertBlock(cb->builder);
     LLVMPositionBuilderAtEnd(cb->builder, gb->last_block);
-    arraylist *elems = gb->elems;
+    Arraylist *elems = gb->elems;
     int i;
     for(i = 2; i < elems->count; i++)
     {

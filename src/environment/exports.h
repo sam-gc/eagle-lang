@@ -9,12 +9,12 @@
 #ifndef EXPORTS_H
 #define EXPORTS_H
 
-typedef struct export_control export_control;
+typedef struct ExportControl ExportControl;
 
-export_control *ec_alloc();
-void ec_add_str(export_control *ec, const char *str, int token);
-void ec_add_wcard(export_control *ec, const char *str, int token);
-int ec_allow(export_control *ec, const char *str, int token);
-void ec_free(export_control *ec);
+ExportControl *ec_alloc();
+void ec_add_str(ExportControl *ec, const char *str, int token);
+void ec_add_wcard(ExportControl *ec, const char *str, int token);
+int ec_allow(ExportControl *ec, const char *str, int token);
+void ec_free(ExportControl *ec);
 
 #endif

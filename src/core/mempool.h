@@ -18,10 +18,10 @@ typedef struct {
     struct poolnode *head;
     void (*free_func)(void *);
     struct poolnode *tail;
-} mempool;
+} Mempool;
 
-mempool pool_create();
-void pool_add(mempool *pool, void *obj);
-void pool_drain(mempool *pool);
+Mempool pool_create();
+void pool_add(Mempool *pool, void *obj);
+void pool_drain(Mempool *pool);
 
 #endif

@@ -536,9 +536,9 @@ LLVMValueRef ac_compile_logical_or(AST *ast, CompilerBundle *cb)
 {
     ASTBinary *a = (ASTBinary *)ast;
 
-    arraylist trees = arr_create(10);
-    arraylist values = arr_create(10);
-    arraylist blocks = arr_create(10);
+    Arraylist trees = arr_create(10);
+    Arraylist values = arr_create(10);
+    Arraylist blocks = arr_create(10);
 
     for(; a->type == ABINARY && ((ASTBinary *)a)->op == '|'; a = (ASTBinary *)a->left)
         arr_append(&trees, a->right);
@@ -609,9 +609,9 @@ LLVMValueRef ac_compile_logical_and(AST *ast, CompilerBundle *cb)
 {
     ASTBinary *a = (ASTBinary *)ast;
 
-    arraylist trees = arr_create(10);
-    arraylist values = arr_create(10);
-    arraylist blocks = arr_create(10);
+    Arraylist trees = arr_create(10);
+    Arraylist values = arr_create(10);
+    Arraylist blocks = arr_create(10);
 
     for(; a->type == ABINARY && ((ASTBinary *)a)->op == '&'; a = (ASTBinary *)a->left)
         arr_append(&trees, a->right);

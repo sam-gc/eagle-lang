@@ -29,9 +29,9 @@ typedef struct {
     CXString  cf_name;
     CXType    cf_ret_type;
     int       cf_n_params;
-    arraylist cf_param_types;
+    Arraylist cf_param_types;
     FILE     *output;
-    hashtable seen;
+    Hashtable seen;
 } HeaderBundle;
 
 void ch_print_basic_type(HeaderBundle *hb, CXType type);
@@ -253,7 +253,7 @@ ch_handle_struct_field_cursor(CXCursor cursor, CXCursor parent, CXClientData cli
 {
     (void)parent;
 
-    arraylist *list = client_data;
+    Arraylist *list = client_data;
 
     CXCursor *c = malloc(sizeof(*c));
     memcpy(c, &cursor, sizeof(*c));
@@ -265,7 +265,7 @@ ch_handle_struct_field_cursor(CXCursor cursor, CXCursor parent, CXClientData cli
 
 void ch_handle_struct_cursor(CXCursor cursor, HeaderBundle *hb)
 {
-    arraylist list = arr_create(10);
+    Arraylist list = arr_create(10);
     clang_visitChildren(cursor, ch_handle_struct_field_cursor, &list);
 
     if(!list.count)

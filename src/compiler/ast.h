@@ -232,8 +232,8 @@ typedef struct {
     int ext;
 
     char *name;
-    arraylist types;
-    arraylist names;
+    Arraylist types;
+    Arraylist names;
 } ASTStructDecl;
 
 typedef struct {
@@ -254,7 +254,7 @@ typedef struct {
     struct AST *next;
     long lineno;
 
-    hashtable exprs;
+    Hashtable exprs;
     char *name;
 } ASTStructLit;
 
@@ -266,18 +266,18 @@ typedef struct {
     VariableLinkage linkage;
 
     char *name;
-    arraylist types;
-    arraylist names;
+    Arraylist types;
+    Arraylist names;
 
     struct AST *initdecl;
     struct AST *destructdecl;
     EagleComplexType *inittype;
     EagleComplexType *destructtype;
 
-    arraylist interfaces;
+    Arraylist interfaces;
 
-    // hashtable methods;
-    hashtable method_types;
+    // Hashtable methods;
+    Hashtable method_types;
 
     int ext;
 } ASTClassDecl;

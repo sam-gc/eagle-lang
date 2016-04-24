@@ -215,9 +215,9 @@ LLVMValueRef ac_compile_closure(AST *ast, CompilerBundle *cb)
     ClosureBundle cloclo;
     ac_pre_prepare_closure(cb, a->ident, &cloclo);
 
-    arraylist list = arr_create(8);
-    arraylist l2 = arr_create(8);
-    arraylist l3 = arr_create(8);
+    Arraylist list = arr_create(8);
+    Arraylist l2 = arr_create(8);
+    Arraylist l3 = arr_create(8);
     cloclo.contextTypes = &list;
     cloclo.contextVals = &l2;
     cloclo.outerContextVals = &l3;

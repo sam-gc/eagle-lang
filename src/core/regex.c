@@ -87,8 +87,8 @@ typedef struct {
     char *input;
     char *error;
 
-    mempool mempool;
-    rgx_regex *regex;
+    Mempool mempool;
+    Regex *regex;
 } rgx_compiler;
 
 typedef struct state rgx_state;
@@ -104,7 +104,7 @@ typedef struct {
     int ct;
 } rgxr_list;
 
-struct regex {
+struct Regex {
     rgx_state *start;
     rgx_state **l1;
     rgx_state **l2;
@@ -116,8 +116,8 @@ struct regex {
     int matched;
 
     int state_count;
-    mempool state_mempool;
-    mempool class_mempool;
+    Mempool state_mempool;
+    Mempool class_mempool;
 
     unsigned flags;
 };
@@ -128,16 +128,16 @@ rgx_ast_node *rgxc_base(rgx_compiler *compiler);
 rgx_ast_node *rgxc_factor(rgx_compiler *compiler);
 rgx_ast_node *rgxc_term(rgx_compiler *compiler);
 rgx_ast_node *rgxc_regex(rgx_compiler *compiler);
-rgx_fragment rgxb_build(rgx_ast_node *head, rgx_regex *regex);
-rgx_state *rgxb_build_state(int c, rgx_state *outa, rgx_state *outb, rgx_regex *regex);
+rgx_fragment rgxb_build(rgx_ast_node *head, Regex *regex);
+rgx_state *rgxb_build_state(int c, rgx_state *outa, rgx_state *outb, Regex *regex);
 void rgxb_patch(dangling_pointers *p, rgx_state *s);
 
-void rgx_set_flags(rgx_regex *regex, unsigned flags)
+void rgx_set_flags(Regex *regex, unsigned flags)
 {
     regex->flags = flags;
 }
 
-unsigned rgx_get_flags(rgx_regex *regex)
+unsigned rgx_get_flags(Regex *regex)
 {
     return regex->flags;
 }
@@ -189,10 +189,10 @@ void *rgxc_malloc(rgx_compiler *compiler, size_t size)
     return ptr;
 }
 
-rgx_regex *rgx_compile(char *input)
+Regex *rgx_compile(char *input)
 {
     rgx_compiler compiler = rgxc_make_compiler(input);
-    rgx_regex *regex = malloc(sizeof(*regex));
+    Regex *regex = malloc(sizeof(*regex));
     regex->state_count = 0;
     regex->listgen = 0;
     regex->flags = 0;
@@ -486,7 +486,7 @@ rgx_fragment rgxb_build_fragment(rgx_state *start, dangling_pointers *out)
     return frag;
 }
 
-rgx_state *rgxb_build_state(int c, rgx_state *outa, rgx_state *outb, rgx_regex *regex)
+rgx_state *rgxb_build_state(int c, rgx_state *outa, rgx_state *outb, Regex *regex)
 {
     rgx_state *state = malloc(sizeof(*state));
     state->c = c;
@@ -501,7 +501,7 @@ rgx_state *rgxb_build_state(int c, rgx_state *outa, rgx_state *outb, rgx_regex *
     return state;
 }
 
-rgx_fragment rgxb_or(rgx_ast_node *node, rgx_regex *regex)
+rgx_fragment rgxb_or(rgx_ast_node *node, Regex *regex)
 {
     rgx_ast_or_seq *or = (rgx_ast_or_seq *)node;
     rgx_fragment left = rgxb_build(or->first, regex);
@@ -511,7 +511,7 @@ rgx_fragment rgxb_or(rgx_ast_node *node, rgx_regex *regex)
     return rgxb_build_fragment(ns, rgxb_joined(left.out, right.out));
 }
 
-rgx_fragment rgxb_sequence(rgx_ast_node *node, rgx_regex *regex)
+rgx_fragment rgxb_sequence(rgx_ast_node *node, Regex *regex)
 {
     rgx_ast_or_seq *or = (rgx_ast_or_seq *)node;
     rgx_fragment left = rgxb_build(or->first, regex);
@@ -521,14 +521,14 @@ rgx_fragment rgxb_sequence(rgx_ast_node *node, rgx_regex *regex)
     return rgxb_build_fragment(left.start, right.out);
 }
 
-rgx_fragment rgxb_base(rgx_ast_node *node, rgx_regex *regex)
+rgx_fragment rgxb_base(rgx_ast_node *node, Regex *regex)
 {
     rgx_ast_base *base = (rgx_ast_base *)node;
     rgx_state *s = rgxb_build_state(base->c, NULL, NULL, regex);
     return rgxb_build_fragment(s, rgxb_singleton(&s->out));
 }
 
-rgx_fragment rgxb_class(rgx_ast_node *node, rgx_regex *regex)
+rgx_fragment rgxb_class(rgx_ast_node *node, Regex *regex)
 {
     rgx_ast_class *cls = (rgx_ast_class *)node;
     rgx_state *s = rgxb_build_state(CHRCLS, NULL, NULL, regex);
@@ -536,7 +536,7 @@ rgx_fragment rgxb_class(rgx_ast_node *node, rgx_regex *regex)
     return rgxb_build_fragment(s, rgxb_singleton(&s->out));
 }
 
-rgx_fragment rgxb_repetition(rgx_ast_node *node, rgx_regex *regex)
+rgx_fragment rgxb_repetition(rgx_ast_node *node, Regex *regex)
 {
     rgx_ast_repetition *rep = (rgx_ast_repetition *)node;
     rgx_fragment e = rgxb_build(rep->loop, regex);
@@ -545,7 +545,7 @@ rgx_fragment rgxb_repetition(rgx_ast_node *node, rgx_regex *regex)
     return rgxb_build_fragment(s, rgxb_singleton(&s->out_alt));
 }
 
-rgx_fragment rgxb_at_least_one(rgx_ast_node *node, rgx_regex *regex)
+rgx_fragment rgxb_at_least_one(rgx_ast_node *node, Regex *regex)
 {
     rgx_ast_repetition *rep = (rgx_ast_repetition *)node;
     rgx_fragment e = rgxb_build(rep->loop, regex);
@@ -554,7 +554,7 @@ rgx_fragment rgxb_at_least_one(rgx_ast_node *node, rgx_regex *regex)
     return rgxb_build_fragment(e.start, rgxb_singleton(&s->out_alt));
 }
 
-rgx_fragment rgxb_one_or_none(rgx_ast_node *node, rgx_regex *regex)
+rgx_fragment rgxb_one_or_none(rgx_ast_node *node, Regex *regex)
 {
     rgx_ast_repetition *rep = (rgx_ast_repetition *)node;
     rgx_fragment e = rgxb_build(rep->loop, regex);
@@ -562,13 +562,13 @@ rgx_fragment rgxb_one_or_none(rgx_ast_node *node, rgx_regex *regex)
     return rgxb_build_fragment(s, rgxb_joined(e.out, rgxb_singleton(&s->out_alt)));
 }
 
-rgx_fragment rgxb_blank(rgx_ast_node *node, rgx_regex *regex)
+rgx_fragment rgxb_blank(rgx_ast_node *node, Regex *regex)
 {
     rgx_state *s = rgxb_build_state(NONE, NULL, NULL, regex);
     return rgxb_build_fragment(s, rgxb_singleton(&s->out));
 }
 
-rgx_fragment rgxb_build(rgx_ast_node *head, rgx_regex *regex)
+rgx_fragment rgxb_build(rgx_ast_node *head, Regex *regex)
 {
     switch(head->type)
     {
@@ -593,7 +593,7 @@ rgx_fragment rgxb_build(rgx_ast_node *head, rgx_regex *regex)
     }
 }
 
-void rgx_add_state(rgx_regex *regex, rgxr_list *list, rgx_state *state)
+void rgx_add_state(Regex *regex, rgxr_list *list, rgx_state *state)
 {
     if(state->listit == regex->listgen)
         return;
@@ -656,7 +656,7 @@ int rgx_test(rgx_state *s, char c, unsigned flags)
     return rgx_test_class(s->chrcls, c);
 }
 
-void rgx_step(rgx_regex *regex, char c)
+void rgx_step(Regex *regex, char c)
 {
     regex->listgen++;
     regex->matched = 0;
@@ -673,16 +673,16 @@ void rgx_step(rgx_regex *regex, char c)
     }
 }
 
-void rgx_reset_all(mempool *state_pool)
+void rgx_reset_all(Mempool *state_pool)
 {
     struct poolnode *node = state_pool->head;
     for(; node; node = node->next)
         ((rgx_state *)node->data)->listit = 0;
 }
 
-rgx_result_wrapper rgx_wrapper_make()
+RegexResultWrapper rgx_wrapper_make()
 {
-    rgx_result_wrapper wrapper;
+    RegexResultWrapper wrapper;
     wrapper.indices = malloc(sizeof(int) * 10);
     wrapper.ct = 0;
     wrapper.alloced = 10;
@@ -690,7 +690,7 @@ rgx_result_wrapper rgx_wrapper_make()
     return wrapper;
 }
 
-void rgx_wrapper_append(rgx_result_wrapper *w, int c)
+void rgx_wrapper_append(RegexResultWrapper *w, int c)
 {
     if(w->ct == w->alloced)
     {
@@ -701,13 +701,13 @@ void rgx_wrapper_append(rgx_result_wrapper *w, int c)
     w->indices[w->ct++] = c;
 }
 
-int *rgx_wrapper_finalize(rgx_result_wrapper *w)
+int *rgx_wrapper_finalize(RegexResultWrapper *w)
 {
     rgx_wrapper_append(w, -1);
     return w->indices;
 }
 
-int *rgx_collect_matches(rgx_regex *regex, char *input)
+int *rgx_collect_matches(Regex *regex, char *input)
 {
     rgx_state *l1[regex->state_count];
     rgx_state *l2[regex->state_count];
@@ -729,7 +729,7 @@ int *rgx_collect_matches(rgx_regex *regex, char *input)
 
     rgx_add_state(regex, regex->curr_list, regex->start);
 
-    rgx_result_wrapper res = rgx_wrapper_make();
+    RegexResultWrapper res = rgx_wrapper_make();
 
     int idx;
     for(idx = 0; *input; input++, idx++)
@@ -785,7 +785,7 @@ int *rgx_collect_matches(rgx_regex *regex, char *input)
     return rgx_wrapper_finalize(&res);
 }
 
-int rgx_search(rgx_regex *regex, char *input)
+int rgx_search(Regex *regex, char *input)
 {
     rgx_state *l1[regex->state_count];
     rgx_state *l2[regex->state_count];
@@ -837,7 +837,7 @@ int rgx_search(rgx_regex *regex, char *input)
     return -1;
 }
 
-int rgx_matches(rgx_regex *regex, char *input)
+int rgx_matches(Regex *regex, char *input)
 {
     rgx_state *l1[regex->state_count];
     rgx_state *l2[regex->state_count];
@@ -876,7 +876,7 @@ int rgx_matches(rgx_regex *regex, char *input)
     return res;
 }
 
-void rgx_free(rgx_regex *regex)
+void rgx_free(Regex *regex)
 {
     pool_drain(&regex->state_mempool);
     pool_drain(&regex->class_mempool);

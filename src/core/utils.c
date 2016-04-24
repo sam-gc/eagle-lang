@@ -69,7 +69,7 @@ char *utl_gen_escaped_string(char *inp, int lineno)
     return n;
 }
 
-static mempool utl_mempool;
+static Mempool utl_mempool;
 static int init_mempool = 0;
 
 void utl_register_memory(void *m)

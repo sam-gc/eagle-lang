@@ -33,7 +33,7 @@ typedef struct {
     EagleFunctionType *currentFunctionType;
     EagleGenType *currentGenType;
 
-    arraylist *yieldBlocks;
+    Arraylist *yieldBlocks;
     LLVMBasicBlockRef nextCaseBlock;
     LLVMBasicBlockRef currentYield;
     LLVMBasicBlockRef currentFunctionEntry;
@@ -45,14 +45,14 @@ typedef struct {
     VarScope *currentCaseScope;
 
     VarScopeStack *varScope;
-    hashtable transients;
-    hashtable loadedTransients;
+    Hashtable transients;
+    Hashtable loadedTransients;
 
     int compilingMethod;
     int inDeferment;
     EagleComplexType *enum_lookup;
 
-    export_control *exports;
+    ExportControl *exports;
 } CompilerBundle;
 
 #include "ac_control_flow.h"

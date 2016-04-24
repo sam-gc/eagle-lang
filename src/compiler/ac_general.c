@@ -13,7 +13,7 @@
 #include "core/utils.h"
 #include "core/colors.h"
 
-extern hashtable global_args;
+extern Hashtable global_args;
 extern char *current_file_name;
 
 static void ac_deferment_callback(AST *ast, void *data);
@@ -107,9 +107,9 @@ void ac_flush_transients(CompilerBundle *cb)
     cb->loadedTransients = hst_create();
 }
 
-export_control *ac_get_exports(AST *ast)
+ExportControl *ac_get_exports(AST *ast)
 {
-    export_control *ec = ec_alloc();
+    ExportControl *ec = ec_alloc();
 
     for(; ast; ast = ast->next)
     {

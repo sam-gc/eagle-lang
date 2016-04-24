@@ -32,9 +32,9 @@ void append_to_list(struct poolnode **head, struct poolnode **tail, struct pooln
     *tail = next;
 }
 
-mempool pool_create()
+Mempool pool_create()
 {
-    mempool pool;
+    Mempool pool;
     pool.head = NULL;
     pool.free_func = NULL;
     pool.tail = NULL;
@@ -42,13 +42,13 @@ mempool pool_create()
     return pool;
 }
 
-void pool_add(mempool *pool, void *obj)
+void pool_add(Mempool *pool, void *obj)
 {
     struct poolnode *next = gen_node(obj);
     append_to_list(&(pool->head), &(pool->tail), next);
 }
 
-void pool_drain(mempool *pool)
+void pool_drain(Mempool *pool)
 {
     struct poolnode *node = pool->head;
     while(node)

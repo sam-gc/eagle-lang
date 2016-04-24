@@ -17,11 +17,11 @@
 typedef struct {
     unsigned verbose : 1;
 
-    arraylist source_files;
-    arraylist object_files;
-    arraylist extra_code;
-    arraylist work;
-    arraylist libs;
+    Arraylist source_files;
+    Arraylist object_files;
+    Arraylist extra_code;
+    Arraylist work;
+    Arraylist libs;
 
     int widex;
 

@@ -20,7 +20,7 @@
 #include "threading.h"
 #include "mempool.h"
 
-extern hashtable global_args;
+extern Hashtable global_args;
 typedef LLVMPassManagerBuilderRef LPMB;
 
 static void shp_spawn_process(const char *process, const char *args[]);

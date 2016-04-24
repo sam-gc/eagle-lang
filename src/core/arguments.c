@@ -18,7 +18,7 @@
 
 #define SEQU(a, b) strcmp((a), (b)) == 0
 
-extern hashtable global_args;
+extern Hashtable global_args;
 
 static TermArgs *targs;
 static const char *progname;
