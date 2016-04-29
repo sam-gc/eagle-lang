@@ -130,6 +130,8 @@ LLVMModuleRef ac_compile(AST *ast, int include_rc)
     cb.builder = LLVMCreateBuilderInContext(utl_get_current_context());
     cb.transients = hst_create();
     cb.loadedTransients = hst_create();
+    cb.genericFunctions = hst_create();
+    cb.genericWorkList = arr_create(5);
     cb.nextCaseBlock = NULL;
 
     cb.compilingMethod = 0;
@@ -180,14 +182,21 @@ LLVMModuleRef ac_compile(AST *ast, int include_rc)
         ac_dispatch_declaration(ast, &cb);
     }
 
+    ac_compile_generics(&cb);
+
     vs_pop(cb.varScope);
 
     LLVMDisposeBuilder(cb.builder);
     LLVMDisposeTargetData(cb.td);
     vs_free(cb.varScope);
 
+    ac_generics_cleanup(&cb);
+
     hst_free(&cb.transients);
     hst_free(&cb.loadedTransients);
+    hst_free(&cb.genericFunctions);
+
+    arr_free(&cb.genericWorkList);
 
     ec_free(cb.exports);
 
@@ -335,17 +344,26 @@ void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
         }
     }
 
-    LLVMTypeRef func_type = LLVMFunctionType(ett_llvm_type(retType->etype), param_types, ct, a->vararg);
-    LLVMValueRef func = LLVMAddFunction(cb->module, a->ident, func_type);
-
-    if(!ec_allow(cb->exports, a->ident, TFUNC) && a->body && strcmp(a->ident, "main") && a->linkage != VLExport)
-        LLVMSetLinkage(func, LLVMPrivateLinkage);
-
-    if(retType->etype->type == ETStruct)
-        die(ALN, "Returning struct by value not supported. (%s)\n", a->ident);
-
     EagleComplexType *ftype = ett_function_type(retType->etype, eparam_types, ct);
     ((EagleFunctionType *)ftype)->variadic = a->vararg;
+
+    LLVMValueRef func = NULL;
+
+    if(ac_decl_is_generic(ast))
+    {
+        ac_generic_register(ast, ftype, cb);
+    }
+    else
+    {
+        LLVMTypeRef func_type = LLVMFunctionType(ett_llvm_type(retType->etype), param_types, ct, a->vararg);
+        func = LLVMAddFunction(cb->module, a->ident, func_type);
+
+        if(!ec_allow(cb->exports, a->ident, TFUNC) && a->body && strcmp(a->ident, "main") && a->linkage != VLExport)
+            LLVMSetLinkage(func, LLVMPrivateLinkage);
+
+        if(retType->etype->type == ETStruct)
+            die(ALN, "Returning struct by value not supported. (%s)\n", a->ident);
+    }
 
     vs_put(cb->varScope, a->ident, func, ftype, -1);
 }

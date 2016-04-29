@@ -116,6 +116,7 @@ globalvardecl       : TSTATIC variabledecl { $$ = $2; ast_set_linkage($2, VLStat
                     ;
 
 type                : TTYPE { $$ = ast_make_type($1); }
+                    | TLT TIDENTIFIER TGT { $$ = ast_make_generic_type($2); }
                     | type TMUL { $$ = ast_make_pointer($1); }
                     | type TLBRACKET TRBRACKET { $$ = ast_make_array($1, -1); }
                     | type TLBRACKET TINT TRBRACKET { $$ = ast_make_array($1, atoi($3)); }

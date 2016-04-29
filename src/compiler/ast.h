@@ -373,6 +373,7 @@ AST *ast_make_arr_decl(AST *type, char *ident, AST *expr);
 void ast_set_linkage(AST *ast, VariableLinkage linkage);
 void ast_set_static_init(AST *ast, AST *staticInit);
 AST *ast_make_type(char *type);
+AST *ast_make_generic_type(char *ident);
 AST *ast_make_closure_type(AST *tysList, AST *resType);
 AST *ast_make_function_type(AST *tysList, AST *resType);
 AST *ast_make_gen_type(AST *ytype);

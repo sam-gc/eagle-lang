@@ -58,7 +58,8 @@ typedef enum {
     ETStruct,
     ETClass,
     ETInterface,
-    ETEnum
+    ETEnum,
+    ETGeneric
 } EagleBasicType;
 
 typedef struct {
@@ -113,6 +114,11 @@ typedef struct {
     char *name;
 } EagleEnumType;
 
+typedef struct {
+    EagleBasicType type;
+    char *ident;
+} EagleGenericType;
+
 EagleComplexType *et_parse_string(char *text);
 EagleBasicType et_promotion(EagleBasicType left, EagleBasicType right);
 EagleBasicType et_eagle_type(LLVMTypeRef ty);
@@ -126,11 +132,13 @@ EagleComplexType *ett_struct_type(char *name);
 EagleComplexType *ett_class_type(char *name);
 EagleComplexType *ett_interface_type(char *name);
 EagleComplexType *ett_enum_type(char *name);
+EagleComplexType *ett_deep_copy(EagleComplexType *type);
 void ett_composite_interface(EagleComplexType *ett, char *name);
 
 LLVMTypeRef ett_closure_type(EagleComplexType *type);
 EagleBasicType ett_get_base_type(EagleComplexType *type);
 EagleComplexType *ett_get_root_pointee(EagleComplexType *type);
+EagleComplexType *ett_get_root_pointee_and_parent(EagleComplexType *type, EagleComplexType **parent);
 LLVMTypeRef ett_llvm_type(EagleComplexType *type);
 LLVMValueRef ett_default_value(EagleComplexType *type);
 int ett_are_same(EagleComplexType *left, EagleComplexType *right);
@@ -138,6 +146,7 @@ int ett_pointer_depth(EagleComplexType *t);
 int ett_size_of_type(EagleComplexType *t);
 int ett_array_has_counted(EagleComplexType *t);
 int ett_array_count(EagleComplexType *t);
+int ett_qualifies_as_generic(EagleComplexType *t);
 char *ett_unique_type_name(EagleComplexType *t);
 
 LLVMTypeRef ty_class_indirect();
@@ -175,6 +184,9 @@ int ty_interface_count(char *name);
 char *ty_interface_for_method(EagleComplexType *ett, char *method);
 int ty_class_implements_interface(EagleComplexType *type, EagleComplexType *interface);
 void ett_class_set_interfaces(EagleComplexType *ett, Arraylist *interfaces);
+EagleComplexType *ett_generic_type(char *ident);
+void ty_set_generic_type(char *ident, EagleComplexType *with);
+size_t ty_type_max_size();
 
 static inline int ET_IS_INT(EagleBasicType t)
 {

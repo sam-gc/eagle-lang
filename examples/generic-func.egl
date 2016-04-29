@@ -1,0 +1,64 @@
+extern func malloc(long) : any*
+
+struct Point
+{
+    int x;
+    int y;
+}
+
+func max(<T> a, <T> b) : <T>
+{
+    return a > b ? a : b
+}
+
+func alloc(<T> a) : <T>*
+{
+    <T>* b = malloc(sizeof(<T>))
+    b! = a
+    return b
+}
+
+func swap(<T>* a, <T>* b)
+{
+    <T> temp = a!
+    a! = b!
+    b! = temp
+}
+
+func point_print_x(<PtPtr> p)
+{
+    puts p.x
+}
+
+func main()
+{
+    puts max(5, 10)
+    puts max(10, 32)
+    puts max(11.3, 11.2)
+
+    var g = alloc(45)
+    puts g!
+
+    var b = alloc(yes)
+    puts b!
+
+    uint x = 10
+    uint y = 5000000
+    swap(&x, &y)
+
+    puts x
+
+    var p = new Point({
+        .x = 11
+        .y = 0
+    })
+
+    var p2 = Point {
+        .x = -10
+        .y = 0
+    }
+
+    point_print_x(p)
+    point_print_x(&p2)
+}
+

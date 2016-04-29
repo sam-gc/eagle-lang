@@ -20,13 +20,12 @@
 #define PLACEHOLDER ((void *)1)
 #define PTR(p) ((void *)(uintptr_t)p)
 
-#define MAX_TYPE_SIZE 700
-
 LLVMModuleRef the_module = NULL;
 LLVMTargetDataRef etTargetData = NULL;
 
 void ty_method_free(void *k, void *v, void *d);
 void ty_struct_def_free(void *k, void *v, void *d);
+static size_t ty_size_of_type(EagleComplexType *type);
 
 static Mempool type_mempool;
 static Mempool list_mempool;
@@ -42,6 +41,7 @@ static Hashtable type_named_table;
 static Hashtable enum_named_table;
 static Hashtable init_table;
 static Hashtable interface_table;
+static Hashtable generic_ident_table;
 static LLVMTypeRef indirect_struct_type = NULL;
 static LLVMTypeRef generator_type = NULL;
 
@@ -86,6 +86,9 @@ void ty_prepare()
     interface_table = hst_create();
     interface_table.duplicate_keys = 1;
 
+    generic_ident_table = hst_create();
+    generic_ident_table.duplicate_keys = 1;
+
     type_mempool = pool_create();
     list_mempool = pool_create();
     list_mempool.free_func = list_mempool_free;
@@ -113,6 +116,7 @@ void ty_teardown()
     hst_for_each(&method_table, ty_method_free, NULL);
     hst_free(&method_table);
     hst_free(&init_table);
+    hst_free(&generic_ident_table);
 
     hst_free(&interface_table);
 
@@ -241,6 +245,7 @@ LLVMTypeRef ett_llvm_type(EagleComplexType *type)
             return LLVMDoubleTypeInContext(utl_get_current_context());
         case ETInt1:
             return LLVMInt1TypeInContext(utl_get_current_context());
+        case ETGeneric: // In practice this doesn't matter
         case ETAny:
         case ETInt8:
         case ETUInt8:
@@ -516,6 +521,39 @@ EagleComplexType *ett_enum_type(char *name)
     return (EagleComplexType *)en;
 }
 
+EagleComplexType *ett_deep_copy(EagleComplexType *type)
+{
+    EagleComplexType *pointer = NULL;
+    EagleComplexType *head = NULL;
+    for(; type->type == ETPointer; type = ET_POINTEE(type))
+    {
+        EaglePointerType *pt = malloc(sizeof(EaglePointerType));
+        pool_add(&type_mempool, pt);
+        memcpy(pt, type, sizeof(EaglePointerType));
+        if(!head)
+        {
+            head = (EagleComplexType *)pt;
+            pointer = head;
+            continue;
+        }
+
+        ((EaglePointerType *)pointer)->to = (EagleComplexType *)pt;
+        pointer = (EagleComplexType *)pt;
+    }
+
+    EagleComplexType *output = malloc(ty_size_of_type(type));
+    memcpy(output, type, ty_size_of_type(type));
+    pool_add(&type_mempool, output);
+    
+    if(head)
+    {
+        ((EaglePointerType *)pointer)->to = output;
+        return head;
+    }
+
+    return output;
+}
+
 void ett_composite_interface(EagleComplexType *ett, char *name)
 {
     EagleInterfaceType *ei = (EagleInterfaceType *)ett;
@@ -544,6 +582,16 @@ EagleComplexType *ett_get_root_pointee(EagleComplexType *type)
     return type;
 }
 
+EagleComplexType *ett_get_root_pointee_and_parent(EagleComplexType *type, EagleComplexType **parent)
+{
+    for(; type->type == ETPointer; type = ET_POINTEE(type))
+    {
+        *parent = type;
+    }
+
+    return type;
+}
+
 EagleBasicType ett_get_base_type(EagleComplexType *type)
 {
     if(type->type == ETPointer)
@@ -556,6 +604,8 @@ int ett_are_same(EagleComplexType *left, EagleComplexType *right)
 {
     if(left->type != right->type)
     {
+        if(left->type == ETGeneric || right->type == ETGeneric)
+            return 1;
         return 0;
     }
 
@@ -635,10 +685,15 @@ char *ett_unique_type_name(EagleComplexType *t)
         NAME_BASIC(Any);
         NAME_BASIC(Nil);
         NAME_BASIC(Int1);
+        NAME_BASIC(UInt8);
         NAME_BASIC(Int8);
+        NAME_BASIC(UInt16);
         NAME_BASIC(Int16);
+        NAME_BASIC(UInt32);
         NAME_BASIC(Int32);
+        NAME_BASIC(UInt64);
         NAME_BASIC(Int64);
+        NAME_BASIC(Float);
         NAME_BASIC(Double);
         NAME_BASIC(CString);
 
@@ -786,6 +841,14 @@ int ett_array_count(EagleComplexType *t)
     return 1;
 }
 
+int ett_qualifies_as_generic(EagleComplexType *type)
+{
+    if(type->type == ETPointer)
+        type = ett_get_root_pointee(type);
+
+    return type->type == ETGeneric;
+}
+
 void ty_add_name(char *name)
 {
     hst_put(&name_table, name, PLACEHOLDER, NULL, NULL);
@@ -899,8 +962,32 @@ void ty_add_enum_item(char *name, char *item, long val)
 
 void ty_register_typedef(char *name)
 {
-    void *tag = malloc(MAX_TYPE_SIZE);
+    void *tag = malloc(ty_type_max_size());
     hst_put(&typedef_table, name, tag, NULL, NULL);
+}
+
+static size_t ty_size_of_type(EagleComplexType *type)
+{
+    switch(type->type)
+    {
+        case ETPointer:
+            return sizeof(EaglePointerType);
+        case ETArray:
+            return sizeof(EagleArrayType);
+        case ETFunction:
+            return sizeof(EagleFunctionType);
+        case ETGenerator:
+            return sizeof(EagleGenType);
+        case ETClass:
+        case ETStruct:
+            return sizeof(EagleStructType);
+        case ETInterface:
+            return sizeof(EagleInterfaceType);
+        case ETGeneric:
+            return sizeof(EagleGenericType);
+        default:
+            return sizeof(EagleComplexType);
+    }
 }
 
 void ty_set_typedef(char *name, EagleComplexType *type)
@@ -912,34 +999,7 @@ void ty_set_typedef(char *name, EagleComplexType *type)
     if(!tag)
         return;
 
-    size_t memsize = 0;
-    switch(type->type)
-    {
-        case ETPointer:
-            memsize = sizeof(EaglePointerType);
-            break;
-        case ETArray:
-            memsize = sizeof(EagleArrayType);
-            break;
-        case ETFunction:
-            memsize = sizeof(EagleFunctionType);
-            break;
-        case ETGenerator:
-            memsize = sizeof(EagleGenType);
-            break;
-        case ETClass:
-        case ETStruct:
-            memsize = sizeof(EagleStructType);
-            break;
-        case ETInterface:
-            memsize = sizeof(EagleInterfaceType);
-            break;
-        default:
-            memsize = sizeof(EagleComplexType);
-            break;
-    }
-
-    memcpy(tag, type, memsize);
+    memcpy(tag, type, ty_size_of_type(type));
 }
 
 int ty_interface_offset(char *name, char *method)
@@ -1139,3 +1199,49 @@ LLVMTypeRef ty_get_counted(LLVMTypeRef in)
 
     return ref;
 }
+
+EagleComplexType *ett_generic_type(char *ident)
+{
+    EagleComplexType *ty = hst_get(&generic_ident_table, ident, NULL, NULL);
+    if(ty)
+        return ty;
+
+    ty = calloc(ty_type_max_size(), 1);
+    ty->type = ETGeneric;
+    ((EagleGenericType *)ty)->ident = ident;
+    hst_put(&generic_ident_table, ident, ty, NULL, NULL);
+
+    pool_add(&type_mempool, ty);
+
+    return ty;
+}
+
+void ty_set_generic_type(char *ident, EagleComplexType *with)
+{
+    EagleComplexType *ty = hst_get(&generic_ident_table, ident, NULL, NULL);
+    if(!ty)
+        die(-1, "Unknown generic type: %s", ident);
+
+    memcpy(ty, with, ty_size_of_type(with));
+}
+
+#define TYPE_SIZE_TEST(var, type) if(sizeof(type) > var) var = sizeof(type)
+size_t ty_type_max_size()
+{
+    static size_t max;
+    if(max)
+        return max;
+
+    TYPE_SIZE_TEST(max, EagleComplexType);
+    TYPE_SIZE_TEST(max, EaglePointerType);
+    TYPE_SIZE_TEST(max, EagleArrayType);
+    TYPE_SIZE_TEST(max, EagleFunctionType);
+    TYPE_SIZE_TEST(max, EagleGenType);
+    TYPE_SIZE_TEST(max, EagleStructType);
+    TYPE_SIZE_TEST(max, EagleInterfaceType);
+    TYPE_SIZE_TEST(max, EagleEnumType);
+    TYPE_SIZE_TEST(max, EagleGenericType);
+
+    return max;
+}
+

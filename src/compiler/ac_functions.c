@@ -425,6 +425,9 @@ void ac_compile_function(AST *ast, CompilerBundle *cb)
 
     ASTFuncDecl *a = (ASTFuncDecl *)ast;
 
+    if(ac_is_generic(a->ident, cb))
+        return;
+
     VarBundle *vb = vs_get(cb->varScope, a->ident);
     func = vb->value;
 

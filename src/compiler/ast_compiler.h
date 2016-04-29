@@ -53,6 +53,9 @@ typedef struct {
     EagleComplexType *enum_lookup;
 
     ExportControl *exports;
+
+    Hashtable genericFunctions;
+    Arraylist genericWorkList;
 } CompilerBundle;
 
 #include "ac_control_flow.h"
@@ -66,5 +69,6 @@ typedef struct {
 #include "ac_generator.h"
 #include "ac_enum.h"
 #include "ac_constants.h"
+#include "ac_generics.h"
 
 #endif

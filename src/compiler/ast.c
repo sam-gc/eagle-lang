@@ -546,6 +546,16 @@ AST *ast_make_type(char *type)
     return (AST *)ast;
 }
 
+AST *ast_make_generic_type(char *ident)
+{
+    ASTTypeDecl *ast = ast_malloc(sizeof(ASTTypeDecl));
+    ast->type = ATYPE;
+
+    ast->etype = ett_generic_type(ident);
+    
+    return (AST *)ast;
+}
+
 AST *ast_make_closure_type(AST *tysList, AST *resType)
 {
     ASTTypeDecl *ast = ast_malloc(sizeof(ASTTypeDecl));

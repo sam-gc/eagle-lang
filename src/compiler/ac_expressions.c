@@ -1106,8 +1106,20 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
     }
 
     EagleComplexType *orig = a->callee->resultantType;
-
     EagleFunctionType *ett;
+
+    char *generic_call_name = NULL;
+
+    // Deal with generic functions ... :(
+    if(a->callee->type == AIDENT)
+    {
+        ASTValue *av = (ASTValue *)a->callee;
+        if(ac_is_generic(av->value.id, cb))
+        {
+            generic_call_name = av->value.id;
+        }
+    }
+
     if(orig->type == ETFunction)
         ett = (EagleFunctionType *)orig;
     else
@@ -1130,6 +1142,7 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
         die(ALN, "Variadic function takes at least %d parameters, but %d provided", ett->pct, ct);
 
     LLVMValueRef args[ct + offset];
+    EagleComplexType *param_types[ct + offset];
     for(p = a->params, i = start; p; p = p->next, i++)
     {
         if(i < ett->pct && ett->params[i]->type == ETEnum)
@@ -1149,6 +1162,15 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
         hst_remove_key(&cb->transients, p, ahhd, ahed);
         // hst_remove_key(&cb->loadedTransients, p, ahhd, ahed);
         args[i + offset] = val;
+        param_types[i + offset] = rt;
+    }
+
+    if(generic_call_name)
+    {
+        LLVMBasicBlockRef bb = LLVMGetInsertBlock(cb->builder);
+        func = ac_generic_get(generic_call_name, param_types + 1, (EagleComplexType **)&ett, cb, ALN);
+        ast->resultantType = ett->retType;
+        LLVMPositionBuilderAtEnd(cb->builder, bb);
     }
 
     LLVMValueRef out;
