@@ -1,4 +1,5 @@
 extern func malloc(long) : any*
+extern func free(any*)
 
 struct Point
 {
@@ -25,9 +26,21 @@ func swap(<T>* a, <T>* b)
     b! = temp
 }
 
+func make_counted(<U> val) : <U>^
+{
+    return new <U>(val)
+}
+
 func point_print_x(<PtPtr> p)
 {
     puts p.x
+}
+
+func factorial(<Num> i) : <Num>
+{
+    if i == 1
+        return i
+    return i * factorial(i - 1)
 }
 
 func main()
@@ -41,6 +54,9 @@ func main()
 
     var b = alloc(yes)
     puts b!
+
+    free(g)
+    free(b)
 
     uint x = 10
     uint y = 5000000
@@ -60,5 +76,10 @@ func main()
 
     point_print_x(p)
     point_print_x(&p2)
+
+    puts make_counted('test')!
+
+    puts factorial(5)
+    puts factorial(5.0)
 }
 
