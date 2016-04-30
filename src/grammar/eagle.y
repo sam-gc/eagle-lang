@@ -10,7 +10,10 @@
     #include <stdlib.h>
     #include "compiler/ast.h"
 
-    extern int yylex();
+    // extern int yylex();
+    extern int pipe_lex();
+    extern void pipe_reset_context();
+    #define yylex pipe_lex
     extern int yyerror(const char *);
 
     AST *ast_root = NULL;
@@ -116,7 +119,6 @@ globalvardecl       : TSTATIC variabledecl { $$ = $2; ast_set_linkage($2, VLStat
                     ;
 
 type                : TTYPE { $$ = ast_make_type($1); }
-                    | TLT TIDENTIFIER TGT { $$ = ast_make_generic_type($2); }
                     | type TMUL { $$ = ast_make_pointer($1); }
                     | type TLBRACKET TRBRACKET { $$ = ast_make_array($1, -1); }
                     | type TLBRACKET TINT TRBRACKET { $$ = ast_make_array($1, atoi($3)); }
@@ -199,7 +201,7 @@ initdecl            : TIDENTIFIER TLPAREN TRPAREN block { $$ = ast_make_class_sp
                     | TIDENTIFIER TLPAREN vardecllist TRPAREN TSEMI { $$ = ast_make_class_special_decl($1, NULL, $3); }
                     ;
 
-funcdecl            : funcident block { ((ASTFuncDecl *)$1)->body = $2; $$ = $1; };
+funcdecl            : funcident block { ((ASTFuncDecl *)$1)->body = $2; $$ = $1; pipe_reset_context(); };
 
 gendecl             : genident block { ((ASTFuncDecl *)$1)->body = $2; $$ = $1; };
 

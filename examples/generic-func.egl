@@ -7,11 +7,50 @@ struct Point
     int y;
 }
 
+-*
 func max(<T> a, <T> b) : <T>
 {
     return a > b ? a : b
 }
+*-
 
+func max<T> (T a, T b) : T
+{
+    return a > b ? a : b
+}
+
+func alloc<T> (T a) : T*
+{
+    T* b = malloc(sizeof(T))
+    b! = a
+    return b
+}
+
+func swap<T> (T* a, T* b)
+{
+    T temp = a!
+    a! = b!
+    b! = temp
+}
+
+func make_counted<U> (U val) : U^
+{
+    return new U(val)
+}
+
+func point_print_x<Pt> (Pt p)
+{
+    puts p.x
+}
+
+func factorial<Num> (Num i) : Num
+{
+    if i == 1
+        return i
+    return i * factorial(i - 1)
+}
+
+-*
 func alloc(<T> a) : <T>*
 {
     <T>* b = malloc(sizeof(<T>))
@@ -41,7 +80,7 @@ func factorial(<Num> i) : <Num>
     if i == 1
         return i
     return i * factorial(i - 1)
-}
+}*-
 
 func main()
 {

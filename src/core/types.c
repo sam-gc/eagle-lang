@@ -20,6 +20,8 @@
 #define PLACEHOLDER ((void *)1)
 #define PTR(p) ((void *)(uintptr_t)p)
 
+extern int pipe_is_type(char *);
+
 LLVMModuleRef the_module = NULL;
 LLVMTargetDataRef etTargetData = NULL;
 
@@ -160,6 +162,11 @@ EagleComplexType *et_parse_string(char *text)
             return ett_enum_type(text);
         else
             return ett_struct_type(text);
+    }
+
+    if(pipe_is_type(text))
+    {
+        return ett_generic_type(text);
     }
 
     return NULL;

@@ -26,6 +26,7 @@
     int in_interface = 0;
     int skip_type_check = 0;
     extern Multibuffer *ymultibuffer;
+    extern int pipe_is_type();
 
     extern int yyerror(const char *);
     #define YY_INPUT(buf, result, max_size) if(skip_type_check) result = fread( buf, 1, max_size, yyin ); else result = mb_buffer(ymultibuffer, buf, max_size)
@@ -161,7 +162,7 @@ charlit `[^`]`
 "double"    { SAVE_NL; SAVE_TOKEN; return TTYPE; }
 "float"     { SAVE_NL; SAVE_TOKEN; return TTYPE; }
 "any"       { SAVE_NL; SAVE_TOKEN; return TTYPE; }
-{nvar}       { SAVE_NL; SAVE_TOKEN; if(skip_type_check) return TIDENTIFIER; else return ty_is_name(yytext) ? TTYPE : TIDENTIFIER; }
+{nvar}       { SAVE_NL; SAVE_TOKEN; if(skip_type_check) return TIDENTIFIER; else return ty_is_name(yytext) || pipe_is_type(yytext) ? TTYPE : TIDENTIFIER; }
 {cstr}      SAVE_NL; yylval.string = utl_gen_escaped_string((char *)yytext, yylineno); return TCSTR;
 <<EOF>>     {static int seen_eof; if(seen_eof) { seen_eof = 0; return 0; } else {seen_eof = 1; return TSEMI; }}
 "-*"        {

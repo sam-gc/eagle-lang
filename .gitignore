@@ -1,4 +1,5 @@
-src/grammar/*.c
+src/grammar/eagle.tab.c
+src/grammar/tokens.c
 src/grammar/*.h
 src/grammar/eagle.output
 
