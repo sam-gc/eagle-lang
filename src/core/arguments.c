@@ -104,12 +104,6 @@ static void rule_seive(char *arg, char *next, int *skip, void *data)
         return;
     }
 
-    if(strlen(arg) > 2 && arg[0] == '-' && arg[1] == 'l')
-    {
-        arr_append(&crate->libs, (char *)arg);
-        return;
-    }
-
     if(access(arg, R_OK) < 0)
     {
         warn(-1, "Ignoring unknown parameter (%s)", arg);
