@@ -856,6 +856,35 @@ int ett_qualifies_as_generic(EagleComplexType *type)
     return type->type == ETGeneric;
 }
 
+Arraylist ett_get_generic_children(EagleComplexType *t)
+{
+    Arraylist list = arr_create(2);
+
+    while(t)
+    {
+        EagleComplexType *n = t;
+        t = NULL;
+
+        switch(n->type)
+        {
+            case ETGeneric:
+                arr_append(&list, n);
+                break;
+            case ETPointer:
+                t = ET_POINTEE(n);
+                break;
+            default:
+                break;
+        }
+    }
+
+    return list;
+}
+
+void ett_replace_generic_with(EagleComplexType *t, char *gen)
+{
+}
+
 void ty_add_name(char *name)
 {
     hst_put(&name_table, name, PLACEHOLDER, NULL, NULL);

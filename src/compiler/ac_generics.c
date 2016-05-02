@@ -193,7 +193,11 @@ LLVMValueRef ac_generic_get(char *func, EagleComplexType *arguments[], EagleComp
         EagleComplexType *given = arguments[i];
         if(ett_qualifies_as_generic(p))
         {
-            EagleGenericType *g = (EagleGenericType *)(p->type == ETPointer ? ett_get_root_pointee(p) : p);
+            Arraylist generics = ett_get_generic_children(p);
+
+            EagleGenericType *g = generics.items[0];
+            arr_free(&generics);
+
             EagleComplexType *prev = hst_get(&scanned, g->ident, NULL, NULL);
             EagleComplexType *replacement_type = ac_resolve_types(p, given, lineno);
 
