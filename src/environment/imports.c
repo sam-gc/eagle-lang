@@ -311,6 +311,8 @@ static char *imp_scan_file(const char *filename)
         imp_iufree(&iu);
     }
 
+    yypop_buffer_state();
+
     return string.buffer;
 }
 
