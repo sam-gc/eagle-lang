@@ -64,6 +64,7 @@ typedef struct {
 VarScopeStack vs_make();
 void vs_free(VarScopeStack *vs);
 VarBundle *vs_get(VarScopeStack *vs, char *ident);
+int vs_is_in_local_scope(VarScopeStack *vs, char *ident);
 VarBundle *vs_get_from_module(VarScopeStack *vs, char *ident, char *mod_name);
 VarBundle *vs_put(VarScopeStack *vs, char *ident, LLVMValueRef val, EagleComplexType *type, int lineno);
 VarBundle *vs_put_in_module(VarScopeStack *vs, char *ident, char *module, LLVMValueRef val, EagleComplexType *type);

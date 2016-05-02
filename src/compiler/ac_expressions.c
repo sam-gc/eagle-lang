@@ -104,9 +104,8 @@ LLVMValueRef ac_compile_identifier(AST *ast, CompilerBundle *cb)
     return LLVMBuildLoad(cb->builder, b->value, "loadtmp");
 }
 
-LLVMValueRef ac_compile_var_decl_ext(EagleComplexType *type, char *ident, CompilerBundle *cb, int noSetNil)
+LLVMValueRef ac_compile_var_decl_ext(EagleComplexType *type, char *ident, CompilerBundle *cb, int noSetNil, int lineno)
 {
-
     LLVMBasicBlockRef curblock = LLVMGetInsertBlock(cb->builder);
     LLVMPositionBuilderAtEnd(cb->builder, cb->currentFunctionEntry);
 
@@ -120,6 +119,8 @@ LLVMValueRef ac_compile_var_decl_ext(EagleComplexType *type, char *ident, Compil
     VarBundle *b = vs_get(cb->varScope, ident);
     if(b && !b->value)
         b->value = pos;
+    else if(b && vs_is_in_local_scope(cb->varScope, ident)) // A bundle exists and is already set
+        die(lineno, "Redeclaration of variable %s", ident);
 
     if(ET_IS_COUNTED(type))
     {
@@ -156,6 +157,9 @@ LLVMValueRef ac_compile_var_decl(AST *ast, CompilerBundle *cb)
     ASTTypeDecl *type = (ASTTypeDecl *)a->atype;
     ast->resultantType = type->etype;
 
+    if(vs_is_in_local_scope(cb->varScope, a->ident))
+        die(ALN, "Redefinition of variable %s", a->ident);
+
     if(type->etype->type == ETAuto)
     {
         vs_put(cb->varScope, a->ident, NULL, type->etype, ALN);
@@ -178,7 +182,7 @@ LLVMValueRef ac_compile_var_decl(AST *ast, CompilerBundle *cb)
     }
 
     vs_put(cb->varScope, a->ident, NULL, type->etype, ALN);
-    LLVMValueRef pos = ac_compile_var_decl_ext(type->etype, a->ident, cb, a->noSetNil);
+    LLVMValueRef pos = ac_compile_var_decl_ext(type->etype, a->ident, cb, a->noSetNil, ALN);
 
     return pos;
 }
@@ -1312,7 +1316,7 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update)
             if(!storageBundle || !storageIdent)
                 die(ALN, "Internal compiler error!");
 
-            pos = ac_compile_var_decl_ext(totype, storageIdent, cb, 0);
+            pos = ac_compile_var_decl_ext(totype, storageIdent, cb, 0, ALN);
             storageBundle->type = totype;
         }
         else if(totype->type == ETStruct)
@@ -1345,7 +1349,7 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update)
         if(!storageBundle || !storageIdent)
             die(ALN, "Internal compiler error!\nstorageBundle = %p; storageIdent = %p;", storageBundle, storageIdent);
 
-        pos = ac_compile_var_decl_ext(totype, storageIdent, cb, 0);
+        pos = ac_compile_var_decl_ext(totype, storageIdent, cb, 0, ALN);
         storageBundle->type = totype;
     }
 
