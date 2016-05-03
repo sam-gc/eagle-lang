@@ -29,6 +29,7 @@ extern char *yytext;
 
 extern FILE *yyin;
 extern int yyparse();
+extern void yyset_start_token(int);
 extern int yylex();
 extern int yylineno;
 
@@ -146,6 +147,7 @@ static LLVMModuleRef compile_generic(ShippingCrate *crate, int include_rc, char 
 
     //mb_add_file(ymultibuffer, argv[1]);
 
+    yyset_start_token(T_PARSE_PROGRAM);
     yyparse();
 
     mb_free(ymultibuffer);

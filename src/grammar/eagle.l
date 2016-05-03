@@ -7,29 +7,37 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
  
-    #include <stdio.h>
-    #include <string.h>
-    #include "compiler/ast.h"
-    #include "core/utils.h"
-    #include "core/multibuffer.h"
-    #include "eagle.tab.h"
+#include <stdio.h>
+#include <string.h>
+#include "compiler/ast.h"
+#include "core/utils.h"
+#include "core/multibuffer.h"
+#include "eagle.tab.h"
 
-    #define SET(t) (yylval.token = t)
-    #define SAVE_TOKEN yylval.string = strdup(yytext); utl_register_memory(yylval.string)
-    #define DISCARD_NL (save_newline = 0)
-    #define SAVE_NL (save_newline = 1)
-    #define OVERRIDE (override = 1)
-    #define OVEROVERIDE (override = 0)
+#define SET(t) (yylval.token = t)
+#define SAVE_TOKEN yylval.string = strdup(yytext); utl_register_memory(yylval.string)
+#define DISCARD_NL (save_newline = 0)
+#define SAVE_NL (save_newline = 1)
+#define OVERRIDE (override = 1)
+#define OVEROVERIDE (override = 0)
 
-    int save_newline = 0;
-    int override = 0;
-    int in_interface = 0;
-    int skip_type_check = 0;
-    extern Multibuffer *ymultibuffer;
-    extern int pipe_is_type();
+int save_newline = 0;
+int override = 0;
+int in_interface = 0;
+int skip_type_check = 0;
+extern Multibuffer *ymultibuffer;
+extern int pipe_is_type();
 
-    extern int yyerror(const char *);
-    #define YY_INPUT(buf, result, max_size) if(skip_type_check) result = fread( buf, 1, max_size, yyin ); else result = mb_buffer(ymultibuffer, buf, max_size)
+extern int yyerror(const char *);
+#define YY_INPUT(buf, result, max_size) if(skip_type_check) result = fread( buf, 1, max_size, yyin ); else result = mb_buffer(ymultibuffer, buf, max_size)
+
+static int start_token;
+
+void yyset_start_token(int tok)
+{
+    start_token = tok;
+}
+
 %}
 
 %option noyywrap
@@ -56,6 +64,16 @@ cstr '(\\.|[^'])*'
 charlit `[^`]`
 
 %%
+%{
+
+if(start_token)
+{
+    int temp = start_token;
+    start_token = 0;
+    return temp;
+}
+
+%}
 
 {white}       ;
 "\n"          { if(save_newline || override) {save_newline = override = 0; return TSEMI;} override = 0; /*else printf("IGNORING! %d\n", yylineno);*/ }

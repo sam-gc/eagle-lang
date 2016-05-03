@@ -28,6 +28,7 @@
     AST *node;
 }
 
+%token <token> T_PARSE_PROGRAM T_PARSE_EXPRESSION
 %token <string> TIDENTIFIER TINT TDOUBLE TFLOAT TCHARLIT TTYPE TCOUNTED TNEW TTOUCH TCSTR TEXPORT
 %token <token> TPLUS TMINUS TEQUALS TMUL TDIV TGT TLT TEQ TNE TGTE TLTE TNOT TPOW TLOGAND TLOGOR TMOD
 %token <token> TPLUSE TMINUSE TMULE TDIVE TMODE TORE TAMPE TRSHIFTE TLSHIFTE TPOWE
@@ -38,7 +39,7 @@
 %token <token> TCOLON TSEMI TNEWLINE TCOMMA TDOT TAMP TAT TARROW T__DEC T__INC TQUESTION TQUESTIONCOLON
 %token <token> TYES TNO TNIL TIMPORT TTYPEDEF TENUM TSTATIC TINTERFACE TCLASS TSTRUCT
 %type <token> exportable 
-%type <node> program declarations declaration statements statement block funcdecl ifstatement
+%type <node> declarations declaration statements statement block funcdecl ifstatement
 %type <node> variabledecl vardecllist funccall calllist funcident funcsident externdecl typelist type interfacetypelist
 %type <node> elifstatement elifblock elsestatement singif structdecl structlist blockalt classlist classdecl interfacedecl interfacelist compositetype
 %type <node> expr singexpr binexpr unexpr ounexpr forstatement clodecl genident gendecl initdecl viewdecl viewident 
@@ -71,11 +72,13 @@
 %right TLBRACKET TRBRACKET;
 %right "then" TIF TELSE TELIF %nonassoc TLPAREN;
 
-%start program
+%start start
 
 %%
 
-program             : declarations { ast_root = $1; };
+start               : T_PARSE_PROGRAM declarations { ast_root = $2; }
+                    | T_PARSE_EXPRESSION statement { ast_root = $2; }
+                    ;
 
 declarations        : declaration { if($1) $$ = $1; else $$ = NULL; }
                     | declaration declarations { if($1) $1->next = $2; $$ = ($1 ? $1 : $2); };
