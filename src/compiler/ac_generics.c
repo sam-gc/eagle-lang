@@ -9,6 +9,8 @@
 #include "ast_compiler.h"
 #include "core/stringbuilder.h"
 
+static EagleComplexType *ac_resolve_types(EagleComplexType *generic, EagleComplexType *given, int lineno);
+
 typedef struct
 {
     AST *definition;
@@ -43,19 +45,6 @@ static GenericBundle *ac_gb_alloc(AST *ast, EagleComplexType *template_type)
         if(ett_qualifies_as_generic(param))
         {
             ft->params[i] = ett_deep_copy(ft->params[i]);
-            /*
-            EaglePointerType *ptt = NULL;
-            if(param->type == ETPointer)
-                param = ett_get_root_pointee_and_parent(param, (EagleComplexType **)&ptt);
-
-            void *dup = malloc(ty_type_max_size());
-            memcpy(dup, param, ty_type_max_size());
-
-            if(ptt)
-                ptt->to = dup;
-            else
-                ft->params[i] = dup;
-                */
         }
     }
 
@@ -63,19 +52,6 @@ static GenericBundle *ac_gb_alloc(AST *ast, EagleComplexType *template_type)
     if(ett_qualifies_as_generic(rt))
     {
         ft->retType = ett_deep_copy(ft->retType);
-        /*
-        EaglePointerType *ptt = NULL;
-        if(rt->type == ETPointer)
-            rt = ett_get_root_pointee_and_parent(rt, (EagleComplexType **)&ptt);
-
-        void *dup = malloc(ty_type_max_size());
-        memcpy(dup, rt, ty_type_max_size());
-
-        if(ptt)
-            ptt->to = dup;
-        else
-            ft->retType = dup;
-            */
     }
     
     return bundle;
@@ -145,29 +121,88 @@ void ac_compile_generics(CompilerBundle *cb)
     }
 }
 
-static EagleComplexType *ac_resolve_types(EagleComplexType *generic, EagleComplexType *given, int lineno)
+// func test<T>((int, T : int)^) : T { }
+// test(
+
+static void ac_verify_pointers(EagleComplexType *a, EagleComplexType *b, int lineno)
 {
+    EaglePointerType *ap = (EaglePointerType *)a;
+    EaglePointerType *bp = (EaglePointerType *)b;
+
+    if(ap->counted != bp->counted)
+        die(lineno, "Specified pointer types for generic resolution don't match");
+
+    if(ap->to->type == ETPointer && bp->to->type == ETPointer)
+        ac_verify_pointers(ap->to, bp->to, lineno);
+}
+
+static EagleComplexType *ac_resolve_pointer_types(EagleComplexType *generic, EagleComplexType *given, int lineno)
+{
+    /*
     if(generic->type != ETPointer)
         return given;
+    */
 
     if(given->type != ETPointer)
-        die(lineno, "Generic function expected pointer but none was passed");
+        die(lineno, "Generic resolution expected pointer but none was passed");
 
     int generic_depth = ett_pointer_depth(generic);
     int given_depth = ett_pointer_depth(given);
     if(generic_depth > given_depth)
-        die(lineno, "Generic function requires pointer depth greater than that given");
+        die(lineno, "Generic resolution requires pointer depth greater than that given");
 
     if(generic_depth == given_depth)
+    {
+        ac_verify_pointers(given, generic, lineno);
         return ett_get_root_pointee(given);
+    }
 
     int required_depth = given_depth - generic_depth;
     for(int i = 0; i < required_depth; i++)
     {
+        ac_verify_pointers(given, generic, lineno);
         given = ET_POINTEE(given);
+        generic = ET_POINTEE(generic);
     }
 
-    return given;
+    return ac_resolve_types(generic, given, lineno);
+}
+
+static EagleComplexType *ac_resolve_function_types(EagleComplexType *generic, EagleComplexType *given, int lineno)
+{
+    if(given->type != ETFunction)
+        die(lineno, "Generic resolution expected function but none given type is not");
+
+    /*
+    EagleFunctionType *genf = (EagleFunctionType *)generic;
+    EagleFunctionType *givf = (EagleFunctionType *)given;
+
+    if(genf->pct != givf->pct)
+        die(lineno, "Parameter counts do not match");
+
+    for(int i = 0; i < genf->pct; i++)
+    {
+        EagleComplexType *genp = genf->params[i];
+        EagleComplexType *givp = givf->params[i];
+
+        if(ett_qualifies_as_generic(genp))
+
+    }
+    */
+    return NULL;
+}
+
+static EagleComplexType *ac_resolve_types(EagleComplexType *generic, EagleComplexType *given, int lineno)
+{
+    switch(generic->type)
+    {
+        case ETGeneric:
+            return given;
+        case ETPointer:
+            return ac_resolve_pointer_types(generic, given, lineno);
+        default:
+            return NULL;
+    }
 }
 
 LLVMValueRef ac_generic_get(char *func, EagleComplexType *arguments[], EagleComplexType **out_type, CompilerBundle *cb, int lineno)
