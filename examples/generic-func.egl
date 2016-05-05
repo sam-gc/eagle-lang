@@ -3,8 +3,8 @@ extern func free(any*)
 
 struct Point
 {
-    int x;
-    int y;
+    int x
+    int y
 }
 
 -*
@@ -48,6 +48,23 @@ func factorial<Num> (Num i) : Num
     if i == 1
         return i
     return i * factorial(i - 1)
+}
+
+func run_n_times<T> (T param, (T:)^ callback, int n)
+{
+    for int i = 0; i < n; i += 1
+    {
+        callback(param)
+    }
+}
+
+func make_adder<T> (T start, T inc) : (:T)^
+{
+    return func() : T
+    {
+        start += inc
+        return start
+    }
 }
 
 -*
@@ -120,5 +137,26 @@ func main()
 
     puts factorial(5)
     puts factorial(5.0)
+
+    int i = 0
+    run_n_times(45, func(int j) {
+        i += 1
+        puts j + i
+    }, 3)
+
+    var adder = make_adder(0, 5)
+    puts adder()
+    puts adder()
+    puts adder()
+
+    var double_adder = make_adder(0.5, 0.1)
+    puts double_adder()
+    puts double_adder()
+    puts double_adder()
+
+    adder = make_adder(1, -1)
+    puts adder()
+    puts adder()
+    puts adder()
 }
 

@@ -9,7 +9,8 @@
 #include "ast_compiler.h"
 #include "core/stringbuilder.h"
 
-static EagleComplexType *ac_resolve_types(EagleComplexType *generic, EagleComplexType *given, int lineno);
+static void
+ac_copy_and_find_types(EagleComplexType *reftype, EagleComplexType *intype, EagleComplexType **copied, Hashtable *scanned, int lineno);
 
 typedef struct
 {
@@ -88,7 +89,7 @@ int ac_decl_is_generic(AST *ast)
         param = param->next;
     }
 
-    return 0;
+    return ett_qualifies_as_generic(((ASTTypeDecl *)a->retType)->etype);
 }
 
 void ac_generic_register(AST *ast, EagleComplexType *template_type, CompilerBundle *cb)
@@ -121,87 +122,91 @@ void ac_compile_generics(CompilerBundle *cb)
     }
 }
 
-// func test<T>((int, T : int)^) : T { }
-// test(
-
-static void ac_verify_pointers(EagleComplexType *a, EagleComplexType *b, int lineno)
+static void ac_handle_generic(EagleComplexType *reftype, EagleComplexType *intype, Hashtable *scanned, int lineno)
 {
-    EaglePointerType *ap = (EaglePointerType *)a;
-    EaglePointerType *bp = (EaglePointerType *)b;
+    if(!intype)
+        return;
 
-    if(ap->counted != bp->counted)
-        die(lineno, "Specified pointer types for generic resolution don't match");
-
-    if(ap->to->type == ETPointer && bp->to->type == ETPointer)
-        ac_verify_pointers(ap->to, bp->to, lineno);
-}
-
-static EagleComplexType *ac_resolve_pointer_types(EagleComplexType *generic, EagleComplexType *given, int lineno)
-{
-    /*
-    if(generic->type != ETPointer)
-        return given;
-    */
-
-    if(given->type != ETPointer)
-        die(lineno, "Generic resolution expected pointer but none was passed");
-
-    int generic_depth = ett_pointer_depth(generic);
-    int given_depth = ett_pointer_depth(given);
-    if(generic_depth > given_depth)
-        die(lineno, "Generic resolution requires pointer depth greater than that given");
-
-    if(generic_depth == given_depth)
+    EagleGenericType *g = (EagleGenericType *)reftype;
+    EagleComplexType *prev = hst_get(scanned, g->ident, NULL, NULL);
+    if(prev)
     {
-        ac_verify_pointers(given, generic, lineno);
-        return ett_get_root_pointee(given);
+        if(!ett_are_same(prev, intype))
+            die(lineno, "Two different concrete types assigned to same generic type (%s)", g->ident);
     }
 
-    int required_depth = given_depth - generic_depth;
-    for(int i = 0; i < required_depth; i++)
-    {
-        ac_verify_pointers(given, generic, lineno);
-        given = ET_POINTEE(given);
-        generic = ET_POINTEE(generic);
-    }
-
-    return ac_resolve_types(generic, given, lineno);
+    hst_put(scanned, g->ident, intype, NULL, NULL);
 }
 
-static EagleComplexType *ac_resolve_function_types(EagleComplexType *generic, EagleComplexType *given, int lineno)
+static EagleComplexType *ac_handle_pointer(EagleComplexType *reftype, EagleComplexType *intype, Hashtable *scanned, int lineno)
 {
-    if(given->type != ETFunction)
-        die(lineno, "Generic resolution expected function but none given type is not");
+    EaglePointerType *refp = (EaglePointerType *)reftype;
+    EaglePointerType *inp  = (EaglePointerType *)intype;
 
-    /*
-    EagleFunctionType *genf = (EagleFunctionType *)generic;
-    EagleFunctionType *givf = (EagleFunctionType *)given;
-
-    if(genf->pct != givf->pct)
-        die(lineno, "Parameter counts do not match");
-
-    for(int i = 0; i < genf->pct; i++)
+    if(inp)
     {
-        EagleComplexType *genp = genf->params[i];
-        EagleComplexType *givp = givf->params[i];
-
-        if(ett_qualifies_as_generic(genp))
-
+        if(refp->counted != inp->counted)
+            die(lineno, "Pointer types do not match in generic");
     }
-    */
-    return NULL;
+
+    EagleComplexType *out = ett_copy(reftype);
+    EaglePointerType *outp = (EaglePointerType *)out;
+
+    ac_copy_and_find_types(refp->to, inp ? inp->to : NULL, &outp->to, scanned, lineno);
+    return out;
 }
 
-static EagleComplexType *ac_resolve_types(EagleComplexType *generic, EagleComplexType *given, int lineno)
+static EagleComplexType *ac_handle_function(EagleComplexType *reftype, EagleComplexType *intype, Hashtable *scanned, int lineno)
 {
-    switch(generic->type)
+    EagleFunctionType *reff = (EagleFunctionType *)reftype;
+    EagleFunctionType *inf  = (EagleFunctionType *)intype;
+
+    if(inf)
+    {
+        if(reff->pct != inf->pct)
+            die(lineno, "Parameter counts do not match in generic function pointer");
+        if(reff->gen != inf->gen)
+            die(lineno, "Function types do not match in generic function pointer");
+        if(reff->variadic != inf->variadic)
+            die(lineno, "Function types do not match in generic function pointer");
+    }
+
+    EagleComplexType *out = ett_copy(reftype);
+    EagleFunctionType *outf = (EagleFunctionType *)out;
+
+    for(int i = 0; i < outf->pct; i++)
+        ac_copy_and_find_types(reff->params[i], inf ? inf->params[i] : NULL, &outf->params[i], scanned, lineno);
+    ac_copy_and_find_types(reff->retType, inf ? inf->retType : NULL, &outf->retType, scanned, lineno);
+
+    return out;
+}
+
+static void
+ac_copy_and_find_types(EagleComplexType *reftype, EagleComplexType *intype, EagleComplexType **copied, Hashtable *scanned, int lineno)
+{
+    // If intype is not specified, we are *just* creating a copy and setting generics
+    if(intype)
+    {
+        if(reftype->type != ETGeneric && reftype->type != intype->type)
+            die(lineno, "Generic and given type do not match");
+    }
+
+    switch(reftype->type)
     {
         case ETGeneric:
-            return given;
+            ac_handle_generic(reftype, intype, scanned, lineno);
+            *copied = (intype ? intype : hst_get(scanned, ((EagleGenericType *)reftype)->ident, NULL, NULL));
+            if(!*copied)
+                die(lineno, "Cannot infer generic type (%s)", ((EagleGenericType *)reftype)->ident);
+            break;
         case ETPointer:
-            return ac_resolve_pointer_types(generic, given, lineno);
+            *copied = ac_handle_pointer(reftype, intype, scanned, lineno);
+            break;
+        case ETFunction:
+            *copied = ac_handle_function(reftype, intype, scanned, lineno);
+            break;
         default:
-            return NULL;
+            break;
     }
 }
 
@@ -228,23 +233,10 @@ LLVMValueRef ac_generic_get(char *func, EagleComplexType *arguments[], EagleComp
         EagleComplexType *given = arguments[i];
         if(ett_qualifies_as_generic(p))
         {
-            Arraylist generics = ett_get_generic_children(p);
-
-            EagleGenericType *g = generics.items[0];
-            arr_free(&generics);
-
-            EagleComplexType *prev = hst_get(&scanned, g->ident, NULL, NULL);
-            EagleComplexType *replacement_type = ac_resolve_types(p, given, lineno);
+            EagleComplexType *replacement_type = NULL;
+            ac_copy_and_find_types(p, given, &replacement_type, &scanned, lineno);
 
             new_args[i] = given;
-            if(prev)
-            {
-                if(!ett_are_same(prev, replacement_type))
-                    die(lineno, "Two different concrete types assigned to same generic type (%s)", g->ident);
-                continue;
-            }
-
-            hst_put(&scanned, g->ident, replacement_type, NULL, NULL);
 
             char *type = ett_unique_type_name(replacement_type);
             sb_append(&sbd, type);
@@ -254,19 +246,7 @@ LLVMValueRef ac_generic_get(char *func, EagleComplexType *arguments[], EagleComp
 
     EagleComplexType *retType = ft->retType;
     if(ett_qualifies_as_generic(retType))
-    {
-        if(retType->type == ETPointer)
-        {
-            retType = ett_deep_copy(retType);
-            EagleComplexType *parent = NULL;
-            EagleGenericType *gt = (EagleGenericType *)ett_get_root_pointee_and_parent(retType, &parent);
-            ((EaglePointerType *)parent)->to = hst_get(&scanned, gt->ident, NULL, NULL);
-        }
-        else
-        {
-            retType = hst_get(&scanned, ((EagleGenericType *)retType)->ident, NULL, NULL);
-        }
-    }
+        ac_copy_and_find_types(ft->retType, NULL, &retType, &scanned, lineno);
 
     if(!retType)
         die(gb->definition->lineno, "Return type of generic function is unspecified");
@@ -283,7 +263,6 @@ LLVMValueRef ac_generic_get(char *func, EagleComplexType *arguments[], EagleComp
 
     concrete_func = LLVMAddFunction(cb->module, expanded_name, ett_llvm_type(*out_type));
     arr_append(&cb->genericWorkList, ac_gw_alloc(gb->definition, scanned, concrete_func, *out_type));
-    // ac_compile_function_ex(gb->definition, cb, concrete_func, (EagleFunctionType *)*out_type);
     hst_put(&gb->implementations, expanded_name, concrete_func, NULL, NULL);
 
     free(expanded_name);

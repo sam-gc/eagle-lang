@@ -32,10 +32,20 @@ extern int yyerror(const char *);
 #define YY_INPUT(buf, result, max_size) if(skip_type_check) result = fread( buf, 1, max_size, yyin ); else result = mb_buffer(ymultibuffer, buf, max_size)
 
 static int start_token;
+static int input (void );
+static void yyunput (int c,char *buf_ptr  );
 
 void yyset_start_token(int tok)
 {
     start_token = tok;
+}
+
+#define unput(c) yyunput( c, (yytext_ptr)  )
+char yypeek()
+{
+    char tok = input();
+    unput(tok);
+    return tok;
 }
 
 %}
@@ -132,6 +142,7 @@ if(start_token)
 "}"         SAVE_NL; in_interface = 0; return SET(TRBRACE);
 "["         DISCARD_NL; return SET(TLBRACKET);
 "]"         SAVE_NL; return SET(TRBRACKET);
+"macro"     DISCARD_NL; return SET(TMACRO);
 "typedef"   DISCARD_NL; return SET(TTYPEDEF);
 "enum"      DISCARD_NL; return SET(TENUM);
 "return"    SAVE_NL; return SET(TRETURN);

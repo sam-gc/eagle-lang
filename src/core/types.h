@@ -132,6 +132,7 @@ EagleComplexType *ett_struct_type(char *name);
 EagleComplexType *ett_class_type(char *name);
 EagleComplexType *ett_interface_type(char *name);
 EagleComplexType *ett_enum_type(char *name);
+EagleComplexType *ett_copy(EagleComplexType *type);
 EagleComplexType *ett_deep_copy(EagleComplexType *type);
 void ett_composite_interface(EagleComplexType *ett, char *name);
 
@@ -147,7 +148,6 @@ int ett_size_of_type(EagleComplexType *t);
 int ett_array_has_counted(EagleComplexType *t);
 int ett_array_count(EagleComplexType *t);
 int ett_qualifies_as_generic(EagleComplexType *t);
-Arraylist ett_get_generic_children(EagleComplexType *t);
 void ett_replace_generic_with(EagleComplexType *t, char *gen);
 char *ett_unique_type_name(EagleComplexType *t);
 

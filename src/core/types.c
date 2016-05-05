@@ -528,6 +528,41 @@ EagleComplexType *ett_enum_type(char *name)
     return (EagleComplexType *)en;
 }
 
+static EagleComplexType *ett_deep_pointer_copy(EagleComplexType *type)
+{
+    EagleComplexType *copy = ett_copy(type);
+    ET_POINTEE(copy) = ett_deep_copy(ET_POINTEE(type));
+    return copy;
+}
+
+static EagleComplexType *ett_deep_function_copy(EagleComplexType *type)
+{
+    EagleFunctionType *ft = (EagleFunctionType *)type;
+    EagleFunctionType *ct = (EagleFunctionType *)ett_copy(type);
+
+    for(int i = 0; i < ft->pct; i++)
+    {
+        ct->params[i] = ett_deep_copy(ft->params[i]);
+    }
+
+    ct->retType = ett_deep_copy(ft->retType);
+    return (EagleComplexType *)ct;
+}
+
+EagleComplexType *ett_deep_copy(EagleComplexType *type)
+{
+    switch(type->type)
+    {
+        case ETPointer:
+            return ett_deep_pointer_copy(type);
+        case ETFunction:
+            return ett_deep_function_copy(type);
+        default:
+            return ett_copy(type);
+    }
+}
+
+/*
 EagleComplexType *ett_deep_copy(EagleComplexType *type)
 {
     EagleComplexType *pointer = NULL;
@@ -556,6 +591,23 @@ EagleComplexType *ett_deep_copy(EagleComplexType *type)
     {
         ((EaglePointerType *)pointer)->to = output;
         return head;
+    }
+
+    return output;
+}
+*/
+
+EagleComplexType *ett_copy(EagleComplexType *type)
+{
+    EagleComplexType *output = malloc(ty_size_of_type(type));
+    pool_add(&type_mempool, output);
+    memcpy(output, type, ty_size_of_type(type));
+
+    if(output->type == ETFunction)
+    {
+        EagleFunctionType *ft = (EagleFunctionType *)output;
+        ft->params = malloc(ft->pct * sizeof(EagleComplexType *));
+        pool_add(&type_mempool, ft->params);
     }
 
     return output;
@@ -752,6 +804,33 @@ char *ett_unique_type_name(EagleComplexType *t)
             return sb.buffer;
         }
 
+        case ETFunction:
+        {
+            EagleFunctionType *ft = (EagleFunctionType *)t;
+            Strbuilder sb;
+            sb_init(&sb);
+            sb_append(&sb, "fn_");
+            for(int i = 0; i < ft->pct; i++)
+            {
+                char *p = ett_unique_type_name(ft->params[i]);
+                sb_append(&sb, p);
+                free(p);
+            }
+
+            if(ft->retType->type != ETVoid)
+            {
+                char *p = ett_unique_type_name(ft->retType);
+                sb_append(&sb, p);
+                free(p);
+            }
+            else
+            {
+                sb_append(&sb, "void");
+            }
+
+            return sb.buffer;
+        }
+
         default: return NULL;
     }
 }
@@ -850,39 +929,23 @@ int ett_array_count(EagleComplexType *t)
 
 int ett_qualifies_as_generic(EagleComplexType *type)
 {
-    if(type->type == ETPointer)
-        type = ett_get_root_pointee(type);
-
-    return type->type == ETGeneric;
-}
-
-Arraylist ett_get_generic_children(EagleComplexType *t)
-{
-    Arraylist list = arr_create(2);
-
-    while(t)
+    switch(type->type)
     {
-        EagleComplexType *n = t;
-        t = NULL;
-
-        switch(n->type)
+        case ETGeneric:
+            return 1;
+        case ETPointer:
+            return ett_qualifies_as_generic(ET_POINTEE(type));
+        case ETFunction:
         {
-            case ETGeneric:
-                arr_append(&list, n);
-                break;
-            case ETPointer:
-                t = ET_POINTEE(n);
-                break;
-            default:
-                break;
+            EagleFunctionType *ft = (EagleFunctionType *)type;
+            for(int i = 0; i < ft->pct; i++)
+                if(ett_qualifies_as_generic(ft->params[i]))
+                    return 1;
+            return ett_qualifies_as_generic(ft->retType);
         }
+        default:
+            return 0;
     }
-
-    return list;
-}
-
-void ett_replace_generic_with(EagleComplexType *t, char *gen)
-{
 }
 
 void ty_add_name(char *name)

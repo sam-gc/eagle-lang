@@ -75,6 +75,10 @@ int pipe_lex()
         in_type_context = 1;
         return yylex();
     }
+    else if(tok == TMACRO)
+    {
+
+    }
 
     return tok;
 }
