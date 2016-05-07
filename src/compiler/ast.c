@@ -8,6 +8,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <ctype.h>
 #include "ast.h"
 #include "ast_compiler.h"
 #include "core/arraylist.h"
@@ -149,7 +150,11 @@ AST *ast_make_int32(char *text)
     ASTValue *ast = ast_malloc(sizeof(ASTValue));
     ast->type = AVALUE;
     ast->etype = ETInt32;
-    ast->value.i = atoi(text);
+
+    if(strlen(text) > 2 && tolower(text[1]) == 'x')
+        ast->value.i = strtol(text, NULL, 16);
+    else
+        ast->value.i = atoi(text);
 
     return (AST *)ast;
 }
