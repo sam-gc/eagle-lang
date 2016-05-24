@@ -920,11 +920,15 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
                         break;
                     case ETInt8:
                     case ETInt16:
+                        v = LLVMBuildIntCast(cb->builder, v,
+                                LLVMInt32TypeInContext(utl_get_current_context()), "bs");
                     case ETInt32:
                         fmt = LLVMBuildGlobalStringPtr(cb->builder, "%d\n", "prfI");
                         break;
                     case ETUInt8:
                     case ETUInt16:
+                        v = LLVMBuildIntCast(cb->builder, v,
+                                LLVMInt32TypeInContext(utl_get_current_context()), "bs");
                     case ETUInt32:
                         fmt = LLVMBuildGlobalStringPtr(cb->builder, "%u\n", "prfU");
                         break;
