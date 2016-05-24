@@ -910,6 +910,7 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
                 {
                     case ETFloat:
                         fmt = LLVMBuildGlobalStringPtr(cb->builder, "%f\n", "prfF");
+                        v = LLVMBuildFPCast(cb->builder, v, LLVMDoubleTypeInContext(utl_get_current_context()), "bs");
                         break;
                     case ETDouble:
                         fmt = LLVMBuildGlobalStringPtr(cb->builder, "%lf\n", "prfLF");
