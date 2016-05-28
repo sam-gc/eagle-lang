@@ -22,6 +22,7 @@ typedef struct {
     Arraylist extra_code;
     Arraylist work;
     Arraylist libs;
+    Arraylist lib_paths;
 
     int widex;
 

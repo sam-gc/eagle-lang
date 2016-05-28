@@ -117,14 +117,17 @@ static void first_pass()
 
 static void init_crate(ShippingCrate *crate)
 {
-    crate->source_files = arr_create(5);
-    crate->object_files = arr_create(5);
-    crate->extra_code = arr_create(2);
-    crate->work = arr_create(10);
-    crate->libs = arr_create(5);
+    *crate = (ShippingCrate) {
+        .source_files = arr_create(5),
+        .object_files = arr_create(5),
+        .extra_code   = arr_create(2),
+        .work         = arr_create(10),
+        .libs         = arr_create(5),
+        .lib_paths    = arr_create(2),
 
-    crate->verbose = 0;
-    crate->threadct = 0; // Let the compiler choose later
+        .verbose      = 0,
+        .threadct     = 0 // Let the compiler choose later
+    };
 }
 
 static LLVMModuleRef compile_generic(ShippingCrate *crate, int include_rc, char *file)

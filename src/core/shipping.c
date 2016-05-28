@@ -125,17 +125,27 @@ void shp_produce_executable(ShippingCrate *crate)
     if(IN(global_args, "-o"))
         outfile = hst_get(&global_args, (char *)"-o", NULL, NULL);
 
-    int arg_count = 4 + crate->object_files.count + crate->libs.count;
+    int arg_count = 4 + crate->object_files.count + crate->libs.count +
+        crate->lib_paths.count;
     const char *args[arg_count];
     args[0] = SystemCC;
     args[1] = "-o";
     args[2] = outfile;
 
+    int offset = 3;
+
     for(int i = 0; i < crate->object_files.count; i++)
-        args[i + 3] = crate->object_files.items[i];
+        args[i + offset] = crate->object_files.items[i];
+
+    offset += crate->object_files.count;
 
     for(int i = 0; i < crate->libs.count; i++)
-        args[i + 3 + crate->object_files.count] = crate->libs.items[i];
+        args[i + offset] = crate->libs.items[i];
+
+    offset += crate->libs.count;
+
+    for(int i = 0; i < crate->lib_paths.count; i++)
+        args[i + offset] = crate->lib_paths.items[i];
 
     args[arg_count - 1] = NULL;
 

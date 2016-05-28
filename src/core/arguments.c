@@ -103,6 +103,11 @@ static void rule_seive(char *arg, char *next, int *skip, void *data)
         arr_append(&crate->libs, (char *)arg);
         return;
     }
+    else if(strlen(arg) > 2 && arg[0] == '-' && arg[1] == 'L')
+    {
+        arr_append(&crate->lib_paths, (char *)arg);
+        return;
+    }
 
     if(access(arg, R_OK) < 0)
     {
@@ -138,6 +143,7 @@ void args_setup(ShippingCrate *crate)
     ta_rule(targs, "*", NULL, &rule_seive, NULL);
 
     ta_extra(targs, "-l<libname>", "Link with library");
+    ta_extra(targs, "-L<libpath>", "Add linker search path");
 }
 
 void args_run(const char *argv[])
