@@ -70,13 +70,13 @@ func main()
 
 | Working | Incomplete | Buggy | Not Working |
 | ------- | ----------- |----|----|
-| Code compilation | 32-bit code generation | Reference counting in class contexts | Nested geneerators |
+| Code compilation | 32-bit code generation | Reference counting in class contexts | Nested generators |
 | Basic reference counting | Static variables | Counted variables in loops | Reference counting in generators |
 | Multiple file compilation | Imports and exports | | Debug information |
 | Control flow (if/elif/else, for, etc) | Type system |
 | Optimization (with levels) | C-ABI compatibility (no passing `structs` by value) |
 | Functions, closures, generators | Errors and warnings |
-| Object orientation (classes, interfaces, views) |
+| Object orientation (classes, interfaces, views) | Generics |
 | Linking, both other object files and libraries |
 | Type inference |
 | Semicolon injection |
@@ -97,7 +97,7 @@ like `llvm-config`). The process of getting LLVM will depend on your particular 
 You will also need a C compiler, a C++ compiler, make, and GNU Bison and Flex. LLVM also requires
 libzip, curses, and pthreads.
 
-The compiler should compile under Linux and OS X. OS X Mavericks, Arch Linux, and Ubuntu have
+The compiler should compile under Linux and OS X. OS X El Capitan, Arch Linux, and Ubuntu have
 all been tested. Please note that, under Ubuntu installations (and likely other Linux systems),
 there may be multiple versions of LLVM in the repositories. Make sure to choose the newest one
 possible; the default will likely be relatively old and therefore unusable.
