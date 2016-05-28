@@ -107,8 +107,8 @@ void ac_generic_check_ident(AST *ast, void *data)
         if(vb->type->type != ETFunction)
             return;
 
-        if(!ec_allow(cb->exports, ident, TFUNC))
-            warn(ALN, "Exported generic (%s) references non-exported symbol (%s)", genname, ident);
+        if(!ec_was_exported(cb->exports, ident, TFUNC))
+            die(ALN, "Exported generic (%s) references non-exported symbol (%s)", genname, ident);
     }
 }
 
@@ -137,13 +137,16 @@ static void ac_check_generics_each(void *key, void *val, void *data)
     GenericBundle *gb = val;
     CompilerBundle *cb = data;
 
-    AST *def = (AST *)gb->definition;
-    ASTWalker *walker = aw_create();
+    if(ec_was_exported(cb->exports, ident, TFUNC))
+    {
+        AST *def = (AST *)gb->definition;
+        ASTWalker *walker = aw_create();
 
-    void *items[] = { cb, ident };
-    aw_register(walker, AIDENT, ac_generic_check_ident, items);
-    aw_walk(walker, def);
-    aw_free(walker);
+        void *items[] = { cb, ident };
+        aw_register(walker, AIDENT, ac_generic_check_ident, items);
+        aw_walk(walker, def);
+        aw_free(walker);
+    }
 }
 
 void ac_check_generics(CompilerBundle *cb)

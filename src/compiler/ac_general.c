@@ -360,13 +360,18 @@ void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
         LLVMTypeRef func_type = LLVMFunctionType(ett_llvm_type(retType->etype), param_types, ct, a->vararg);
         func = LLVMAddFunction(cb->module, a->ident, func_type);
 
-        if(!ec_allow(cb->exports, a->ident, TFUNC) && a->body && strcmp(a->ident, "main") && a->linkage != VLExport)
-            LLVMSetLinkage(func, LLVMPrivateLinkage);
-        else
-            ec_register_record(cb->exports, a->ident, TFUNC);
-
         if(retType->etype->type == ETStruct)
             die(ALN, "Returning struct by value not supported. (%s)\n", a->ident);
+    }
+
+    if(!ec_allow(cb->exports, a->ident, TFUNC) && a->body && strcmp(a->ident, "main") && a->linkage != VLExport)
+    {
+        if(func)
+            LLVMSetLinkage(func, LLVMPrivateLinkage);
+    }
+    else
+    {
+        ec_register_record(cb->exports, a->ident, TFUNC);
     }
 
     vs_put(cb->varScope, a->ident, func, ftype, -1);

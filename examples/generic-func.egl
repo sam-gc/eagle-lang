@@ -19,7 +19,7 @@ func max<T> (T a, T b) : T
     return a > b ? a : b
 }
 
-func alloc<T> (T a) : T*
+export func alloc<T> (T a) : T*
 {
     T* b = malloc(sizeof(T))
     b! = a
@@ -43,7 +43,7 @@ func point_print_x<Pt> (Pt p)
     puts p.x
 }
 
-func factorial<Num> (Num i) : Num
+export func factorial<Num> (Num i) : Num
 {
     if i == 1
         return i
