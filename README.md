@@ -144,6 +144,7 @@ the `eagle` executable exists in the main project directory.
 | `--no-rc` | Do not include reference counting headers |
 | `--code [extra eagle code]` | Specify extra code to compile from command line |
 | `-l[libname]` | Link external library |
+| `-L[libpath]` | Add linker search path |
 | `--llvm` | Dump llvm bitcode |
 | `--verbose` | Provide details of compilation process |
 | `--threads [thread-count]` | Specify number of threads to use during code generation |
