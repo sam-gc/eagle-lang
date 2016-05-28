@@ -172,6 +172,8 @@ LLVMModuleRef ac_compile(AST *ast, int include_rc)
 
     ast = old;
 
+    ac_check_generics(&cb);
+
     ac_make_enum_definitions(ast, &cb);
     ac_make_struct_definitions(ast, &cb);
     ac_generate_interface_definitions(ast, &cb);
@@ -360,6 +362,8 @@ void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
 
         if(!ec_allow(cb->exports, a->ident, TFUNC) && a->body && strcmp(a->ident, "main") && a->linkage != VLExport)
             LLVMSetLinkage(func, LLVMPrivateLinkage);
+        else
+            ec_register_record(cb->exports, a->ident, TFUNC);
 
         if(retType->etype->type == ETStruct)
             die(ALN, "Returning struct by value not supported. (%s)\n", a->ident);
@@ -517,6 +521,28 @@ void ac_dispatch_declaration(AST *ast, CompilerBundle *cb)
             die(ALN, "Invalid declaration type.");
             return;
     }
+}
+
+typedef struct
+{
+    DispatchObserver observer;
+    void *data;
+} DispatchObserverBundle;
+
+void ac_add_dispatch_observer(CompilerBundle *cb, ASTType type, DispatchObserver observer, void *data)
+{
+    DispatchObserverBundle *db = malloc(sizeof(DispatchObserverBundle));
+    db->observer = observer;
+    db->data = data;
+
+    hst_put(&cb->dispatchObservers, (void *)type, db, ahhd, ahed);
+}
+
+void ac_remove_dispatch_observer(CompilerBundle *cb, ASTType type)
+{
+    DispatchObserverBundle *db = hst_get(&cb->dispatchObservers, (void *)type, ahhd, ahed);
+    if(db)
+        free(db);
 }
 
 void ac_guard_deferment(CompilerBundle *cb, int lineno)

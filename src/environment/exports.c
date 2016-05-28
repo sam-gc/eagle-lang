@@ -8,6 +8,8 @@
 
 #include "exports.h"
 #include "core/regex.h"
+#include "core/hashtable.h"
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <fnmatch.h>
@@ -36,6 +38,7 @@ struct ExportControl
 {
     rgxnode *head;
     rgxnode *tail;
+    Hashtable record;
 };
 
 ExportControl *ec_alloc()
@@ -43,6 +46,7 @@ ExportControl *ec_alloc()
     ExportControl *ec = malloc(sizeof(ExportControl));
     ec->head = NULL;
     ec->tail = NULL;
+    ec->record = hst_create();
 
     return ec;
 }
@@ -102,6 +106,16 @@ int ec_allow(ExportControl *ec, const char *str, int token)
     return 0;
 }
 
+void ec_register_record(ExportControl *ec, const char *str, int token)
+{
+    hst_put(&ec->record, (char *)str, (void *)(uintptr_t)token, NULL, NULL);
+}
+
+int ec_was_exported(ExportControl *ec, const char *str, int token)
+{
+    return hst_get(&ec->record, (char *)str, NULL, NULL) == (void *)(uintptr_t)token;
+}
+
 void ec_free(ExportControl *ec)
 {
     rgxnode *node = ec->head;
@@ -116,5 +130,8 @@ void ec_free(ExportControl *ec)
         node = next;
     }
 
+    hst_free(&ec->record);
+
     free(ec);
 }
+

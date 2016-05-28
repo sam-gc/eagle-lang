@@ -15,6 +15,8 @@ ExportControl *ec_alloc();
 void ec_add_str(ExportControl *ec, const char *str, int token);
 void ec_add_wcard(ExportControl *ec, const char *str, int token);
 int ec_allow(ExportControl *ec, const char *str, int token);
+void ec_register_record(ExportControl *ec, const char *str, int token);
+int ec_was_exported(ExportControl *ec, const char *str, int token);
 void ec_free(ExportControl *ec);
 
 #endif

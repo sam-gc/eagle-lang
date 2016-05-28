@@ -92,6 +92,26 @@ int ac_decl_is_generic(AST *ast)
     return ett_qualifies_as_generic(((ASTTypeDecl *)a->retType)->etype);
 }
 
+void ac_generic_check_ident(AST *ast, void *data)
+{
+    ASTValue *v = (ASTValue *)ast;
+    void **items = data;
+
+    CompilerBundle *cb = items[0];
+    char *genname = items[1];
+    char *ident = v->value.id;
+
+    if(vs_is_in_global_scope(cb->varScope, ident))
+    {
+        VarBundle *vb = vs_get(cb->varScope, ident);
+        if(vb->type->type != ETFunction)
+            return;
+
+        if(!ec_allow(cb->exports, ident, TFUNC))
+            warn(ALN, "Exported generic (%s) references non-exported symbol (%s)", genname, ident);
+    }
+}
+
 void ac_generic_register(AST *ast, EagleComplexType *template_type, CompilerBundle *cb)
 {
     ASTFuncDecl *a = (ASTFuncDecl *)ast;
@@ -109,6 +129,26 @@ static void ac_generic_compile_work(GenericWork *work, CompilerBundle *cb)
 {
     hst_for_each(&work->scanned, &ac_replace_types_each, NULL);
     ac_compile_function_ex(work->definition, cb, work->concrete_func, (EagleFunctionType *)work->concrete_type);
+}
+
+static void ac_check_generics_each(void *key, void *val, void *data)
+{
+    char *ident = key;
+    GenericBundle *gb = val;
+    CompilerBundle *cb = data;
+
+    AST *def = (AST *)gb->definition;
+    ASTWalker *walker = aw_create();
+
+    void *items[] = { cb, ident };
+    aw_register(walker, AIDENT, ac_generic_check_ident, items);
+    aw_walk(walker, def);
+    aw_free(walker);
+}
+
+void ac_check_generics(CompilerBundle *cb)
+{
+    hst_for_each(&cb->genericFunctions, ac_check_generics_each, cb);
 }
 
 void ac_compile_generics(CompilerBundle *cb)

@@ -43,7 +43,8 @@ typedef enum {
     ASWITCH,
     ACASE,
     ADEFER,
-    ATERNARY
+    ATERNARY,
+    AFINALPLACEHOLDER
 } ASTType;
 
 typedef enum {

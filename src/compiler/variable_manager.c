@@ -128,6 +128,22 @@ int vs_is_in_local_scope(VarScopeStack *vs, char *ident)
     return !!(int)(uintptr_t)hst_get(&s->table, ident, NULL, NULL);
 }
 
+int vs_is_in_global_scope(VarScopeStack *vs, char *ident)
+{
+    VarScope *s = vs->scope;
+    for(; s; s = s->next)
+    {
+        if(s->scope == BARRIER)
+            continue;
+
+        VarBundle *o = hst_get(&s->table, ident, NULL, NULL);
+        if(o)
+            return !s->next;
+    }
+
+    return 0;
+}
+
 VarBundle *vs_get_from_module(VarScopeStack *vs, char *ident, char *mod_name)
 {
     Hashtable *module = hst_get(&vs->modules, mod_name, NULL, NULL);

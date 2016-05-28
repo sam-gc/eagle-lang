@@ -12,6 +12,7 @@
 int ac_decl_is_generic(AST *ast);
 void ac_generic_register(AST *ast, EagleComplexType *template_type, CompilerBundle *cb);
 void ac_compile_generics(CompilerBundle *cb);
+void ac_check_generics(CompilerBundle *cb);
 LLVMValueRef ac_generic_get(char *func, EagleComplexType *arguments[], EagleComplexType **out_type, CompilerBundle *cb, int lineno);
 void ac_generics_cleanup(CompilerBundle *cb);
 
