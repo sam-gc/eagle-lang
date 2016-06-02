@@ -88,11 +88,6 @@ static ImportUnit imp_parse_function(int inclass, char *intext, int extdecl)
 
     int token = yylex();
 
-    /*
-    if(token != TIDENTIFIER)
-        die(yylineno, "%s name not properly defined", intext);
-    */
-
     iu.symbol = strdup(yytext);
 
     int terminal = extdecl ? TSEMI : TLBRACE;
@@ -135,6 +130,31 @@ static ImportUnit imp_parse_typedef()
 
     iu.full_text = string.buffer;
     iu.symbol = last;
+
+    return iu;
+}
+
+static ImportUnit imp_parse_static_var()
+{
+    ImportUnit iu = {NULL, NULL};
+
+    Strbuilder string;
+    sb_init(&string);
+
+    sb_append(&string, "extern static ");
+
+    yylex();
+    sb_append(&string, yytext);
+
+    sb_append(&string, " ");
+    
+    yylex();
+    sb_append(&string, yytext);
+    iu.symbol = strdup(yytext);
+    iu.full_text = string.buffer;
+
+    int token;
+    while((token = yylex()) != TSEMI);
 
     return iu;
 }
@@ -276,6 +296,10 @@ static char *imp_scan_file(const char *filename)
             case TEXPORT:
                 save_next = 1;
                 continue;
+
+            case TSTATIC:
+                iu = imp_parse_static_var();
+                break;
 
             case TFUNC:
             case TGEN:

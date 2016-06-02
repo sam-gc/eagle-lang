@@ -106,6 +106,7 @@ exportdecl          : TEXPORT TCSTR TSEMI { $$ = ast_make_export($2, 0); }
                     | TEXPORT structdecl TSEMI { $$ = ast_set_external_linkage($2); }
                     | TEXPORT gendecl { $$ = ast_set_external_linkage($2); }
                     | TEXPORT classdecl TSEMI { $$ = ast_set_external_linkage($2); }
+                    | TEXPORT globalvardecl TSEMI { $$ = ast_set_external_linkage($2); }
                     ;
 
 exportable          : TCLASS { $$ = $1; }
@@ -115,6 +116,7 @@ exportable          : TCLASS { $$ = $1; }
                     | TGEN { $$ = $1; }
                     | TTYPEDEF { $$ = $1; }
                     | TENUM { $$ = $1; }
+                    | TSTATIC { $$ = $1; }
                     ;
 
 globalvardecl       : TSTATIC variabledecl { $$ = $2; ast_set_linkage($2, VLStatic); }
@@ -219,6 +221,7 @@ externdecl          : TEXTERN funcident { $$ = $2; }
                     | TEXTERN classdecl { $$ = $2; ast_class_set_extern($$); }
                     | TEXTERN structdecl { $$ = $2; ast_struct_set_extern($$); }
                     | TEXTERN genident { $$ = $2; }
+                    | TEXTERN TSTATIC variabledecl { $$ = $3; ast_set_linkage($3, VLExternal); }
                     ;
 
 funcident           : TFUNC TIDENTIFIER TLPAREN TRPAREN TCOLON type { $$ = ast_make_func_decl($6, $2, NULL, NULL); }

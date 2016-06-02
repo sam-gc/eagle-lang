@@ -166,7 +166,7 @@ LLVMValueRef ac_compile_var_decl(AST *ast, CompilerBundle *cb)
         return NULL;
     }
 
-    if(a->linkage == VLStatic)
+    if(vl_is_static(a->linkage))
     {
         EagleComplexType *et = type->etype;
 
@@ -1288,7 +1288,7 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update)
             storageBundle = vs_get(cb->varScope, storageIdent);
         }
 
-        if(((ASTVarDecl *)a->left)->linkage == VLStatic)
+        if(vl_is_static(((ASTVarDecl *)a->left)->linkage))
             staticInitializer = 1;
     }
     else if(a->left->type == ABINARY && ((ASTBinary *)a->left)->op == '[')

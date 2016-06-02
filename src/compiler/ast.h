@@ -55,6 +55,11 @@ typedef enum {
     VLExport
 } VariableLinkage;
 
+static inline int vl_is_static(VariableLinkage l)
+{
+    return l == VLStatic || l == VLExport || l == VLExternal;
+}
+
 typedef struct AST {
     ASTType type;
     EagleComplexType *resultantType; struct AST *next;
@@ -136,13 +141,14 @@ typedef struct {
     EagleComplexType *resultantType;
     struct AST *next;
     long lineno;
+    VariableLinkage linkage;
 
     struct AST *atype;
     char *ident;
     struct AST *arrct;
 
     // Fields to manage global variables
-    VariableLinkage linkage;
+    // VariableLinkage linkage;
     AST *staticInit;
 
     // This field is *only* used for generator calls

@@ -1,7 +1,7 @@
 static int x
 static int z = 10.0
 static byte* text = 'Hello, world!'
-static byte** words
+export static byte** words
 
 func inc() : int
 {

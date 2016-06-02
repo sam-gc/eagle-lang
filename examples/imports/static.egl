@@ -1,0 +1,9 @@
+import lib-static.egl
+
+func main()
+{
+    puts x_x
+    x_x = 33
+    test()
+}
+

@@ -285,15 +285,26 @@ void ac_add_global_variable_declarations(AST *ast, CompilerBundle *cb)
                 die(ALN, "Invalid implicit constant conversion");
         }
     }
-    else
+    else if(a->linkage != VLExternal)
+    {
         init = ett_default_value(et);
-
-    if(!init)
-        die(ALN, "Cannot declare global variable of the given type");
+        if(!init)
+            die(ALN, "Variable %s does not have a valid static type", a->ident);
+    }
 
     LLVMSetInitializer(glob, init);
 
     vs_put(cb->varScope, a->ident, glob, et, ALN);
+
+    if(!init || a->linkage == VLExport ||
+       ec_allow(cb->exports, a->ident, TSTATIC))
+    {
+        // If there is no initializer, this is a variable declaration
+        // (i.e. extern variable ...). Thus, we need to ensure we
+        // don't have unused variable warnings.
+        VarBundle *bun = vs_get(cb->varScope, a->ident);
+        bun->wasassigned = bun->wasused = 1;
+    }
 }
 
 void ac_add_early_declarations(AST *ast, CompilerBundle *cb)

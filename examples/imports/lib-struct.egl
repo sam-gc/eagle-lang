@@ -1,4 +1,4 @@
-struct TestStruct
+export struct TestStruct
 {
     int a
     int b

@@ -1,0 +1,7 @@
+export static int x_x = 55
+
+export func test()
+{
+    puts x_x
+}
+
