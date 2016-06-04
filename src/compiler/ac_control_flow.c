@@ -163,7 +163,7 @@ static int ac_count_switch_cases(ASTSwitchBlock *ast)
     return i;
 }
 
-static LLVMValueRef ac_compile_case_label(AST *ast, CompilerBundle *cb)
+static LLVMValueRef ac_compile_case_label(AST *ast, EagleComplexType *st, CompilerBundle *cb)
 {
     ASTCaseBlock *cblock = (ASTCaseBlock *)ast;
 
@@ -177,6 +177,9 @@ static LLVMValueRef ac_compile_case_label(AST *ast, CompilerBundle *cb)
         die(ALN, "Case branch not constant");
     if(!LLVMIsConstant(label))
         die(ALN, "Case branch not constant");
+    
+    if(!ett_are_same(st, rt))
+        label = ac_build_conversion(cb, label, rt, st, STRICT_CONVERSION, ALN);
 
     return label;
 }
@@ -233,7 +236,7 @@ void ac_compile_switch(AST *ast, CompilerBundle *cb)
             if(test_type->type == ETEnum)
                 cb->enum_lookup = test_type;
     
-            LLVMValueRef targ = ac_compile_case_label(cblock, cb);
+            LLVMValueRef targ = ac_compile_case_label(cblock, test_type, cb);
             cb->enum_lookup = NULL;
 
             ac_check_case_label_uniqueness(targ, caseLabels, i, cblock->lineno);

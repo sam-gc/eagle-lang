@@ -299,9 +299,9 @@ void ac_add_global_variable_declarations(AST *ast, CompilerBundle *cb)
     if(!init || a->linkage == VLExport ||
        ec_allow(cb->exports, a->ident, TSTATIC))
     {
-        // If there is no initializer, this is a variable declaration
-        // (i.e. extern variable ...). Thus, we need to ensure we
-        // don't have unused variable warnings.
+        // If this is a variable declaration (i.e.
+        // extern variable ...), or is exported, we need to
+        // ensure we don't have unused variable warnings.
         VarBundle *bun = vs_get(cb->varScope, a->ident);
         bun->wasassigned = bun->wasused = 1;
     }
