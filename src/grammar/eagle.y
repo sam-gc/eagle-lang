@@ -9,11 +9,15 @@
  
     #include <stdlib.h>
     #include "compiler/ast.h"
+    #include "core/config.h"
 
     // extern int yylex();
+    extern int yylineno;
     extern int pipe_lex();
     extern void pipe_reset_context();
+    extern int proper_formatting;
     #define yylex pipe_lex
+    #define PF if(proper_formatting) die(yylineno, "Proper formatting violation: Opening brace on same line as declaration")
     extern int yyerror(const char *);
 
     AST *ast_root = NULL;
@@ -146,7 +150,7 @@ compositetype       : TTYPE TOR TTYPE { $$ = ast_make_type($1); ast_make_composi
                     | TTYPE TOR compositetype { $$ = ast_make_composite($3, $1); }
                     ;
 
-enumdecl            : TENUM TTYPE TLBRACE enumlist TRBRACE { $$ = ast_make_enum($2, $4); }
+enumdecl            : TENUM TTYPE TLBRACE enumlist TRBRACE { PF; $$ = ast_make_enum($2, $4); }
                     | TENUM TTYPE TLBRACE TSEMI enumlist TRBRACE { $$ = ast_make_enum($2, $5); }
                     ;
 
@@ -158,7 +162,7 @@ enumitem            : TIDENTIFIER TSEMI { $$ = ast_make_enumitem($1, NULL); }
                     | TIDENTIFIER TCOLON TINT TSEMI { $$ = ast_make_enumitem($1, $3); }
                     ;
 
-structdecl          : TSTRUCT TTYPE TLBRACE structlist TRBRACE { $$ = $4; ast_struct_name($$, $2); }
+structdecl          : TSTRUCT TTYPE TLBRACE structlist TRBRACE { PF; $$ = $4; ast_struct_name($$, $2); }
                     | TSTRUCT TTYPE TLBRACE TSEMI structlist TRBRACE { $$ = $5; ast_struct_name($$, $2); }
                     ;
 
@@ -172,7 +176,7 @@ interfacelist       : interfacelist funcsident TSEMI { $$ = $1; ast_class_method
                     | funcident TSEMI { $$ = ast_make_interface_decl(); ast_class_method_add($$, $1); }
                     ;
 
-interfacedecl       : TINTERFACE TTYPE TLBRACE interfacelist TRBRACE { $$ = $4; ast_class_name($$, $2); }
+interfacedecl       : TINTERFACE TTYPE TLBRACE interfacelist TRBRACE { PF; $$ = $4; ast_class_name($$, $2); }
                     | TINTERFACE TTYPE TLBRACE TSEMI interfacelist TRBRACE { $$ = $5; ast_class_name($$, $2); }
                     ;
 
@@ -180,9 +184,9 @@ interfacetypelist   : type { $$ = $1; }
                     | type TCOMMA interfacetypelist { $$ = $1; $$->next = $3; }
                     ;
 
-classdecl           : TCLASS TTYPE TLBRACE classlist TRBRACE { $$ = $4; ast_class_name($$, $2); }
+classdecl           : TCLASS TTYPE TLBRACE classlist TRBRACE { PF; $$ = $4; ast_class_name($$, $2); }
                     | TCLASS TTYPE TLBRACE TSEMI classlist TRBRACE { $$ = $5; ast_class_name($$, $2); }
-                    | TCLASS TTYPE TLPAREN interfacetypelist TRPAREN TLBRACE classlist TRBRACE { $$ = $7; ast_class_name($$, $2); ast_class_add_interface($$, $4); }
+                    | TCLASS TTYPE TLPAREN interfacetypelist TRPAREN TLBRACE classlist TRBRACE { PF; $$ = $7; ast_class_name($$, $2); ast_class_add_interface($$, $4); }
                     | TCLASS TTYPE TLPAREN interfacetypelist TRPAREN TLBRACE TSEMI classlist TRBRACE { $$ = $8; ast_class_name($$, $2); ast_class_add_interface($$, $4); }
                     ;
 

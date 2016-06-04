@@ -19,6 +19,7 @@
 #define SEQU(a, b) strcmp((a), (b)) == 0
 
 extern Hashtable global_args;
+extern int proper_formatting;
 
 static TermArgs *targs;
 static const char *progname;
@@ -89,6 +90,11 @@ static void rule_skip(char *arg, char *next, int *skip, void *data)
     *skip = 1;
 }
 
+static void rule_pf(char *arg, char *next, int *skip, void *data)
+{
+    proper_formatting = 1;
+}
+
 static void rule_ignore(char *arg, char *next, int *skip, void *data)
 {
     // Pass
@@ -132,6 +138,7 @@ void args_setup(ShippingCrate *crate)
     ta_rule(targs, "--code", "--code <eagle code>", &rule_code, "Provide extra code to compile");
     ta_rule(targs, "--threads", "--threads <count>", &rule_threads, "Optimize and compile on <count> threads (default 4)");
     ta_rule(targs, "--dump-code", "--dump-code", &rule_ignore, "Dump the pre-processed code from imports");
+    ta_rule(targs, "--pf", "--pf", &rule_pf, "Require proper formatting for code (strict mode)");
     ta_rule(targs, "-o", "-o <filename>", &rule_skip, "Output executable name");
     ta_rule(targs, "-c", "-c", &rule_ignore, "Output object file");
     ta_rule(targs, "-S", "-S", &rule_ignore, "Output assembly file");

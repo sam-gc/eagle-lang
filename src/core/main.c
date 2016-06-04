@@ -45,6 +45,8 @@ extern void yy_delete_buffer(YY_BUFFER_STATE buf);
 
 char *current_file_name = NULL;
 
+int proper_formatting;
+
 static void register_typedef()
 {
     char *prev = NULL;

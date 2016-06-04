@@ -12,6 +12,7 @@
 #include "compiler/ast.h"
 #include "core/utils.h"
 #include "core/multibuffer.h"
+#include "core/config.h"
 #include "eagle.tab.h"
 
 #define SET(t) (yylval.token = t)
@@ -27,6 +28,7 @@ int in_interface = 0;
 int skip_type_check = 0;
 extern Multibuffer *ymultibuffer;
 extern int pipe_is_type();
+extern int proper_formatting;
 
 extern int yyerror(const char *);
 #define YY_INPUT(buf, result, max_size) if(skip_type_check) result = fread( buf, 1, max_size, yyin ); else result = mb_buffer(ymultibuffer, buf, max_size)
@@ -40,6 +42,7 @@ void yyset_start_token(int tok)
     start_token = tok;
 }
 
+#define PF if(proper_formatting) die(yylineno, "Proper formatting violation: Tab character as indentation")
 #define unput(c) yyunput( c, (yytext_ptr)  )
 char yypeek()
 {
@@ -54,7 +57,8 @@ char yypeek()
 %option yylineno
 
 reset "=== RESET ==="
-white [ \t]+
+whitespace [ ]+
+tabspace [\t]+
 whitechar [ \t]
 digit [0-9]
 lalpha [a-z]
@@ -85,7 +89,8 @@ if(start_token)
 
 %}
 
-{white}       ;
+{whitespace}  ;
+{tabspace}    PF;
 "\n"          { if(save_newline || override) {save_newline = override = 0; return TSEMI;} override = 0; /*else printf("IGNORING! %d\n", yylineno);*/ }
 
 {integer}     { SAVE_NL; SAVE_TOKEN; return TINT; }
