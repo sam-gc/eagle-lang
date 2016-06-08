@@ -17,7 +17,7 @@
     extern void pipe_reset_context();
     extern int proper_formatting;
     #define yylex pipe_lex
-    #define PF if(proper_formatting) die(yylineno, "Proper formatting violation: Opening brace on same line as declaration")
+    #define PF if(proper_formatting) die(yylineno, msgerr_proper_formatting_brace_same_line)
     extern int yyerror(const char *);
 
     AST *ast_root = NULL;

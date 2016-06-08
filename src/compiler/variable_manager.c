@@ -62,9 +62,9 @@ void vs_run_warnings(void *key, void *val, void *data)
         return;
 
     if(!bun->wasused && !bun->wasassigned)
-        warn(bun->lineno, "Unused variable %s", ident);
+        warn(bun->lineno, msgwarn_unused_variable, ident);
     else if(!bun->wasused)
-        warn(bun->lineno, "Variable %s assigned but never used", ident);
+        warn(bun->lineno, msgwarn_assigned_not_used, ident);
 }
 
 void vs_pop(VarScopeStack *vs)
@@ -230,7 +230,7 @@ void vs_add_deferment(VarScopeStack *vs, AST *ast)
 void vs_run_deferments(VarScopeStack *vs, void *data)
 {
     if(!vs->deferCallback)
-        die(-1, "Internal compiler error: deferment callback not set");
+        die(-1, msgerr_internal_deferment_callback_missing);
 
     VarScope *s = vs->scope;
     Arraylist *deferments = &s->deferments;
@@ -243,7 +243,7 @@ void vs_run_deferments(VarScopeStack *vs, void *data)
 void vs_run_deferments_through(VarScopeStack *vs, VarScope *scope, void *data)
 {
     if(!vs->deferCallback)
-        die(-1, "Internal compiler error: deferment callback not set");
+        die(-1, msgerr_internal_deferment_callback_missing);
 
     VarScope *s = vs->scope;
     for(; s != scope->next; s = s->next)

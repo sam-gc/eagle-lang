@@ -234,7 +234,7 @@ void ac_make_struct_definitions(AST *ast, CompilerBundle *cb)
 
         if(!LLVMIsOpaqueStruct(loaded))
         {
-            warn(ALN, "Attempting to redeclare struct %s", a->name);
+            warn(ALN, msgwarn_struct_redeclaration, a->name);
             free(tys);
             continue;
         }
@@ -291,7 +291,7 @@ void ac_call_constructor(CompilerBundle *cb, LLVMValueRef pos, EagleComplexType 
 void ac_call_destructor(CompilerBundle *cb, LLVMValueRef pos, EagleComplexType *ty)
 {
     if(ET_IS_WEAK(ty) || ET_IS_COUNTED(ty))
-        die(-1, "WEIRD ERROR");
+        die(-1, msgerr_internal);
 
     EagleStructType *st = ty->type == ETPointer ? (EagleStructType *)((EaglePointerType *)ty)->to
                                                 : (EagleStructType *)ty;
@@ -331,7 +331,7 @@ static void ac_struct_lit_each(void *key, void *val, void *data)
     ty_struct_member_index((EagleComplexType *)st, member, &index, &memtype);
 
     if(index < 0)
-        die(a->lineno, "struct %s has no member %s", st->name, member);
+        die(a->lineno, msgerr_member_not_in_struct, st->name, member);
 
     hst_put(lh->set, member, (void *)1, NULL, NULL);
 
@@ -342,7 +342,7 @@ static void ac_struct_lit_each(void *key, void *val, void *data)
     if(exp->type == ASTRUCTLIT)
     {
         if(memtype->type != ETStruct)
-            die(exp->lineno, "Attempting to assign struct literal to non-struct member %s", member);
+            die(exp->lineno, msgerr_assign_struct_lit_member, member);
 
         ASTStructLit *asl = (ASTStructLit *)exp;
         if(!asl->name)
@@ -377,7 +377,7 @@ LLVMValueRef ac_compile_struct_lit(AST *ast, CompilerBundle *cb, LLVMValueRef st
     ASTStructLit *a = (ASTStructLit *)ast;
 
     if(!a->name)
-        die(ALN, "Unable to infer type of struct literal from context.");
+        die(ALN, msgerr_struct_literal_type_unknown);
 
     EagleStructType *st = (EagleStructType *)ett_struct_type(a->name);
 

@@ -227,7 +227,7 @@ void ac_compile_generator_code(AST *ast, CompilerBundle *cb)//, LLVMValueRef fun
     ac_compile_block(a->body, NULL, cb);
 
     // if(!ac_compile_block(a->body, entry, cb) && retType->etype->type != ETVoid)
-    //     die(ALN, "Function must return a value.");
+    //     die(ALN, msgerr_function_return_required);
 
     // if(retType->etype->type == ETVoid)
     // {
@@ -408,7 +408,7 @@ void ac_add_gen_declaration(AST *ast, CompilerBundle *cb)
         eparam_types[i] = type->etype;
 
         if(type->etype->type == ETStruct)
-            die(ALN, "Passing struct by value not supported.");
+            die(ALN, msgerr_unsupported_struct_byval);
     }
 
     ASTTypeDecl *genType = (ASTTypeDecl *)a->retType;

@@ -43,7 +43,7 @@ LLVMValueRef ac_const_value(AST *ast, CompilerBundle *cb)
             a->resultantType = ett_pointer_type(ett_base_type(ETAny));
             return LLVMConstPointerNull(ett_llvm_type(a->resultantType));
         default:
-            die(ALN, "Unknown value type.");
+            die(ALN, msgerr_unknown_value_type);
             return NULL;
     }
 }

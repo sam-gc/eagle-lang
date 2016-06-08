@@ -176,7 +176,7 @@ void ac_check_and_register_implementation(char *method, ClassHelper *h, char *cl
         EagleComplexType *clsty  = ty_method_lookup(class, method);
 
         if(!ett_are_same(implty, clsty))
-            die(cd->lineno, "Implementation of method (%s) in class (%s) does not match interface", method, class);
+            die(cd->lineno, msgerr_bad_impl, method, class);
 
 #ifdef llvm_OLD
         func = LLVMConstBitCast(func, LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0));
@@ -314,7 +314,7 @@ void ac_make_class_definitions(AST *ast, CompilerBundle *cb)
         {
             int i;
             for(i = 0; i < h.table_len; i++) if(!h.interface_pointers[i])
-                die(ast->lineno, "Class (%s) does not fully implement all announced interfaces", a->name);
+                die(ast->lineno, msgerr_incomplete_impl, a->name);
             LLVMValueRef initptrs = LLVMConstArray(LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), h.interface_pointers, h.table_len);
 
             char *ptrs_name = ac_gen_ifc_internal_name(a->name, 'p');

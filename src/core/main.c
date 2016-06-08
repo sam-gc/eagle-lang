@@ -268,7 +268,7 @@ int main(int argc, const char *argv[])
 
     if(!crate.source_files.count && !crate.object_files.count && !crate.extra_code.count)
     {
-        die(-1, "No valid operands provided.");
+        die(-1, msgerr_no_code_specified);
     }
 
     if(crate.verbose)

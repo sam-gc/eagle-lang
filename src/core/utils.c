@@ -29,7 +29,7 @@ char *utl_gen_escaped_string(char *inp, int lineno)
         switch(inp[i])
         {
             case 0:
-                die(lineno, "Unexpected end of escaped string: \"%s\"", inp);
+                die(lineno, msgerr_unexpected_escaped_string_end, inp);
             case 't':
                 gen = '\t';
                 break;
@@ -58,7 +58,7 @@ char *utl_gen_escaped_string(char *inp, int lineno)
                 gen = '\'';
                 break;
             default:
-                die(lineno, "Unknown escape character in string: \"%s\"", inp);
+                die(lineno, msgerr_unexpected_escaped_char, inp);
         }
 
         n[j] = gen;

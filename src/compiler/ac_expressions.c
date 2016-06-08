@@ -35,7 +35,7 @@ LLVMValueRef ac_compile_value(AST *ast, CompilerBundle *cb)
             a->resultantType = ett_pointer_type(ett_base_type(ETAny));
             return LLVMConstPointerNull(ett_llvm_type(a->resultantType));
         default:
-            die(ALN, "Unknown value type.");
+            die(ALN, msgerr_unknown_value_type);
             return NULL;
     }
 }
@@ -60,15 +60,15 @@ LLVMValueRef ac_compile_identifier(AST *ast, CompilerBundle *cb)
     {
         LLVMValueRef enl = ac_lookup_enum(cb->enum_lookup, a->value.id);
         if(!enl)
-            die(ALN, "Item %s not associated with enum %s.", a->value.id, ((EagleEnumType *)cb->enum_lookup)->name);
+            die(ALN, msgerr_item_not_in_enum, a->value.id, ((EagleEnumType *)cb->enum_lookup)->name);
         a->resultantType = cb->enum_lookup;
         return enl;
     }
 
     if(!b) // We are dealing with a local variable
-        die(ALN, "Undeclared Identifier (%s)", a->value.id);
+        die(ALN, msgerr_undeclared_identifier, a->value.id);
     if(b->type->type == ETAuto)
-        die(ALN, "Trying to read variable of unknown type (%s)", a->value.id);
+        die(ALN, msgerr_unknown_var_read, a->value.id);
 
     b->wasused = 1;
 
@@ -120,7 +120,7 @@ LLVMValueRef ac_compile_var_decl_ext(EagleComplexType *type, char *ident, Compil
     if(b && !b->value)
         b->value = pos;
     else if(b && vs_is_in_local_scope(cb->varScope, ident)) // A bundle exists and is already set
-        die(lineno, "Redeclaration of variable %s", ident);
+        die(lineno, msgerr_redeclaration, ident);
 
     if(ET_IS_COUNTED(type))
     {
@@ -158,7 +158,7 @@ LLVMValueRef ac_compile_var_decl(AST *ast, CompilerBundle *cb)
     ast->resultantType = type->etype;
 
     if(vs_is_in_local_scope(cb->varScope, a->ident))
-        die(ALN, "Redefinition of variable %s", a->ident);
+        die(ALN, msgerr_redefinition, a->ident);
 
     if(type->etype->type == ETAuto)
     {
@@ -174,7 +174,7 @@ LLVMValueRef ac_compile_var_decl(AST *ast, CompilerBundle *cb)
         LLVMValueRef init = ett_default_value(et);
 
         if(!init)
-            die(ALN, "Cannot declare global variable of the given type");
+            die(ALN, msgerr_invalid_global_type);
         LLVMSetInitializer(glob, init);
 
         vs_put(cb->varScope, a->ident, glob, et, ALN);
@@ -196,10 +196,10 @@ LLVMValueRef ac_compile_struct_member(AST *ast, CompilerBundle *cb, int keepPoin
     EagleComplexType *ty = a->left->resultantType;
 
     if(ty->type != ETPointer && ty->type != ETStruct && ty->type != ETClass && ty->type != ETInterface)
-        die(ALN, "Attempting to access member of non-struct type (%s).", a->ident);
+        die(ALN, msgerr_member_access_non_struct, a->ident);
     if(ty->type == ETPointer && ((EaglePointerType *)ty)->to->type != ETStruct && ((EaglePointerType *)ty)->to->type != ETClass &&
        ((EaglePointerType *)ty)->to->type != ETInterface)
-        die(ALN, "Attempting to access member of non-struct pointer type (%s).", a->ident);
+        die(ALN, msgerr_member_access_non_struct_ptr, a->ident);
 
     LLVMValueRef lcw = a->left->type == AUNARY ? ((ASTUnary *)a->left)->savedWrapped : left;
 
@@ -241,7 +241,7 @@ LLVMValueRef ac_compile_struct_member(AST *ast, CompilerBundle *cb, int keepPoin
         a->leftCompiled = lcw; // a->left->type == AUNARY ? ((ASTUnary *)a->left)->savedWrapped : left;
         char *name = ac_gen_method_name(((EagleStructType *)ty)->name, a->ident);
         LLVMValueRef func = LLVMGetNamedFunction(cb->module, name);
-        if(!func) die(ALN, "Internal compiler error: unable to resolve method");
+        if(!func) die(ALN, msgerr_internal_method_resolution);
         free(name);
         ast->resultantType = functionType;
         return func;
@@ -253,9 +253,9 @@ LLVMValueRef ac_compile_struct_member(AST *ast, CompilerBundle *cb, int keepPoin
     ty_struct_member_index(ty, a->ident, &index, &type);
 
     if(index < -1)
-        die(ALN, "Internal compiler error. Struct not loaded but found.");
+        die(ALN, msgerr_internal_struct_load_find);
     if(index < 0)
-        die(ALN, "Struct \"%s\" has no member \"%s\".", ((EagleStructType *)ty)->name, a->ident);
+        die(ALN, msgerr_member_not_in_struct, ((EagleStructType *)ty)->name, a->ident);
 
     ast->resultantType = type;
 
@@ -270,14 +270,14 @@ LLVMValueRef ac_compile_type_lookup(AST *ast, CompilerBundle *cb)
     ASTTypeLookup *a = (ASTTypeLookup *)ast;
 
     if(!ty_is_enum(a->name))
-        die(ALN, "Trying to lookup item of non-enum type %s.", a->name);
+        die(ALN, msgerr_invalid_type_lookup_type, a->name);
 
     EagleComplexType *et = ett_enum_type(a->name);
     int valid;
     long enum_val = ty_lookup_enum_item(et, a->item, &valid);
 
     if(!valid)
-        die(ALN, "Enum (%s) does not have item %s.", a->name, a->item);
+        die(ALN, msgerr_item_not_in_enum, a->name, a->item);
 
     a->resultantType = et;
 
@@ -383,7 +383,7 @@ LLVMValueRef ac_compile_new_decl(AST *ast, CompilerBundle *cb)
         if(a->right->type == ASTRUCTLIT)
         {
             if(to->type != ETStruct)
-                die(ALN, "Attempting to initialize non-struct pointer type with struct literal");
+                die(ALN, msgerr_invalid_struct_lit_assignment);
 
             ASTStructLit *asl = (ASTStructLit *)a->right;
             if(!asl->name)
@@ -474,18 +474,18 @@ LLVMValueRef ac_compile_cast(AST *ast, CompilerBundle *cb)
     if(to->type == ETPointer)
     {
         if(!ET_IS_INT(from->type))
-            die(ALN, "Cannot cast non-integer type to pointer.");
+            die(ALN, msgerr_non_int_ptr_cast);
         return LLVMBuildIntToPtr(cb->builder, val, ett_llvm_type(to), "casttmp");
     }
 
     if(from->type == ETPointer)
     {
         if(!ET_IS_INT(to->type))
-            die(ALN, "Pointers may only be cast to other pointers or integers.");
+            die(ALN, msgerr_ptr_cast);
         return LLVMBuildPtrToInt(cb->builder, val, ett_llvm_type(to), "casttmp");
     }
 
-    die(ALN, "Unknown type conversion requested.");
+    die(ALN, msgerr_unknown_conversion);
 
     return NULL;
 }
@@ -503,11 +503,11 @@ LLVMValueRef ac_compile_index(AST *ast, int keepPointer, CompilerBundle *cb)
     EagleComplexType *rt = right->resultantType;
 
     if(lt->type != ETPointer && lt->type != ETArray)
-        die(LN(left), "Only pointer types may be indexed.");
+        die(LN(left), msgerr_invalid_indexed_type);
     if(lt->type == ETPointer && ett_pointer_depth(lt) == 1 && ett_get_base_type(lt) == ETAny)
-        die(LN(left), "Trying to dereference any-pointer.");
+        die(LN(left), msgerr_deref_any_ptr);
     if(!ett_is_numeric(rt))
-        die(LN(right), "Arrays can only be indexed by a number.");
+        die(LN(right), msgerr_invalid_indexer_type);
 
     if(ET_IS_REAL(rt->type))
         r = ac_build_conversion(cb, r, rt, ett_base_type(ETInt64), STRICT_CONVERSION, right->lineno);
@@ -694,7 +694,7 @@ LLVMValueRef ac_generic_unary(ASTUnary *a, LLVMValueRef val, CompilerBundle *cb)
         case '~':
             return ac_make_bitnot(val, cb->builder, a->val->resultantType->type, a->lineno);
         default:
-            die(a->lineno, "Internal compiler error");
+            die(a->lineno, msgerr_internal);
     }
 
     return NULL;
@@ -723,16 +723,16 @@ ac_generic_binary(ASTBinary *a, LLVMValueRef l, LLVMValueRef r,
         EagleComplexType *lt = totype;
         EagleComplexType *rt = fromtype;
         if(a->op != '+' && a->op != '-' && a->op != 'e' && a->op !='P' && a->op != 'n')
-            die(a->lineno, "Operation '%c' not valid for pointer types.", a->op);
+            die(a->lineno, msgerr_op_invalid_for_ptr, a->op);
         if(lt->type == ETPointer && !ET_IS_INT(rt->type))
-            die(a->lineno, "Pointer arithmetic is only valid with integer and non-any pointer types.");
+            die(a->lineno, msgerr_invalid_ptr_arithmetic);
         if(rt->type == ETPointer && !ET_IS_INT(lt->type))
-            die(a->lineno, "Pointer arithmetic is only valid with integer and non-any pointer types.");
+            die(a->lineno, msgerr_invalid_ptr_arithmetic);
 
         if(lt->type == ETPointer && ett_get_base_type(lt) == ETAny && ett_pointer_depth(lt) == 1)
-            die(a->lineno, "Pointer arithmetic results in dereferencing any pointer.");
+            die(a->lineno, msgerr_ptr_arithmetic_deref_any);
         if(rt->type == ETPointer && ett_get_base_type(rt) == ETAny && ett_pointer_depth(rt) == 1)
-            die(a->lineno, "Pointer arithmetic results in dereferencing any pointer.");
+            die(a->lineno, msgerr_ptr_arithmetic_deref_any);
 
         LLVMValueRef indexer = lt->type == ETPointer ? r : l;
         LLVMValueRef ptr = lt->type == ETPointer ? l : r;
@@ -782,7 +782,7 @@ ac_generic_binary(ASTBinary *a, LLVMValueRef l, LLVMValueRef r,
         case 'E':
             return ac_make_bitshift(l, r, cb->builder, totype->type, a->lineno, LEFT);
         default:
-            die(a->lineno, "Invalid binary operation (%c).", a->op);
+            die(a->lineno, msgerr_invalid_binary_op, a->op);
             return NULL;
     }
 }
@@ -852,7 +852,7 @@ LLVMValueRef ac_compile_get_address(AST *of, CompilerBundle *cb)
             VarBundle *b = vs_get(cb->varScope, o->value.id);
 
             if(!b)
-                die(LN(of), "Undeclared identifier (%s)", o->value.id);
+                die(LN(of), msgerr_undeclared_identifier, o->value.id);
 
             of->resultantType = b->type;
             b->wasused = 1;
@@ -863,7 +863,7 @@ LLVMValueRef ac_compile_get_address(AST *of, CompilerBundle *cb)
         {
             ASTBinary *o = (ASTBinary *)of;
             if(o->op != '[')
-                die(LN(of), "Address may not be taken of this operator.");
+                die(LN(of), msgerr_addr_invalid_expression);
 
             LLVMValueRef val = ac_compile_index(of, 1, cb);
             return val;
@@ -873,7 +873,7 @@ LLVMValueRef ac_compile_get_address(AST *of, CompilerBundle *cb)
             return ac_compile_struct_member(of, cb, 1);
         }
         default:
-            die(LN(of), "Address may not be taken of this expression.");
+            die(LN(of), msgerr_addr_invalid_expression);
     }
 
     return NULL;
@@ -957,7 +957,7 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
                         }
                         break;
                     default:
-                        die(ALN, "The requested type may not be printed.");
+                        die(ALN, msgerr_invalid_puts_type);
                         break;
                 }
 
@@ -969,9 +969,9 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
         case '*':
             {
                 if(a->val->resultantType->type != ETPointer)
-                    die(ALN, "Only pointers may be dereferenced.");
+                    die(ALN, msgerr_invalid_deref_type);
                 if(IS_ANY_PTR(a->val->resultantType))
-                    die(ALN, "Any pointers may not be dereferenced without cast.");
+                    die(ALN, msgerr_deref_any_no_cast);
 
                 a->savedWrapped = v;
                 ac_unwrap_pointer(cb, &v, a->val->resultantType, 0);
@@ -988,7 +988,7 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
         case 'c':
             {
                 if(a->val->resultantType->type != ETArray)
-                    die(ALN, "countof operator only valid for arrays.");
+                    die(ALN, msgerr_invalid_countof_type);
 
                 LLVMValueRef r = LLVMBuildStructGEP(cb->builder, v, 0, "ctp");
                 a->resultantType = ett_base_type(ETInt64);
@@ -1006,7 +1006,7 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
         case 'i':
             {
                 if(!ET_IS_COUNTED(a->val->resultantType) && !ET_IS_WEAK(a->val->resultantType))
-                    die(ALN, "Only pointers in the counted regime may be manipulated using __inc");
+                    die(ALN, msgerr_invalid___inc_type);
                 a->resultantType = a->val->resultantType;
                 ac_incr_val_pointer(cb, &v, NULL);
                 return v;
@@ -1014,7 +1014,7 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
         case 'd':
             {
                 if(!ET_IS_COUNTED(a->val->resultantType) && !ET_IS_WEAK(a->val->resultantType))
-                    die(ALN, "Only pointers in the counted regime may be manipulated using __dec");
+                    die(ALN, msgerr_invalid___dec_type);
                 a->resultantType = a->val->resultantType;
                 ac_decr_val_pointer(cb, &v, NULL);
                 return v;
@@ -1022,7 +1022,7 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
         case 'u':
             {
                 if(!ET_IS_COUNTED(a->val->resultantType) && !ET_IS_WEAK(a->val->resultantType))
-                    die(ALN, "Only pointers in the counted regime may be unwrapped.");
+                    die(ALN, msgerr_invalid_unwrap_type);
 
                 a->resultantType = ett_pointer_type(((EaglePointerType *)a->val->resultantType)->to);
                 return LLVMBuildStructGEP(cb->builder, v, 5, "unwrap");
@@ -1044,11 +1044,11 @@ LLVMValueRef ac_compile_unary(AST *ast, CompilerBundle *cb)
         case '-':
         case '~':
             if(!ett_is_numeric(a->val->resultantType))
-                die(ALN, "Trying to negate non-numeric type");
+                die(ALN, msgerr_invalid_negate_type);
             a->resultantType = a->val->resultantType;
             return ac_generic_unary(a, v, cb);
         default:
-            die(ALN, "Invalid unary operator (%c).", a->op);
+            die(ALN, msgerr_invalid_unary_op, a->op);
             break;
     }
 
@@ -1146,9 +1146,9 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
 
     // Make sure the number of parameters matches...
     if(ct != ett->pct && !ett->variadic)
-        die(ALN, "Function takes %d parameters, but %d provided", ett->pct, ct);
+        die(ALN, msgerr_mismatch_param_count, ett->pct, ct);
     else if(ett->variadic && ct < ett->pct)
-        die(ALN, "Variadic function takes at least %d parameters, but %d provided", ett->pct, ct);
+        die(ALN, msgerr_mismatch_param_count_variadic, ett->pct, ct);
 
     LLVMValueRef args[ct + offset];
     EagleComplexType *param_types[ct + offset];
@@ -1190,7 +1190,7 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
             ac_unwrap_pointer(cb, &func, NULL, 0);
 
         if(instanceOfClass)
-            die(ALN, "Internal compiler error!");
+            die(ALN, msgerr_internal);
         // if(ET_HAS_CLOASED(ett))
         args[0] = LLVMBuildLoad(cb->builder, LLVMBuildStructGEP(cb->builder, func, 1, ""), "");
         // else
@@ -1224,7 +1224,7 @@ LLVMValueRef ac_compile_function_call(AST *ast, CompilerBundle *cb)
 void ac_set_static_initializer(int lineno, LLVMValueRef glob, LLVMValueRef init)
 {
     if(!LLVMIsConstant(init))
-        die(lineno, "Attempting to initialize global variable with non-constant value");
+        die(lineno, msgerr_global_init_non_constant);
 
     LLVMSetInitializer(glob, init);
 }
@@ -1303,7 +1303,7 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update)
     }
     else
     {
-        die(ALN, "Left hand side may not be assigned to.");
+        die(ALN, msgerr_invalid_assignment);
         return NULL;
     }
 
@@ -1315,11 +1315,11 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update)
         if(totype->type == ETAuto)
         {
             if(!asl->name)
-                die(ALN, "Unable to infer type of struct literal from context.");
+                die(ALN, msgerr_struct_literal_type_unknown);
 
             totype = ett_struct_type(asl->name);
             if(!storageBundle || !storageIdent)
-                die(ALN, "Internal compiler error!");
+                die(ALN, msgerr_internal);
 
             pos = ac_compile_var_decl_ext(totype, storageIdent, cb, 0, ALN);
             storageBundle->type = totype;
@@ -1330,7 +1330,7 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update)
                 asl->name = ((EagleStructType *)totype)->name;
         }
         else
-            die(ALN, "Attempting to assign structure literal to non-struct object");
+            die(ALN, msgerr_invalid_struct_lit_assignment_val);
 
         ac_compile_struct_lit(a->right, cb, pos);
         return pos;
@@ -1352,7 +1352,7 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update)
     {
         totype = fromtype;
         if(!storageBundle || !storageIdent)
-            die(ALN, "Internal compiler error!\nstorageBundle = %p; storageIdent = %p;", storageBundle, storageIdent);
+            die(ALN, msgerr_internal_storageBundle, storageBundle, storageIdent);
 
         pos = ac_compile_var_decl_ext(totype, storageIdent, cb, 0, ALN);
         storageBundle->type = totype;
@@ -1367,7 +1367,7 @@ LLVMValueRef ac_build_store(AST *ast, CompilerBundle *cb, char update)
     {
         r = ac_convert_const(r, totype, fromtype);
         if(!r)
-            die(ALN, "Invalid implicit conversion in constant initializer");
+            die(ALN, msgerr_invalid_conversion_constant);
     }
     else if(!ett_are_same(fromtype, totype) && (!update || (update && totype->type != ETPointer)))
         r = ac_build_conversion(cb, r, fromtype, totype, LOOSE_CONVERSION, a->right->lineno);

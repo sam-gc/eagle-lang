@@ -515,7 +515,7 @@ EagleComplexType *ett_enum_type(char *name)
 
     char *anam = hst_retrieve_duped_key(&enum_table, name);
     if(!anam)
-        die(__LINE__, "Internal compiler error: no such enum %s", name);
+        die(__LINE__, msgerr_internal_no_enum, name);
 
     EagleEnumType *en = malloc(sizeof(*en));
     en->type = ETEnum;
@@ -999,7 +999,7 @@ void ty_register_class(char *name)
 {
     Hashtable *lst = hst_get(&method_table, name, NULL, NULL);
     if(lst)
-        die(-1, "Redeclaring class with name: %s", name);
+        die(-1, msgerr_class_redeclaration, name);
 
     lst = malloc(sizeof(Hashtable));
     *lst = hst_create();
@@ -1010,9 +1010,9 @@ void ty_register_class(char *name)
 void ty_register_interface(char *name)
 {
     if(hst_get(&interface_table, name, NULL, NULL))
-        die(-1, "Redeclaring interface with name: %s", name);
+        die(-1, msgerr_interface_redeclaration, name);
     if(hst_get(&method_table, name, NULL, NULL))
-        die(-1, "Interface declaration %s clashes with previously named class.", name);
+        die(-1, msgerr_interface_class_name_clash, name);
 
     Arraylist *list = malloc(sizeof(Arraylist));
     *list = arr_create(10);
@@ -1024,7 +1024,7 @@ void ty_register_enum(char *name)
 {
     Hashtable *en = hst_get(&enum_table, name, NULL, NULL);
     if(en)
-        die(-1, "Redeclaring enum with name: %s", name);
+        die(-1, msgerr_enum_redeclaration, name);
 
     en = malloc(sizeof(*en));
     *en = hst_create();
@@ -1038,7 +1038,7 @@ long ty_lookup_enum_item(EagleComplexType *ty, char *item, int *valid)
 
     Hashtable *en = hst_get(&enum_table, et->name, NULL, NULL);
     if(!en)
-        die(__LINE__, "Internal compiler error could not find enum item %s.%s", et->name, item);
+        die(__LINE__, msgerr_internal_enum_lookup_failed, et->name, item);
 
     if(!hst_contains_key(en, item, NULL, NULL))
     {
@@ -1054,7 +1054,7 @@ void ty_add_enum_item(char *name, char *item, long val)
 {
     Hashtable *en = hst_get(&enum_table, name, NULL, NULL);
     if(!en)
-        die(__LINE__, "Internal compiler error declaring enum item %s.%s", name, item);
+        die(__LINE__, msgerr_internal_enum_decl_failed, name, item);
 
     hst_put(en, item, PTR(val), NULL, NULL);
 }
@@ -1319,7 +1319,7 @@ void ty_set_generic_type(char *ident, EagleComplexType *with)
 {
     EagleComplexType *ty = hst_get(&generic_ident_table, ident, NULL, NULL);
     if(!ty)
-        die(-1, "Unknown generic type: %s", ident);
+        die(-1, msgerr_unknown_generic, ident);
 
     memcpy(ty, with, ty_size_of_type(with));
 }

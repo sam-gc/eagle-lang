@@ -75,7 +75,7 @@ LLVMValueRef ac_build_conversion(CompilerBundle *cb, LLVMValueRef val, EagleComp
             }
 
             if(to->type != ETPointer)
-                die(lineno, "Non-pointer type may not be converted to pointer type.");
+                die(lineno, msgerr_invalid_ptr_conversion);
 
             if(ett_get_base_type(to) == ETAny)
                 return LLVMBuildBitCast(builder, val, ett_llvm_type(to), "ptrtmp");
@@ -83,20 +83,20 @@ LLVMValueRef ac_build_conversion(CompilerBundle *cb, LLVMValueRef val, EagleComp
                 return LLVMBuildBitCast(builder, val, ett_llvm_type(to), "ptrtmp");
 
             if(ET_IS_COUNTED(to) != ET_IS_COUNTED(from) || ET_IS_WEAK(to) != ET_IS_WEAK(from))
-                die(lineno, "Counted pointer type may not be converted to counted pointer type. Use the \"unwrap\" keyword.");
+                die(lineno, msgerr_invalid_counted_uncounted_conversion);
 
             if(ett_pointer_depth(to) != ett_pointer_depth(from))
-                die(lineno, "Implicit pointer conversion invalid. Cannot conver pointer of depth %d to depth %d.", ett_pointer_depth(to), ett_pointer_depth(from));
+                die(lineno, msgerr_mismatched_ptr_depth, ett_pointer_depth(to), ett_pointer_depth(from));
 
             if(ett_get_base_type(to) == ETInterface)
             {
                 if(!ty_class_implements_interface(from, to))
-                    die(lineno, "Class does not implement the requested interface");
+                    die(lineno, msgerr_interface_not_impl_by_class);
             }
             else if(!ett_are_same(ett_get_root_pointee(to), ett_get_root_pointee(from)))
             {
                 LLVMDumpType(ett_llvm_type(ett_get_root_pointee(from)));
-                die(lineno, "Implicit pointer conversion invalid; pointer types are incompatible.");
+                die(lineno, msgerr_invalid_implicit_ptr_conversion);
             }
 
             return LLVMBuildBitCast(builder, val, ett_llvm_type(to), "ptrtmp");
@@ -104,7 +104,7 @@ LLVMValueRef ac_build_conversion(CompilerBundle *cb, LLVMValueRef val, EagleComp
         case ETArray:
         {
             if(to->type != ETPointer && to->type != ETArray)
-                die(lineno, "Arrays may only be converted to equivalent pointers.");
+                die(lineno, msgerr_invalid_array_conversion);
 
             //LLVMValueRef zero = LLVMConstInt(LLVMInt32TypeInContext(utl_get_current_context()), 0, 0);
             return LLVMBuildBitCast(builder, val, ett_llvm_type(to), "ptrtmp");
@@ -135,7 +135,7 @@ LLVMValueRef ac_build_conversion(CompilerBundle *cb, LLVMValueRef val, EagleComp
                 case ETDouble:
                     return LLVMBuildSIToFP(builder, val, ett_llvm_type(to), "conv");
                 default:
-                    die(lineno, "Invalid implicit conversion.");
+                    die(lineno, msgerr_invalid_implicit_conversion);
                     break;
             }
         case ETFloat:
@@ -158,7 +158,7 @@ LLVMValueRef ac_build_conversion(CompilerBundle *cb, LLVMValueRef val, EagleComp
                 case ETUInt64:
                     return LLVMBuildFPToSI(builder, val, ett_llvm_type(to), "conv");
                 default:
-                    die(lineno, "Invalid implicit conversion from double.");
+                    die(lineno, msgerr_invalid_implicit_conversion);
                     break;
             }
             break;
@@ -167,10 +167,10 @@ LLVMValueRef ac_build_conversion(CompilerBundle *cb, LLVMValueRef val, EagleComp
                 return val;
             if(to->type == ETPointer && ((EaglePointerType *)to)->to->type == ETInt8)
                 return val;
-            die(lineno, "Invalid implicit conversion to C string.");
+            die(lineno, msgerr_invalid_implicit_conversion);
             break;
         default:
-            die(lineno, "Invalid implicit conversion.");
+            die(lineno, msgerr_invalid_implicit_conversion);
             break;
     }
 
@@ -194,7 +194,7 @@ LLVMValueRef ac_make_add(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
         case ETUInt64:
             return LLVMBuildAdd(builder, left, right, "addtmp");
         default:
-            die(lineno, "The given types may not be summed.");
+            die(lineno, msgerr_invalid_sum_types);
             return NULL;
     }
 }
@@ -216,7 +216,7 @@ LLVMValueRef ac_make_sub(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
         case ETUInt64:
             return LLVMBuildSub(builder, left, right, "subtmp");
         default:
-            die(lineno, "The given types may not be subtracted.");
+            die(lineno, msgerr_invalid_sub_types);
             return NULL;
     }
 }
@@ -238,7 +238,7 @@ LLVMValueRef ac_make_mul(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
         case ETUInt64:
             return LLVMBuildMul(builder, left, right, "multmp");
         default:
-            die(lineno, "The given types may not be multiplied.");
+            die(lineno, msgerr_invalid_mul_types);
             return NULL;
     }
 }
@@ -261,7 +261,7 @@ LLVMValueRef ac_make_div(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
         case ETUInt64:
             return LLVMBuildUDiv(builder, left, right, "divtmp");
         default:
-            die(lineno, "The given types may not be divided.");
+            die(lineno, msgerr_invalid_div_types);
             return NULL;
     }
 }
@@ -284,7 +284,7 @@ LLVMValueRef ac_make_mod(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef b
         case ETUInt64:
             return LLVMBuildURem(builder, left, right, "modtmp");
         default:
-            die(lineno, "The given types may not have modulo applied.");
+            die(lineno, msgerr_invalid_mod_types);
             return NULL;
     }
 }
@@ -295,7 +295,7 @@ LLVMValueRef ac_make_bitor(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef
     {
         case ETFloat:
         case ETDouble:
-            die(lineno, "Bitwise OR does not apply to floating point types");
+            die(lineno, msgerr_invalid_OR_types);
             return NULL;
         case ETInt8:
         case ETInt16:
@@ -307,7 +307,7 @@ LLVMValueRef ac_make_bitor(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef
         case ETUInt64:
             return LLVMBuildOr(builder, left, right, "OR");
         default:
-            die(lineno, "The given types may not be OR'd");
+            die(lineno, msgerr_invalid_OR_types);
             return NULL;
     }
 }
@@ -318,7 +318,7 @@ LLVMValueRef ac_make_bitand(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRe
     {
         case ETFloat:
         case ETDouble:
-            die(lineno, "Bitwise AND does not apply to floating point types");
+            die(lineno, msgerr_invalid_AND_types);
             return NULL;
         case ETInt8:
         case ETInt16:
@@ -330,7 +330,7 @@ LLVMValueRef ac_make_bitand(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRe
         case ETUInt64:
             return LLVMBuildAnd(builder, left, right, "AND");
         default:
-            die(lineno, "The given types may not be AND'd");
+            die(lineno, msgerr_invalid_AND_types);
             return NULL;
     }
 }
@@ -341,7 +341,7 @@ LLVMValueRef ac_make_bitxor(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRe
     {
         case ETFloat:
         case ETDouble:
-            die(lineno, "Bitwise XOR does not apply to floating point types");
+            die(lineno, msgerr_invalid_XOR_types);
             return NULL;
         case ETInt8:
         case ETInt16:
@@ -353,7 +353,7 @@ LLVMValueRef ac_make_bitxor(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRe
         case ETUInt64:
             return LLVMBuildXor(builder, left, right, "XOR");
         default:
-            die(lineno, "The given types may not be XOR'd");
+            die(lineno, msgerr_invalid_XOR_types);
             return NULL;
     }
 }
@@ -371,7 +371,7 @@ LLVMValueRef ac_make_bitshift(LLVMValueRef left, LLVMValueRef right, LLVMBuilder
     {
         case ETFloat:
         case ETDouble:
-            die(lineno, "Bitwise shift does not apply to floating point types");
+            die(lineno, msgerr_invalid_shift_types);
             return NULL;
         case ETInt8:
         case ETInt16:
@@ -383,7 +383,7 @@ LLVMValueRef ac_make_bitshift(LLVMValueRef left, LLVMValueRef right, LLVMBuilder
         case ETUInt64:
             return shift_func(builder, left, right, "shift");
         default:
-            die(lineno, "The given types may not be shifted");
+            die(lineno, msgerr_invalid_shift_types);
             return NULL;
     }
 }
@@ -405,7 +405,7 @@ LLVMValueRef ac_make_neg(LLVMValueRef val, LLVMBuilderRef builder, EagleBasicTyp
         case ETUInt64:
             return LLVMBuildNeg(builder, val, "negtmp");
         default:
-            die(lineno, "The given type may not have negation applied (%d).", type);
+            die(lineno, msgerr_invalid_neg_type, type);
             return NULL;
     }
 }
@@ -416,7 +416,7 @@ LLVMValueRef ac_make_bitnot(LLVMValueRef val, LLVMBuilderRef builder, EagleBasic
     {
         case ETFloat:
         case ETDouble:
-            die(lineno, "Bitwise NOT does not apply to floating point types");
+            die(lineno, msgerr_invalid_NOT_type);
             return NULL;
         case ETInt8:
         case ETInt16:
@@ -428,7 +428,7 @@ LLVMValueRef ac_make_bitnot(LLVMValueRef val, LLVMBuilderRef builder, EagleBasic
         case ETUInt64:
             return LLVMBuildNot(builder, val, "NOT");
         default:
-            die(lineno, "The given type may not be NOT'd");
+            die(lineno, msgerr_invalid_NOT_type);
             return NULL;
     }
 }
@@ -483,7 +483,7 @@ LLVMValueRef ac_make_comp(LLVMValueRef left, LLVMValueRef right, LLVMBuilderRef 
         case ETEnum:
             return LLVMBuildICmp(builder, ip, left, right, "eqtmp");
         default:
-            die(lineno, "The given types may not be compared.");
+            die(lineno, msgerr_invalid_comparison_types);
             return NULL;
     }
 }
@@ -512,3 +512,4 @@ void ac_replace_with_counted(CompilerBundle *cb, VarBundle *b)
 
     LLVMPositionBuilderAtEnd(cb->builder, isb);
 }
+

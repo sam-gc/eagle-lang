@@ -45,7 +45,7 @@ static void rule_code(char *arg, char *next, int *skip, void *data)
     ShippingCrate *crate = data;
 
     if(!next)
-        die(-1, "--code switch specified but no extra code defined.");
+        die(-1, msgerr_arg_code_missing);
     arr_append(&crate->extra_code, (void *)next);
     *skip = 1;
 }
@@ -68,13 +68,13 @@ static void rule_help(char *arg, char *next, int *skip, void *data)
 static void rule_threads(char *arg, char *next, int *skip, void *data)
 {
     if(!next)
-        die(-1, "Argument expects operand but non provided (%s)", arg);
+        die(-1, msgerr_arg_threads_missing, arg);
     *skip = 1;
     ShippingCrate *crate = data;
     crate->threadct = atoi(next);
 
     if(!crate->threadct)
-        warn(-1, "Invalid thread count");
+        warn(-1, msgwarn_invalid_thread_count);
 }
 
 static void rule_verbose(char *arg, char *next, int *skip, void *data)
@@ -86,7 +86,7 @@ static void rule_verbose(char *arg, char *next, int *skip, void *data)
 static void rule_skip(char *arg, char *next, int *skip, void *data)
 {
     if(!next)
-        die(-1, "Argument expects operand but non provided (%s)", arg);
+        die(-1, msgerr_arg_skip_missing, arg);
     *skip = 1;
 }
 
@@ -117,7 +117,7 @@ static void rule_seive(char *arg, char *next, int *skip, void *data)
 
     if(access(arg, R_OK) < 0)
     {
-        warn(-1, "Ignoring unknown parameter (%s)", arg);
+        warn(-1, msgwarn_ignoring_unknown_param, arg);
         return;
     }
 

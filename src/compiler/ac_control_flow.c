@@ -35,7 +35,7 @@ int ac_compile_block(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
                     return 1;
                 case 'f': // Fallthrough
                     if(!cb->nextCaseBlock)
-                        die(un->lineno, "Attempting a fallthrough outside of switch statement");
+                        die(un->lineno, msgerr_fallthrough_outside_switch);
                     vs_run_deferments_through(cb->varScope, cb->currentCaseScope, cb);
                     vs_run_callbacks_through(cb->varScope, cb->currentCaseScope);
                     LLVMBuildBr(cb->builder, cb->nextCaseBlock);
@@ -100,7 +100,7 @@ void ac_compile_yield(AST *ast, LLVMBasicBlockRef block, CompilerBundle *cb)
     LLVMValueRef val = NULL;
 
     if(!ya->val)
-        die(ALN, "Yield statement must have an associated expression.");
+        die(ALN, msgerr_yield_no_expression);
 
     LLVMBasicBlockRef nblock = LLVMAppendBasicBlockInContext(utl_get_current_context(), cb->currentFunction, "yield");
     LLVMMoveBasicBlockAfter(nblock, cb->yieldBlocks->items[cb->yieldBlocks->count - 1]);
@@ -174,9 +174,9 @@ static LLVMValueRef ac_compile_case_label(AST *ast, EagleComplexType *st, Compil
     
     EagleComplexType *rt = cblock->targ->resultantType;
     if(!ac_type_is_valid_for_switch(rt))
-        die(ALN, "Case branch not constant");
+        die(ALN, msgerr_nonconstant_case_label);
     if(!LLVMIsConstant(label))
-        die(ALN, "Case branch not constant");
+        die(ALN, msgerr_nonconstant_case_label);
     
     if(!ett_are_same(st, rt))
         label = ac_build_conversion(cb, label, rt, st, STRICT_CONVERSION, ALN);
@@ -190,7 +190,7 @@ static void ac_check_case_label_uniqueness(LLVMValueRef label, long long *cases,
     for(int i = 0; i < ct; i++)
     {
         if(cases[i] == num)
-            die(lineno, "Duplicate case label");
+            die(lineno, msgerr_duplicate_case_label);
     }
 
     cases[ct] = num;
@@ -218,7 +218,7 @@ void ac_compile_switch(AST *ast, CompilerBundle *cb)
 
     EagleComplexType *test_type = a->test->resultantType;
     if(!ac_type_is_valid_for_switch(test_type))
-        die(ALN, "Cannot switch over given type");
+        die(ALN, msgerr_invalid_switch_type);
 
     AST *cblock = a->cases;
 
@@ -393,14 +393,14 @@ void ac_compile_loop(AST *ast, CompilerBundle *cb)
             if(a->test->resultantType->type != ETPointer ||
                 (  ((EaglePointerType *)a->test->resultantType)->to->type != ETGenerator
                 && ((EaglePointerType *)a->test->resultantType)->to->type != ETClass))
-                die(ALN, "Range-based for-loops only work with generators.");
+                die(ALN, msgerr_range_not_gen);
 
             EagleComplexType *setupt = ((EaglePointerType *)a->test->resultantType)->to;
             if(setupt->type == ETGenerator)
             {
                 EagleGenType *gt = (EagleGenType *)setupt;
                 if(!ett_are_same(gt->ytype, a->setup->resultantType))
-                    die(ALN, "Generator type and iterator do not match.");
+                    die(ALN, msgerr_mistmatch_gen_iter);
                 ypt = ett_pointer_type(gt->ytype);
             }
             else
@@ -551,7 +551,7 @@ LLVMValueRef ac_compile_ntest(AST *res, LLVMValueRef val, CompilerBundle *cb)
     else if(res->resultantType->type == ETPointer)
         cmp = LLVMBuildICmp(cb->builder, LLVMIntEQ, val, LLVMConstPointerNull(ett_llvm_type(res->resultantType)), "cmp");
     else
-        die(LN(res), "Cannot test against given type.");
+        die(LN(res), msgerr_invalid_test_type);
 
     return cmp;
 }
@@ -568,7 +568,7 @@ LLVMValueRef ac_compile_test(AST *res, LLVMValueRef val, CompilerBundle *cb)
     else if(res->resultantType->type == ETPointer)
         cmp = LLVMBuildICmp(cb->builder, LLVMIntNE, val, LLVMConstPointerNull(ett_llvm_type(res->resultantType)), "cmp");
     else
-        die(LN(res), "Cannot test against given type.");
+        die(LN(res), msgerr_invalid_test_type);
 
     return cmp;
 }

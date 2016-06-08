@@ -108,7 +108,7 @@ void ac_generic_check_ident(AST *ast, void *data)
             return;
 
         if(!ec_was_exported(cb->exports, ident, TFUNC))
-            die(ALN, "Exported generic (%s) references non-exported symbol (%s)", genname, ident);
+            die(ALN, msgerr_generic_references_non_exported, genname, ident);
     }
 }
 
@@ -175,7 +175,7 @@ static void ac_handle_generic(EagleComplexType *reftype, EagleComplexType *intyp
     if(prev)
     {
         if(!ett_are_same(prev, intype))
-            die(lineno, "Two different concrete types assigned to same generic type (%s)", g->ident);
+            die(lineno, msgerr_generic_type_disagreement, g->ident);
     }
 
     hst_put(scanned, g->ident, intype, NULL, NULL);
@@ -189,7 +189,7 @@ static EagleComplexType *ac_handle_pointer(EagleComplexType *reftype, EagleCompl
     if(inp)
     {
         if(refp->counted != inp->counted)
-            die(lineno, "Pointer types do not match in generic");
+            die(lineno, msgerr_generic_pointer_disagreement);
     }
 
     EagleComplexType *out = ett_copy(reftype);
@@ -207,11 +207,11 @@ static EagleComplexType *ac_handle_function(EagleComplexType *reftype, EagleComp
     if(inf)
     {
         if(reff->pct != inf->pct)
-            die(lineno, "Parameter counts do not match in generic function pointer");
+            die(lineno, msgerr_generic_param_count_disagreement);
         if(reff->gen != inf->gen)
-            die(lineno, "Function types do not match in generic function pointer");
+            die(lineno, msgerr_generic_function_type_disagreement);
         if(reff->variadic != inf->variadic)
-            die(lineno, "Function types do not match in generic function pointer");
+            die(lineno, msgerr_generic_function_type_disagreement);
     }
 
     EagleComplexType *out = ett_copy(reftype);
@@ -231,7 +231,7 @@ ac_copy_and_find_types(EagleComplexType *reftype, EagleComplexType *intype, Eagl
     if(intype)
     {
         if(reftype->type != ETGeneric && reftype->type != intype->type)
-            die(lineno, "Generic and given type do not match");
+            die(lineno, msgerr_generic_given_mismatch);
     }
 
     switch(reftype->type)
@@ -240,7 +240,7 @@ ac_copy_and_find_types(EagleComplexType *reftype, EagleComplexType *intype, Eagl
             ac_handle_generic(reftype, intype, scanned, lineno);
             *copied = (intype ? intype : hst_get(scanned, ((EagleGenericType *)reftype)->ident, NULL, NULL));
             if(!*copied)
-                die(lineno, "Cannot infer generic type (%s)", ((EagleGenericType *)reftype)->ident);
+                die(lineno, msgerr_generic_inference_impossible, ((EagleGenericType *)reftype)->ident);
             break;
         case ETPointer:
             *copied = ac_handle_pointer(reftype, intype, scanned, lineno);
@@ -257,7 +257,7 @@ LLVMValueRef ac_generic_get(char *func, EagleComplexType *arguments[], EagleComp
 {
     GenericBundle *gb = hst_get(&cb->genericFunctions, func, NULL, NULL);
     if(!gb)
-        die(lineno, "Internal compiler error: could not find generic bundle");
+        die(lineno, msgerr_internal_no_generic_bundle);
 
     Strbuilder sbd;
     sb_init(&sbd);
@@ -292,7 +292,7 @@ LLVMValueRef ac_generic_get(char *func, EagleComplexType *arguments[], EagleComp
         ac_copy_and_find_types(ft->retType, NULL, &retType, &scanned, lineno);
 
     if(!retType)
-        die(gb->definition->lineno, "Return type of generic function is unspecified");
+        die(gb->definition->lineno, msgerr_generic_unspecified_return);
 
     *out_type = ett_function_type(retType, new_args, ft->pct);
 

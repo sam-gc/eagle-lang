@@ -282,14 +282,14 @@ void ac_add_global_variable_declarations(AST *ast, CompilerBundle *cb)
         {
             init = ac_convert_const(init, et, f);
             if(!init)
-                die(ALN, "Invalid implicit constant conversion");
+                die(ALN, msgerr_invalid_conversion_constant);
         }
     }
     else if(a->linkage != VLExternal)
     {
         init = ett_default_value(et);
         if(!init)
-            die(ALN, "Variable %s does not have a valid static type", a->ident);
+            die(ALN, msgerr_invalid_static_type, a->ident);
     }
 
     LLVMSetInitializer(glob, init);
@@ -335,7 +335,7 @@ void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
         eparam_types[i] = type->etype;
 
         if(type->etype->type == ETStruct)
-            die(ALN, "Passing struct by value not supported.");
+            die(ALN, msgerr_unsupported_struct_byval);
     }
 
     ASTTypeDecl *retType = (ASTTypeDecl *)a->retType;
@@ -372,7 +372,7 @@ void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
         func = LLVMAddFunction(cb->module, a->ident, func_type);
 
         if(retType->etype->type == ETStruct)
-            die(ALN, "Returning struct by value not supported. (%s)\n", a->ident);
+            die(ALN, msgerr_unsupported_struct_return_byval, a->ident);
     }
 
     if(!ec_allow(cb->exports, a->ident, TFUNC) && a->body && strcmp(a->ident, "main") && a->linkage != VLExport)
@@ -397,12 +397,12 @@ LLVMValueRef ac_dispatch_constant(AST *ast, CompilerBundle *cb)
             val = ac_const_value(ast, cb);
             break;
         default:
-            die(ALN, "Invalid constant type.");
+            die(ALN, msgerr_invalid_constant_type);
             return NULL;
     }
 
     if(!ast->resultantType)
-        die(ALN, "Internal Error. AST Resultant Type for expression not set.");
+        die(ALN, msgerr_internal_ast_resultantType);
 
     return val;
 }
@@ -449,12 +449,12 @@ LLVMValueRef ac_dispatch_expression(AST *ast, CompilerBundle *cb)
             val = ac_compile_ternary(ast, cb);
             break;
         default:
-            die(ALN, "Invalid expression type.");
+            die(ALN, msgerr_invalid_expression_type);
             return NULL;
     }
 
     if(!ast->resultantType)
-        die(ALN, "Internal Error. AST Resultant Type for expression not set.");
+        die(ALN, msgerr_internal_ast_resultantType);
 
     return val;
 }
@@ -510,7 +510,7 @@ void ac_dispatch_statement(AST *ast, CompilerBundle *cb)
             vs_add_deferment(cb->varScope, ((ASTDefer *)ast)->block);
             break;
         default:
-            die(ALN, "Invalid statement type.");
+            die(ALN, msgerr_invalid_statement_type);
     }
     
     ac_flush_transients(cb);
@@ -534,7 +534,7 @@ void ac_dispatch_declaration(AST *ast, CompilerBundle *cb)
             ac_compile_generator_code(ast, cb);
             break;
         default:
-            die(ALN, "Invalid declaration type.");
+            die(ALN, msgerr_invalid_declaration_type);
             return;
     }
 }
@@ -564,7 +564,7 @@ void ac_remove_dispatch_observer(CompilerBundle *cb, ASTType type)
 void ac_guard_deferment(CompilerBundle *cb, int lineno)
 {
     if(cb->inDeferment)
-        die(lineno, "Invalid statement in deferment");
+        die(lineno, msgerr_invalid_statement_in_defer);
 }
 
 static void ac_deferment_callback(AST *ast, void *data)

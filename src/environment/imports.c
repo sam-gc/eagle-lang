@@ -185,7 +185,7 @@ static ImportUnit imp_parse_bracketed(int declext, const char *what)
 
     int token = yylex();
     if(token != TIDENTIFIER)
-        die(yylineno, "%s name not properly defined", what);
+        die(yylineno, msgerr_improperly_defined_name, what);
 
     iu.symbol = strdup(yytext);
 
@@ -231,7 +231,7 @@ static ImportUnit imp_parse_class(int extdecl)
 
     int token = yylex();
     if(token != TIDENTIFIER)
-        die(yylineno, "class name not properly defined");
+        die(yylineno, msgerr_improperly_defined_class);
 
     iu.symbol = strdup(yytext);
 
@@ -332,7 +332,7 @@ static char *imp_scan_file(const char *filename)
                 iu = imp_parse_interface();
                 break;
             default:
-                die(yylineno, "Unknown top-level symbol");
+                die(yylineno, msgerr_unknown_top_level_symbol);
         }
 
         is_extern = 0;
@@ -380,7 +380,7 @@ Multibuffer *imp_generate_imports(const char *filename)
     current_file_name = (char *)"Executable Argument";
 
     if(!arr_get(&work, 0))
-        die(-1, "Unknown code file: %s", filename);
+        die(-1, msgerr_unknown_code_file, filename);
 
     current_file_name = (char *)filename;
 
@@ -412,7 +412,7 @@ Multibuffer *imp_generate_imports(const char *filename)
                 char *rp = realpath(nw, NULL);
 
                 if(!rp)
-                    die(-1, "Imported file (%s) does not exist", nw);
+                    die(-1, msgerr_import_does_not_exist, nw);
 
                 // Ignore previously viewed files and the current file
                 if(IN(all_imports, rp) || !strcmp(rp, current_realpath))

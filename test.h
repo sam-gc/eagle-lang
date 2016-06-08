@@ -43,3 +43,5 @@ void swap(int *a, int *b);
 void iterate(int **vector, char ct);
 Day get_wednesday();
 
+die(msgerr_test_ignore)
+

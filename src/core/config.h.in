@@ -9,6 +9,8 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#include "messages.h"
+
 #define SystemCC "@CC@"
 #define @llvmvsn@
 #define EGL_VERSION "@PACKAGE_VERSION@"

@@ -117,7 +117,7 @@ AST *ast_make_allocater(char op, AST *val, AST *init)
     if(at->etype->type == ETClass)
     {
         if(!init)
-            die(yylineno, "Missing parentheses after new declaration.");
+            die(yylineno, msgerr_class_decl_no_parens);
         if((uintptr_t)init == 1)
             init = NULL; // We just use 1 to indicate that there is indeed parentheses, for consistency.
     }
@@ -214,7 +214,7 @@ AST *ast_set_vararg(AST *ast)
 AST *ast_make_class_special_decl(char *ident, AST *body, AST *params)
 {
     if(strcmp(ident, "init") && strcmp(ident, "destruct"))
-        die(yylineno, "Unexpected identifier: %s", ident);
+        die(yylineno, msgerr_unexpected_identifier, ident);
 
     ASTFuncDecl *ast = ast_malloc(sizeof(ASTFuncDecl));
     ast->type = AFUNCDECL;
@@ -398,11 +398,11 @@ void ast_class_add_interface(AST *ast, AST *interfaces)
     for(; i; i = (ASTTypeDecl *)i->next)
     {
         if(i->etype->type != ETInterface)
-            die(ALN, "Non-interface type declared in class signature (%s)", cls->name);
+            die(ALN, msgerr_non_interface_type_in_impl_list, cls->name);
         EagleInterfaceType *ei = (EagleInterfaceType *)i->etype;
 
         if(ei->names.count != 1)
-            die(ALN, "Cannot implement composite interface; implement each interface separately (with a comma) (%s)", cls->name);
+            die(ALN, msgerr_bad_composite_type_decl, cls->name);
 
         arr_append(&cls->interfaces, ei->names.items[0]);
     }
@@ -437,7 +437,7 @@ AST *ast_class_set_init(AST *ast, AST *init)
     else
     {
         if(((EagleFunctionType *)ttype)->pct > 1)
-            die(yylineno, "Custom destructors can't accept parameters");
+            die(yylineno, msgerr_destructor_has_params);
         cls->destructtype = ttype;
         cls->destructdecl = init;
     }
@@ -511,7 +511,7 @@ void ast_set_counted(AST *ast)
     ASTVarDecl *a = (ASTVarDecl *)ast;
     ASTTypeDecl *td = (ASTTypeDecl *)a->atype;
     if(td->etype->type != ETPointer)
-        die(yylineno, "Only pointer types can be counted.");
+        die(yylineno, msgerr_invalid_counted_type);
     EaglePointerType *pt = (EaglePointerType *)td->etype;
     pt->counted = 1;
 }
@@ -618,7 +618,7 @@ AST *ast_make_pointer(AST *ast)
     ASTTypeDecl *a = (ASTTypeDecl *)ast;
 
     if(a->etype->type == ETVoid)
-        die(a->lineno, "Cannot declare void pointer type. Use an any-pointer instead (any *).");
+        die(a->lineno, msgerr_void_ptr_decl);
 
     /*
     if(a->etype->type == ETPointer)
@@ -639,7 +639,7 @@ AST *ast_make_counted(AST *ast)
     ASTTypeDecl *a = (ASTTypeDecl *)ast;
 
     if(a->etype->type != ETPointer)
-        die(a->lineno, "Only pointer types may be counted.");
+        die(a->lineno, msgerr_invalid_counted_type);
     EaglePointerType *ep = (EaglePointerType *)a->etype;
     ep->counted = 1;
 
@@ -651,10 +651,10 @@ AST *ast_make_weak(AST *ast)
     ASTTypeDecl *a = (ASTTypeDecl *)ast;
 
     if(a->etype->type != ETPointer)
-        die(a->lineno, "Only pointer types may be declared weak.");
+        die(a->lineno, msgerr_invalid_weak_type);
     EaglePointerType *ep = (EaglePointerType *)a->etype;
     if(!ep->counted)
-        die(a->lineno, "Only counted pointers may be declared weak.");
+        die(a->lineno, msgerr_invalid_weak_ptr_type);
 
     ep->weak = 1;
     ep->counted = 0;
@@ -667,7 +667,7 @@ AST *ast_make_composite(AST *orig, char *nw)
     ASTTypeDecl *a = (ASTTypeDecl *)orig;
 
     if(a->etype->type != ETInterface || !ty_is_interface(nw))
-        die(a->lineno, "Attempting to make composite type from non-interface componenents");
+        die(a->lineno, msgerr_composite_from_non_interfaces);
 
     ett_composite_interface(a->etype, nw);
 
@@ -717,7 +717,7 @@ AST *ast_make_switch(AST *test, AST *cases)
         if(!cs->targ) // Default value
         {
             if(ast->default_index >= 0) // We already have a default
-                die(ast->lineno, "Switch statement has multiple default cases");
+                die(ast->lineno, msgerr_duplicate_default_case);
             ast->default_index = i;
         }
     }

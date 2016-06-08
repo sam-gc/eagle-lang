@@ -297,7 +297,7 @@ LLVMValueRef ac_compile_closure(AST *ast, CompilerBundle *cb)
     vs_put(cb->varScope, (char *)"recur", pos, penultEType, -1);
 
     if(!ac_compile_block(a->body, entry, cb) && retType->etype->type != ETVoid)
-        die(ALN, "Function must return a value.");
+        die(ALN, msgerr_function_return_required);
 
     if(retType->etype->type == ETVoid)
     {
@@ -403,7 +403,7 @@ void ac_compile_function_ex(AST *ast, CompilerBundle *cb, LLVMValueRef func, Eag
     }
 
     if(!ac_compile_block(a->body, entry, cb) && retType->etype->type != ETVoid)
-        die(ALN, "Function must return a value.");
+        die(ALN, msgerr_function_return_required);
 
     vs_run_deferments(cb->varScope, cb);
 

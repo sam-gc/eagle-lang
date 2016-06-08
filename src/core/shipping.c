@@ -158,11 +158,11 @@ static void shp_spawn_process(const char *process, const char *args[])
     if(!pid) // We are the child
     {
         execvp(process, (char *const*)args);
-        die(-1, "Internal compiler error: execvp() should not return!");
+        die(-1, msgerr_internal_execvp_returned);
     }
     else if(pid < 0)
     {
-        die(-1, "Internal compiler error: failed to fork process");
+        die(-1, msgerr_internal_fork_failed);
     }
 
     int status;

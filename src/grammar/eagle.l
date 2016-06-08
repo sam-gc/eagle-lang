@@ -42,7 +42,7 @@ void yyset_start_token(int tok)
     start_token = tok;
 }
 
-#define PF if(proper_formatting) die(yylineno, "Proper formatting violation: Tab character as indentation")
+#define PF if(proper_formatting) die(yylineno, msgerr_proper_formatting_tab)
 #define unput(c) yyunput( c, (yytext_ptr)  )
 char yypeek()
 {
