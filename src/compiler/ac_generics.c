@@ -307,6 +307,7 @@ LLVMValueRef ac_generic_get(char *func, EagleComplexType *arguments[], EagleComp
     concrete_func = LLVMAddFunction(cb->module, expanded_name, ett_llvm_type(*out_type));
     arr_append(&cb->genericWorkList, ac_gw_alloc(gb->definition, scanned, concrete_func, *out_type));
     hst_put(&gb->implementations, expanded_name, concrete_func, NULL, NULL);
+    LLVMSetLinkage(concrete_func, LLVMLinkOnceODRLinkage);
 
     free(expanded_name);
     return concrete_func;

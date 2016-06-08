@@ -91,15 +91,26 @@ static ImportUnit imp_parse_function(int inclass, char *intext, int extdecl)
     iu.symbol = strdup(yytext);
 
     int terminal = extdecl ? TSEMI : TLBRACE;
+    int generic = 0;
 
-    do 
+    do
     {
+        if(token == TLT) // This is a generic function
+        {
+            terminal = TLBRACE;
+            generic = 1;
+        }
         sb_append(&string, yytext);
         sb_append(&string, " ");
     }
     while((token = yylex()) != terminal);
 
-    if(!extdecl)
+    if(generic)
+    {
+        sb_append(&string, "\n{");
+        imp_consume_body(&string);
+    }
+    else if(!extdecl)
         imp_consume_body(NULL);
 
     iu.full_text = string.buffer;

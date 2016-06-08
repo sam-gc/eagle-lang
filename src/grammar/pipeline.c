@@ -65,6 +65,8 @@ int pipe_lex()
         TLT
     };
 
+    static int needs_generic_tok;
+
     int tok = yylex();
     pipe_shift(previous_tokens, tok, LOOKBACK);
 
@@ -73,11 +75,22 @@ int pipe_lex()
         pipe_prepare_type_names();
         pipe_read_typenames();
         in_type_context = 1;
+        needs_generic_tok = 1;
         return yylex();
     }
     else if(tok == TMACRO)
     {
 
+    }
+    else if(tok == TLBRACE && needs_generic_tok > 0)
+    {
+        needs_generic_tok = -1;
+        return TGENERIC;
+    }
+    else if(needs_generic_tok < 0)
+    {
+        needs_generic_tok = 0;
+        return TLBRACE;
     }
 
     return tok;

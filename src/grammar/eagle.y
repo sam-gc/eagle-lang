@@ -39,7 +39,7 @@
 %token <token> TOR TTILDE TRSHIFT TLSHIFT
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TLBRACKET TRBRACKET
 %token <token> TFUNC TRETURN TYIELD TPUTS TEXTERN TIF TELSE TELIF TSIZEOF TCOUNTOF TFOR TIN TWEAK TUNWRAP TSWITCH TMACRO
-%token <token> TBREAK TCONTINUE TVAR TGEN  TELLIPSES TVIEW TFALLTHROUGH TCASE TDEFAULT TDEFER
+%token <token> TBREAK TCONTINUE TVAR TGEN  TELLIPSES TVIEW TFALLTHROUGH TCASE TDEFAULT TDEFER TGENERIC
 %token <token> TCOLON TSEMI TNEWLINE TCOMMA TDOT TAMP TAT TARROW T__DEC T__INC TQUESTION TQUESTIONCOLON
 %token <token> TYES TNO TNIL TIMPORT TTYPEDEF TENUM TSTATIC TINTERFACE TCLASS TSTRUCT
 %type <token> exportable 
@@ -48,7 +48,7 @@
 %type <node> elifstatement elifblock elsestatement singif structdecl structlist blockalt classlist classdecl interfacedecl interfacelist compositetype
 %type <node> expr singexpr binexpr unexpr ounexpr forstatement clodecl genident gendecl initdecl viewdecl viewident 
 %type <node> enumitem enumlist enumdecl globalvardecl constantexpr structlitlist structlit exportdecl
-%type <node> singcase caseblock switchstatement
+%type <node> singcase caseblock switchstatement genericfuncident genericfuncdecl
 
 %nonassoc TTYPE;
 %nonassoc TNEW;
@@ -88,6 +88,7 @@ declarations        : declaration { if($1) $$ = $1; else $$ = NULL; }
                     | declaration declarations { if($1) $1->next = $2; $$ = ($1 ? $1 : $2); };
 
 declaration         : externdecl TSEMI { $$ = $1; }
+                    | TEXTERN genericfuncdecl { $$ = $2; }
                     | funcdecl { $$ = $1; }
                     | structdecl TSEMI { $$ = $1; }
                     | gendecl { $$ = $1; }
@@ -107,6 +108,7 @@ declaration         : externdecl TSEMI { $$ = $1; }
 exportdecl          : TEXPORT TCSTR TSEMI { $$ = ast_make_export($2, 0); }
                     | TEXPORT TLPAREN exportable TRPAREN TCSTR TSEMI { $$ = ast_make_export($5, $3); }
                     | TEXPORT funcdecl { $$ = ast_set_external_linkage($2); }
+                    | TEXPORT genericfuncdecl { $$ = ast_set_external_linkage($2); }
                     | TEXPORT structdecl TSEMI { $$ = ast_set_external_linkage($2); }
                     | TEXPORT gendecl { $$ = ast_set_external_linkage($2); }
                     | TEXPORT classdecl TSEMI { $$ = ast_set_external_linkage($2); }
@@ -210,7 +212,11 @@ initdecl            : TIDENTIFIER TLPAREN TRPAREN block { $$ = ast_make_class_sp
                     | TIDENTIFIER TLPAREN vardecllist TRPAREN TSEMI { $$ = ast_make_class_special_decl($1, NULL, $3); }
                     ;
 
-funcdecl            : funcident block { ((ASTFuncDecl *)$1)->body = $2; $$ = $1; pipe_reset_context(); };
+funcdecl            : funcident block { ((ASTFuncDecl *)$1)->body = $2; $$ = $1; pipe_reset_context(); }
+                    ;
+
+genericfuncdecl     : genericfuncident block { ((ASTFuncDecl *)$1)->body = $2; $$ = $1; pipe_reset_context(); }
+                    ;
 
 gendecl             : genident block { ((ASTFuncDecl *)$1)->body = $2; $$ = $1; };
 
@@ -226,6 +232,9 @@ externdecl          : TEXTERN funcident { $$ = $2; }
                     | TEXTERN structdecl { $$ = $2; ast_struct_set_extern($$); }
                     | TEXTERN genident { $$ = $2; }
                     | TEXTERN TSTATIC variabledecl { $$ = $3; ast_set_linkage($3, VLExternal); }
+                    ;
+
+genericfuncident    : funcident TGENERIC { $$ = $1; }
                     ;
 
 funcident           : TFUNC TIDENTIFIER TLPAREN TRPAREN TCOLON type { $$ = ast_make_func_decl($6, $2, NULL, NULL); }
