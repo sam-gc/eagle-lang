@@ -4,6 +4,7 @@ extern const char *msgerr_incomplete_impl;
 
 // src/compiler/ac_constants.c
 extern const char *msgerr_unknown_value_type;
+extern const char *msgerr_invalid_constant_struct_member;
 
 // src/compiler/ac_control_flow.c
 extern const char *msgerr_fallthrough_outside_switch;

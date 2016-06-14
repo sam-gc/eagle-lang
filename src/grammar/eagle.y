@@ -49,6 +49,7 @@
 %type <node> expr singexpr binexpr unexpr ounexpr forstatement clodecl genident gendecl initdecl viewdecl viewident 
 %type <node> enumitem enumlist enumdecl globalvardecl constantexpr structlitlist structlit exportdecl
 %type <node> singcase caseblock switchstatement genericfuncident genericfuncdecl
+%type <node> conststatic conststructlit conststructlitlist
 
 %nonassoc TTYPE;
 %nonassoc TNEW;
@@ -126,7 +127,7 @@ exportable          : TCLASS { $$ = $1; }
                     ;
 
 globalvardecl       : TSTATIC variabledecl { $$ = $2; ast_set_linkage($2, VLStatic); }
-                    | TSTATIC variabledecl TEQUALS constantexpr { $$ = $2; ast_set_linkage($2, VLStatic); ast_set_static_init($2, $4); }
+                    | TSTATIC variabledecl TEQUALS conststatic { $$ = $2; ast_set_linkage($2, VLStatic); ast_set_static_init($2, $4); }
                     ;
 
 type                : TTYPE { $$ = ast_make_type($1); }
@@ -264,6 +265,15 @@ structlit           : TTYPE TLBRACE structlitlist TRBRACE { $$ = ast_make_struct
 
 structlitlist       : structlitlist TDOT TIDENTIFIER TEQUALS expr TSEMI { $$ = $1; ast_struct_lit_add($1, $3, $5); }
                     | TDOT TIDENTIFIER TEQUALS expr TSEMI { $$ = ast_make_struct_lit_dict(); ast_struct_lit_add($$, $2, $4); }
+                    | TDOT { $$ = ast_make_struct_lit_dict(); }
+                    ;
+
+conststructlit      : TTYPE TLBRACE conststructlitlist TRBRACE { $$ = ast_make_struct_lit($1, $3); }
+                    | TLBRACE conststructlitlist TRBRACE { $$ = ast_make_struct_lit(NULL, $2); }
+                    ;
+
+conststructlitlist  : conststructlitlist TDOT TIDENTIFIER TEQUALS conststatic TSEMI { $$ = $1; ast_struct_lit_add($1, $3, $5); }
+                    | TDOT TIDENTIFIER TEQUALS conststatic TSEMI { $$ = ast_make_struct_lit_dict(); ast_struct_lit_add($$, $2, $4); }
                     | TDOT { $$ = ast_make_struct_lit_dict(); }
                     ;
 
@@ -427,6 +437,10 @@ constantexpr        : TINT { $$ = ast_make_int32($1); }
                     | TYES { $$ = ast_make_bool(1); }
                     | TNO { $$ = ast_make_bool(0); }
                     | TNIL { $$ = ast_make_nil(); }
+                    ;
+
+conststatic         : constantexpr { $$ = $1; }
+                    | conststructlit { $$ = $1; }
                     ;
 
 %%

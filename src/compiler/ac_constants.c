@@ -48,6 +48,51 @@ LLVMValueRef ac_const_value(AST *ast, CompilerBundle *cb)
     }
 }
 
+LLVMValueRef ac_const_struct_lit(AST *ast, CompilerBundle *cb)
+{
+    ASTStructLit *asl = (ASTStructLit *)ast;
+    if(!asl->name)
+        die(ALN, msgerr_struct_literal_type_unknown);
+
+    Arraylist *names;
+    Arraylist *types;
+    Hashtable *dict = &asl->exprs;
+
+    EagleComplexType *st = ett_struct_type(asl->name);
+
+    ty_struct_get_members(st, &names, &types);
+    LLVMValueRef vals[names->count];
+
+    for(int i = 0; i < names->count; i++)
+    {
+        char *name = names->items[i];
+        EagleComplexType *type = types->items[i];
+
+        AST *e = hst_get(dict, name, NULL, NULL);
+        if(!e)
+        {
+            vals[i] = ett_default_value(types->items[i]);
+            if(!vals[i])
+                die(ALN, msgerr_invalid_constant_struct_member);
+            continue;
+        }
+
+        LLVMValueRef it = ac_dispatch_constant(e, cb);
+
+        if(!ett_are_same(e->resultantType, type))
+        {
+            it = ac_convert_const(it, type, e->resultantType);
+            if(!it)
+                die(ALN, msgerr_invalid_conversion_constant);
+        }
+
+        vals[i] = it;
+    }
+
+    ast->resultantType = st;
+    return LLVMConstNamedStruct(ett_llvm_type(st), vals, names->count);
+}
+
 LLVMValueRef ac_convert_const(LLVMValueRef val, EagleComplexType *to, EagleComplexType *from)
 {
     switch(from->type)

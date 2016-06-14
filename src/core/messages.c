@@ -5,7 +5,8 @@ const char *msgerr_bad_impl        = "Implementation of method (%s) in class (%s
 const char *msgerr_incomplete_impl = "Class (%s) does not fully implement all announced interfaces";
 
 // src/compiler/ac_constants.c
-const char *msgerr_unknown_value_type = "Unknown value type.";
+const char *msgerr_unknown_value_type             = "Unknown value type.";
+const char *msgerr_invalid_constant_struct_member = "Invalid type for constant struct member";
 
 // src/compiler/ac_control_flow.c
 const char *msgerr_fallthrough_outside_switch = "Attempting a fallthrough outside of switch statement";

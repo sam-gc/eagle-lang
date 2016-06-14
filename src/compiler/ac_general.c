@@ -17,6 +17,7 @@ extern Hashtable global_args;
 extern char *current_file_name;
 
 static void ac_deferment_callback(AST *ast, void *data);
+static void ac_add_global_variable_initializations(AST *ast, CompilerBundle *cb);
 
 #ifdef RELEASE
 void die(int lineno, const char *fmt, ...)
@@ -179,6 +180,9 @@ LLVMModuleRef ac_compile(AST *ast, int include_rc)
     ac_generate_interface_definitions(ast, &cb);
     ac_make_class_definitions(ast, &cb);
 
+    // Compile static initializers
+    ac_add_global_variable_initializations(ast, &cb);
+
     for(; ast; ast = ast->next)
     {
         ac_dispatch_declaration(ast, &cb);
@@ -261,6 +265,56 @@ void ac_add_early_name_declaration(AST *ast, CompilerBundle *cb)
     }
 }
 
+static void ac_add_global_variable_initializations(AST *ast, CompilerBundle *cb)
+{
+    for(; ast; ast = ast->next)
+    {
+        if(ast->type != AVARDECL)
+            continue;
+
+        ASTVarDecl *a = (ASTVarDecl *)ast;
+        ASTTypeDecl *t = (ASTTypeDecl *)a->atype;
+
+        EagleComplexType *et = t->etype;
+
+        LLVMValueRef glob = vs_get(cb->varScope, a->ident)->value;
+        if(!glob)
+            die(ALN, msgerr_internal);
+
+        LLVMValueRef init = NULL;
+        if(a->staticInit)
+        {
+            // Handle the special case where the constant is a struct
+            // literal
+            if(a->staticInit->type == ASTRUCTLIT)
+            {
+                ASTStructLit *asl = (ASTStructLit *)a->staticInit;
+                if(et->type != ETStruct)
+                    die(ALN, msgerr_invalid_struct_lit_assignment_val);
+                asl->name = ((EagleStructType *)et)->name;
+            }
+
+            init = ac_dispatch_constant(a->staticInit, cb);
+            EagleComplexType *f = a->staticInit->resultantType;
+            if(!ett_are_same(f, et))
+            {
+                init = ac_convert_const(init, et, f);
+                if(!init)
+                    die(ALN, msgerr_invalid_conversion_constant);
+            }
+        }
+        else if(a->linkage != VLExternal)
+        {
+            init = ett_default_value(et);
+            if(!init)
+                die(ALN, msgerr_invalid_static_type, a->ident);
+        }
+
+        LLVMSetInitializer(glob, init);
+    }
+}
+
+
 void ac_add_global_variable_declarations(AST *ast, CompilerBundle *cb)
 {
     if(ast->type != AVARDECL)
@@ -273,30 +327,9 @@ void ac_add_global_variable_declarations(AST *ast, CompilerBundle *cb)
 
     LLVMValueRef glob = LLVMAddGlobal(cb->module, ett_llvm_type(et), a->ident); 
 
-    LLVMValueRef init = NULL;
-    if(a->staticInit)
-    {
-        init = ac_dispatch_constant(a->staticInit, cb);
-        EagleComplexType *f = a->staticInit->resultantType;
-        if(!ett_are_same(f, et))
-        {
-            init = ac_convert_const(init, et, f);
-            if(!init)
-                die(ALN, msgerr_invalid_conversion_constant);
-        }
-    }
-    else if(a->linkage != VLExternal)
-    {
-        init = ett_default_value(et);
-        if(!init)
-            die(ALN, msgerr_invalid_static_type, a->ident);
-    }
-
-    LLVMSetInitializer(glob, init);
-
     vs_put(cb->varScope, a->ident, glob, et, ALN);
 
-    if(!init || a->linkage == VLExport ||
+    if(a->linkage == VLExternal || a->linkage == VLExport ||
        ec_allow(cb->exports, a->ident, TSTATIC))
     {
         // If this is a variable declaration (i.e.
@@ -395,6 +428,9 @@ LLVMValueRef ac_dispatch_constant(AST *ast, CompilerBundle *cb)
     {
         case AVALUE:
             val = ac_const_value(ast, cb);
+            break;
+        case ASTRUCTLIT:
+            val = ac_const_struct_lit(ast, cb);
             break;
         default:
             die(ALN, msgerr_invalid_constant_type);

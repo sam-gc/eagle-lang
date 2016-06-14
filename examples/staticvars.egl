@@ -1,7 +1,20 @@
+extern func printf(byte* ...) : int
+
 static int x
 static int z = 10.0
 static byte* text = 'Hello, world!'
 export static byte** words
+
+struct Point
+{
+    int x
+    int y
+}
+
+static Point p = {
+    .x = 10
+    .y = 45
+}
 
 func inc() : int
 {
@@ -31,5 +44,18 @@ func main()
 
     puts z
 
+    puts p.y
+
     puts text
+
+    (new Test()).printPointDouble()
 }
+
+class Test
+{
+    func printPointDouble()
+    {
+        printf('(%d, %d)\n', p.x * 2, p.y * 2)
+    }
+}
+
