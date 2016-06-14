@@ -75,7 +75,7 @@ void ac_incr_val_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleComplexType
     }
 
     LLVMValueRef tptr = *ptr;
-    tptr = LLVMBuildBitCast(builder, tptr, LLVMPointerType(LLVMInt64TypeInContext(utl_get_current_context()), 0), "cast");
+    tptr = LLVMBuildBitCast(builder, tptr, LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), "cast");
 
     LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_incr_ptr");
     LLVMBuildCall(builder, func, &tptr, 1, "");
@@ -93,7 +93,7 @@ void ac_incr_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleComplexType *ty
     }
 
     LLVMValueRef tptr = LLVMBuildLoad(builder, *ptr, "tptr");
-    tptr = LLVMBuildBitCast(builder, tptr, LLVMPointerType(LLVMInt64TypeInContext(utl_get_current_context()), 0), "cast");
+    tptr = LLVMBuildBitCast(builder, tptr, LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), "cast");
 
     LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_incr_ptr");
     LLVMBuildCall(builder, func, &tptr, 1, "");
@@ -105,7 +105,7 @@ void ac_check_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleComplexType *t
     if(!pt->counted)
         return;
 
-    LLVMValueRef tptr = LLVMBuildBitCast(cb->builder, *ptr, LLVMPointerType(LLVMInt64TypeInContext(utl_get_current_context()), 0), "");
+    LLVMValueRef tptr = LLVMBuildBitCast(cb->builder, *ptr, LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), "");
     LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_check_ptr");
     LLVMBuildCall(cb->builder, func, &tptr, 1, "");
 }
@@ -115,7 +115,7 @@ void ac_prepare_pointer(CompilerBundle *cb, LLVMValueRef ptr, EagleComplexType *
     if(ty && !ET_IS_COUNTED(ty))
         return;
 
-    LLVMValueRef tptr = LLVMBuildBitCast(cb->builder, ptr, LLVMPointerType(LLVMInt64TypeInContext(utl_get_current_context()), 0), "");
+    LLVMValueRef tptr = LLVMBuildBitCast(cb->builder, ptr, LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), "");
     LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_prepare");
     LLVMBuildCall(cb->builder, func, &tptr, 1, "");
 }
@@ -126,7 +126,7 @@ void ac_add_weak_pointer(CompilerBundle *cb, LLVMValueRef ptr, LLVMValueRef weak
         return;
 
     LLVMValueRef vals[2];
-    vals[0] = LLVMBuildBitCast(cb->builder, ptr, LLVMPointerType(LLVMInt64TypeInContext(utl_get_current_context()), 0), "");
+    vals[0] = LLVMBuildBitCast(cb->builder, ptr, LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), "");
     vals[1] = LLVMBuildBitCast(cb->builder, weak, LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), "");
     LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_add_weak");
     LLVMBuildCall(cb->builder, func, vals, 2, "");
@@ -153,7 +153,7 @@ void ac_decr_val_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleComplexType
     }
 
     LLVMValueRef tptr = *ptr;
-    tptr = LLVMBuildBitCast(builder, tptr, LLVMPointerType(LLVMInt64TypeInContext(utl_get_current_context()), 0), "cast");
+    tptr = LLVMBuildBitCast(builder, tptr, LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), "cast");
 
     LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_decr_ptr");
     LLVMBuildCall(builder, func, &tptr, 1, "");
@@ -170,7 +170,7 @@ void ac_decr_val_pointer_no_free(CompilerBundle *cb, LLVMValueRef *ptr, EagleCom
     }
 
     LLVMValueRef tptr = *ptr;
-    tptr = LLVMBuildBitCast(builder, tptr, LLVMPointerType(LLVMInt64TypeInContext(utl_get_current_context()), 0), "cast");
+    tptr = LLVMBuildBitCast(builder, tptr, LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), "cast");
 
     LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_decr_no_free");
     LLVMBuildCall(builder, func, &tptr, 1, "");
@@ -208,7 +208,7 @@ void ac_decr_pointer(CompilerBundle *cb, LLVMValueRef *ptr, EagleComplexType *ty
     }
 
     LLVMValueRef tptr = LLVMBuildLoad(builder, *ptr, "tptr");
-    tptr = LLVMBuildBitCast(builder, tptr, LLVMPointerType(LLVMInt64TypeInContext(utl_get_current_context()), 0), "cast");
+    tptr = LLVMBuildBitCast(builder, tptr, LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0), "cast");
 
     LLVMValueRef func = LLVMGetNamedFunction(cb->module, "__egl_decr_ptr");
     LLVMBuildCall(builder, func, &tptr, 1, "");

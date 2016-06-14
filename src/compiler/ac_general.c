@@ -211,7 +211,9 @@ LLVMModuleRef ac_compile(AST *ast, int include_rc)
 
 void ac_prepare_module(LLVMModuleRef module)
 {
-    LLVMTypeRef param_types_rc[] = {LLVMPointerType(LLVMInt64TypeInContext(utl_get_current_context()), 0)};
+    LLVMTypeRef cptr = LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0);
+
+    LLVMTypeRef param_types_rc[] = {cptr};
     LLVMTypeRef func_type_rc = LLVMFunctionType(LLVMVoidTypeInContext(utl_get_current_context()), param_types_rc, 1, 0);
     LLVMAddFunction(module, "__egl_incr_ptr", func_type_rc);
     LLVMAddFunction(module, "__egl_decr_ptr", func_type_rc);
@@ -219,7 +221,7 @@ void ac_prepare_module(LLVMModuleRef module)
     LLVMAddFunction(module, "__egl_check_ptr", func_type_rc);
     LLVMAddFunction(module, "__egl_prepare", func_type_rc);
 
-    LLVMTypeRef param_types_we[] = { LLVMPointerType(LLVMInt64TypeInContext(utl_get_current_context()), 0), LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0)};
+    LLVMTypeRef param_types_we[] = { cptr, LLVMPointerType(LLVMInt8TypeInContext(utl_get_current_context()), 0)};
     func_type_rc = LLVMFunctionType(LLVMVoidTypeInContext(utl_get_current_context()), param_types_we, 2, 0);
     LLVMAddFunction(module, "__egl_add_weak", func_type_rc);
 
