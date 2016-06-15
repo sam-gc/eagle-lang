@@ -147,6 +147,7 @@ void args_setup(ShippingCrate *crate)
     ta_rule(targs, "-O1", NULL, &rule_ignore, NULL);
     ta_rule(targs, "-O2", NULL, &rule_ignore, NULL);
     ta_rule(targs, "-O3", NULL, &rule_ignore, NULL);
+    ta_rule(targs, "--no-opt-codegen", NULL, &rule_ignore, "Don't optimize during the code generation phase");
     ta_rule(targs, "*", NULL, &rule_seive, NULL);
 
     ta_extra(targs, "-l<libname>", "Link with library");

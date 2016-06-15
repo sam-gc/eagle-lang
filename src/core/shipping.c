@@ -29,21 +29,27 @@ void shp_optimize(LLVMModuleRef module)
 {
     LPMB passBuilder = LLVMPassManagerBuilderCreate();
     LLVMPassManagerRef pm = LLVMCreatePassManager();
+    LLVMTargetDataRef td = LLVMCreateTargetData("");
 
-    unsigned opt = 2;
+    unsigned opt = 0;
 
-    if(IN(global_args, "-O0"))
-        opt = 0;
-    else if(IN(global_args, "-O1"))
-        opt = 1;
-    else if(IN(global_args, "-O3"))
-        opt = 3;
+    // TODO: Find a workaround for these optimizations on 32 bit.
+    if(LLVMPointerSize(td) >= 8)
+    {
+        opt = 2;
+
+        if(IN(global_args, "-O0"))
+            opt = 0;
+        else if(IN(global_args, "-O1"))
+            opt = 1;
+        else if(IN(global_args, "-O3"))
+            opt = 3;
+    }
 
     LLVMPassManagerBuilderSetOptLevel(passBuilder, opt);
 
     thr_populate_pass_manager(passBuilder, pm);
 
-    LLVMTargetDataRef td = LLVMCreateTargetData("");
     LLVMAddTargetData(td, pm);
 
     LLVMRunPassManager(pm, module);
@@ -82,11 +88,20 @@ void shp_produce_assembly(LLVMModuleRef module, char *filename, char **outname)
     else
         ofn = thr_temp_assembly_file(filename);
 
+    LLVMCodeGenOptLevel opt = LLVMCodeGenLevelDefault;
+
+    if(IN(global_args, "-O0") || IN(global_args, "--no-opt-codegen"))
+        opt = LLVMCodeGenLevelNone;
+    else if(IN(global_args, "-O1"))
+        opt = LLVMCodeGenLevelLess;
+    else if(IN(global_args, "-O3"))
+        opt = LLVMCodeGenLevelAggressive;
+
     LLVMTargetRef targ;
     LLVMGetTargetFromTriple(LLVMGetDefaultTargetTriple(), &targ, NULL);
     LLVMTargetMachineRef tm =
         LLVMCreateTargetMachine(targ, LLVMGetDefaultTargetTriple(),
-                                "", "", LLVMCodeGenLevelNone,
+                                "", "", opt,
                                 LLVMRelocDefault, LLVMCodeModelDefault);
 
     LLVMTargetMachineEmitToFile(tm, module, ofn, LLVMAssemblyFile, NULL);
