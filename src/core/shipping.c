@@ -52,20 +52,14 @@ void shp_optimize(LLVMModuleRef module)
     LLVMPassManagerRef pm = LLVMCreatePassManager();
     LLVMTargetDataRef td = LLVMCreateTargetData(shp_get_data_rep());
 
-    unsigned opt = 0;
+    unsigned opt = 2;
 
-    // TODO: Find a workaround for these optimizations on 32 bit.
-    if(LLVMPointerSize(td) >= 8)
-    {
-        opt = 2;
-
-        if(IN(global_args, "-O0"))
-            opt = 0;
-        else if(IN(global_args, "-O1"))
-            opt = 1;
-        else if(IN(global_args, "-O3"))
-            opt = 3;
-    }
+    if(IN(global_args, "-O0"))
+        opt = 0;
+    else if(IN(global_args, "-O1"))
+        opt = 1;
+    else if(IN(global_args, "-O3"))
+        opt = 3;
 
     LLVMPassManagerBuilderSetOptLevel(passBuilder, opt);
 
