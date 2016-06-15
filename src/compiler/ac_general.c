@@ -12,6 +12,7 @@
 #include "ast_compiler.h"
 #include "core/utils.h"
 #include "core/colors.h"
+#include "core/shipping.h"
 
 extern Hashtable global_args;
 extern char *current_file_name;
@@ -128,6 +129,9 @@ LLVMModuleRef ac_compile(AST *ast, int include_rc)
 {
     CompilerBundle cb;
     cb.module = LLVMModuleCreateWithNameInContext("main-module", utl_get_current_context());
+    LLVMSetDataLayout(cb.module, shp_get_data_rep());
+    LLVMSetTarget(cb.module, LLVMGetDefaultTargetTriple());
+
     cb.builder = LLVMCreateBuilderInContext(utl_get_current_context());
     cb.transients = hst_create();
     cb.loadedTransients = hst_create();
@@ -140,7 +144,7 @@ LLVMModuleRef ac_compile(AST *ast, int include_rc)
 
     cb.currentLoopEntry = cb.currentLoopExit = NULL;
 
-    cb.td = LLVMCreateTargetData("");
+    cb.td = LLVMCreateTargetData(shp_get_data_rep());
 
     VarScopeStack vs = vs_make();
     vs.deferCallback = &ac_deferment_callback;

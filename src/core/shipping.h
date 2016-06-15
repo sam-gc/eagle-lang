@@ -30,6 +30,7 @@ typedef struct {
 } ShippingCrate;
 
 void shp_optimize(LLVMModuleRef module);
+char *shp_get_data_rep();
 void shp_produce_assembly(LLVMModuleRef module, char *filename, char **outname);
 void shp_produce_binary(char *filename, char *assemblyname, char **outname);
 void shp_produce_executable(ShippingCrate *crate);
