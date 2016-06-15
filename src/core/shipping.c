@@ -25,11 +25,32 @@ typedef LLVMPassManagerBuilderRef LPMB;
 
 static void shp_spawn_process(const char *process, const char *args[]);
 
+char *shp_get_data_rep()
+{
+    static char *ref;
+
+    if(ref)
+        return ref;
+
+    LLVMTargetRef targ;
+    LLVMGetTargetFromTriple(LLVMGetDefaultTargetTriple(), &targ, NULL);
+    LLVMTargetMachineRef tm =
+        LLVMCreateTargetMachine(targ, LLVMGetDefaultTargetTriple(),
+                                "", "", LLVMCodeGenLevelNone,
+                                LLVMRelocDefault, LLVMCodeModelDefault);
+
+    LLVMTargetDataRef td = LLVMGetTargetMachineData(tm);
+    ref = LLVMCopyStringRepOfTargetData(td);
+    LLVMDisposeTargetMachine(tm);
+
+    return ref;
+}
+
 void shp_optimize(LLVMModuleRef module)
 {
     LPMB passBuilder = LLVMPassManagerBuilderCreate();
     LLVMPassManagerRef pm = LLVMCreatePassManager();
-    LLVMTargetDataRef td = LLVMCreateTargetData("");
+    LLVMTargetDataRef td = LLVMCreateTargetData(shp_get_data_rep());
 
     unsigned opt = 0;
 
