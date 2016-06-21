@@ -63,7 +63,7 @@ whitechar [ \t]
 digit [0-9]
 lalpha [a-z]
 alpha [a-zA-Z_$]+
-integer (0x)?{digit}+
+integer (0x)?{digit}+[uU]?([cC]|[sS]|[lL])?
 exponent [eE][+-]?{integer}
 real {integer}("."{digit}*){exponent}?
 nvar {alpha}({alpha}|{digit})*

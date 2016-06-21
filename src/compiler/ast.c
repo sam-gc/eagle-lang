@@ -149,12 +149,30 @@ AST *ast_make_int32(char *text)
 {
     ASTValue *ast = ast_malloc(sizeof(ASTValue));
     ast->type = AVALUE;
-    ast->etype = ETInt32;
+    // ast->etype = ETInt32;
 
-    if(strlen(text) > 2 && tolower(text[1]) == 'x')
-        ast->value.i = strtol(text, NULL, 16);
-    else
-        ast->value.i = atoi(text);
+    int us, bits;
+    ast->value.i = utl_process_int(text, &us, &bits);
+
+    static EagleBasicType ust[] = {ETUInt8, ETUInt16, ETUInt32, ETUInt64};
+    static EagleBasicType st[]  = {ETInt8,  ETInt16,  ETInt32,  ETInt64};
+
+    EagleBasicType *src = us ? ust : st;
+    switch(bits)
+    {
+        case 8:
+            ast->etype = src[0];
+            break;
+        case 16:
+            ast->etype = src[1];
+            break;
+        case 32:
+            ast->etype = src[2];
+            break;
+        case 64:
+            ast->etype = src[3];
+            break;
+    }
 
     return (AST *)ast;
 }

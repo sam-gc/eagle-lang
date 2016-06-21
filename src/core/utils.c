@@ -10,6 +10,12 @@
 #include "mempool.h"
 #include "compiler/ast_compiler.h"
 #include <string.h>
+#include <ctype.h>
+
+#define UNSIGNED 1
+#define LONG     2
+#define LONGLONG 4
+#define DEFAULT_INT_WIDTH 32
 
 char *utl_gen_escaped_string(char *inp, int lineno)
 {
@@ -67,6 +73,48 @@ char *utl_gen_escaped_string(char *inp, int lineno)
     n[j] = 0;
 
     return n;
+}
+
+long long utl_process_int(char *fmt, int *us, int *bits)
+{
+    size_t len = strlen(fmt);
+    int hex, qidx;
+    hex = qidx = 0;
+    *us = 0;
+    *bits = DEFAULT_INT_WIDTH;
+
+    for(size_t i = 0; i < len; i++)
+    {
+        char c = tolower(fmt[i]);
+        switch(c)
+        {
+            case 'x':
+                hex = 1;
+                break;
+            case 'u':
+                *us = 1;
+                break;
+            case 'c':
+                *bits = 8;
+                break;
+            case 's':
+                *bits = 16;
+                break;
+            case 'l':
+                *bits = 64;
+                break;
+        }
+
+        // The position where the qualifiers
+        // start
+        if((*us || *bits != DEFAULT_INT_WIDTH) && !qidx)
+            qidx = i;
+    }
+
+    if(qidx)
+        fmt[qidx] = '\0';
+
+    return hex ? strtoll(fmt, NULL, 16) : atoll(fmt);
 }
 
 static Mempool utl_mempool;

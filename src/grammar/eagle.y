@@ -441,6 +441,8 @@ constantexpr        : TINT { $$ = ast_make_int32($1); }
 
 conststatic         : constantexpr { $$ = $1; }
                     | conststructlit { $$ = $1; }
+                    | TTYPE TDOT TIDENTIFIER { $$ = ast_make_type_lookup($1, $3); }
+                    | TIDENTIFIER { $$ = ast_make_identifier($1); }
                     ;
 
 %%

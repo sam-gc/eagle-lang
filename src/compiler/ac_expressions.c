@@ -17,11 +17,21 @@ LLVMValueRef ac_compile_value(AST *ast, CompilerBundle *cb)
             a->resultantType = ett_base_type(ETInt1);
             return LLVMConstInt(LLVMInt1TypeInContext(utl_get_current_context()), a->value.i, 1);
         case ETInt8:
-            a->resultantType = ett_base_type(ETInt8);
+        case ETUInt8:
+            a->resultantType = ett_base_type(a->etype);
             return LLVMConstInt(LLVMInt8TypeInContext(utl_get_current_context()), a->value.i, 1);
+        case ETInt16:
+        case ETUInt16:
+            a->resultantType = ett_base_type(a->etype);
+            return LLVMConstInt(LLVMInt16TypeInContext(utl_get_current_context()), a->value.i, 1);
         case ETInt32:
-            a->resultantType = ett_base_type(ETInt32);
+        case ETUInt32:
+            a->resultantType = ett_base_type(a->etype);
             return LLVMConstInt(LLVMInt32TypeInContext(utl_get_current_context()), a->value.i, 1);
+        case ETInt64:
+        case ETUInt64:
+            a->resultantType = ett_base_type(a->etype);
+            return LLVMConstInt(LLVMInt64TypeInContext(utl_get_current_context()), a->value.i, 1);
         case ETFloat:
             a->resultantType = ett_base_type(ETFloat);
             return LLVMConstReal(LLVMFloatTypeInContext(utl_get_current_context()), a->value.d);
@@ -65,7 +75,7 @@ LLVMValueRef ac_compile_identifier(AST *ast, CompilerBundle *cb)
         return enl;
     }
 
-    if(!b) // We are dealing with a local variable
+    if(!b)
         die(ALN, msgerr_undeclared_identifier, a->value.id);
     if(b->type->type == ETAuto)
         die(ALN, msgerr_unknown_var_read, a->value.id);

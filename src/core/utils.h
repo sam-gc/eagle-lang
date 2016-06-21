@@ -12,6 +12,7 @@
 #include "llvm_headers.h"
 
 char *utl_gen_escaped_string(char *inp, int lineno);
+long long utl_process_int(char *fmt, int *us, int *bits);
 void utl_register_memory(void *m);
 void utl_free_registered();
 void utl_set_current_context(LLVMContextRef ctx);

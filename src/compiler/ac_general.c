@@ -300,7 +300,14 @@ static void ac_add_global_variable_initializations(AST *ast, CompilerBundle *cb)
                 asl->name = ((EagleStructType *)et)->name;
             }
 
+            // Handle the special case where we might want to lookup
+            // an enum type
+            if(et->type == ETEnum && a->staticInit->type == AIDENT)
+                cb->enum_lookup = et;
+
             init = ac_dispatch_constant(a->staticInit, cb);
+            cb->enum_lookup = NULL;
+            
             EagleComplexType *f = a->staticInit->resultantType;
             if(!ett_are_same(f, et))
             {
@@ -437,6 +444,12 @@ LLVMValueRef ac_dispatch_constant(AST *ast, CompilerBundle *cb)
             break;
         case ASTRUCTLIT:
             val = ac_const_struct_lit(ast, cb);
+            break;
+        case ATYPELOOKUP:
+            val = ac_const_enum(ast, cb);
+            break;
+        case AIDENT:
+            val = ac_const_identifier(ast, cb);
             break;
         default:
             die(ALN, msgerr_invalid_constant_type);

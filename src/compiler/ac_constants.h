@@ -11,6 +11,8 @@
 
 LLVMValueRef ac_const_value(AST *ast, CompilerBundle *cb);
 LLVMValueRef ac_const_struct_lit(AST *ast, CompilerBundle *cb);
+LLVMValueRef ac_const_enum(AST *ast, CompilerBundle *cb);
+LLVMValueRef ac_const_identifier(AST *ast, CompilerBundle *cb);
 LLVMValueRef ac_convert_const(LLVMValueRef val, EagleComplexType *to, EagleComplexType *from);
 
 #endif

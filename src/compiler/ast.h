@@ -106,7 +106,7 @@ typedef struct {
 
     EagleBasicType etype;
     union {
-        int32_t i;
+        long long i;
         double d;
         char *id;
     } value;

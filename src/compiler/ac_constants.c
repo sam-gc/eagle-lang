@@ -17,11 +17,21 @@ LLVMValueRef ac_const_value(AST *ast, CompilerBundle *cb)
             a->resultantType = ett_base_type(ETInt1);
             return LLVMConstInt(LLVMInt1TypeInContext(utl_get_current_context()), a->value.i, 1);
         case ETInt8:
-            a->resultantType = ett_base_type(ETInt8);
+        case ETUInt8:
+            a->resultantType = ett_base_type(a->etype);
             return LLVMConstInt(LLVMInt8TypeInContext(utl_get_current_context()), a->value.i, 1);
+        case ETInt16:
+        case ETUInt16:
+            a->resultantType = ett_base_type(a->etype);
+            return LLVMConstInt(LLVMInt16TypeInContext(utl_get_current_context()), a->value.i, 1);
         case ETInt32:
-            a->resultantType = ett_base_type(ETInt32);
+        case ETUInt32:
+            a->resultantType = ett_base_type(a->etype);
             return LLVMConstInt(LLVMInt32TypeInContext(utl_get_current_context()), a->value.i, 1);
+        case ETInt64:
+        case ETUInt64:
+            a->resultantType = ett_base_type(a->etype);
+            return LLVMConstInt(LLVMInt64TypeInContext(utl_get_current_context()), a->value.i, 1);
         case ETDouble:
             a->resultantType = ett_base_type(ETDouble);
             return LLVMConstReal(LLVMDoubleTypeInContext(utl_get_current_context()), a->value.d);
@@ -91,6 +101,51 @@ LLVMValueRef ac_const_struct_lit(AST *ast, CompilerBundle *cb)
 
     ast->resultantType = st;
     return LLVMConstNamedStruct(ett_llvm_type(st), vals, names->count);
+}
+
+LLVMValueRef ac_const_enum(AST *ast, CompilerBundle *cb)
+{
+    ASTTypeLookup *a = (ASTTypeLookup *)ast;
+
+    if(!ty_is_enum(a->name))
+        die(ALN, msgerr_invalid_type_lookup_type, a->name);
+
+    EagleComplexType *et = ett_enum_type(a->name);
+    int valid;
+    long enum_val = ty_lookup_enum_item(et, a->item, &valid);
+
+    if(!valid)
+        die(ALN, msgerr_item_not_in_enum, a->name, a->item);
+
+    a->resultantType = et;
+
+    return LLVMConstInt(LLVMInt64TypeInContext(utl_get_current_context()), enum_val, 0);
+}
+
+LLVMValueRef ac_const_identifier(AST *ast, CompilerBundle *cb)
+{
+    ASTValue *a = (ASTValue *)ast;
+    VarBundle *b = vs_get(cb->varScope, a->value.id);
+
+    if(!b && cb->enum_lookup)
+    {
+        LLVMValueRef enl = ac_lookup_enum(cb->enum_lookup, a->value.id);
+        if(!enl)
+            die(ALN, msgerr_item_not_in_enum, a->value.id, ((EagleEnumType *)cb->enum_lookup)->name);
+        a->resultantType = cb->enum_lookup;
+        return enl;
+    }
+
+    if(!b)
+        die(ALN, msgerr_undeclared_identifier, a->value.id);
+    if(b->type->type == ETAuto)
+        die(ALN, msgerr_unknown_var_read, a->value.id);
+
+    b->wasused = 1;
+
+    a->resultantType = b->type;
+
+    return LLVMGetInitializer(b->value);
 }
 
 LLVMValueRef ac_convert_const(LLVMValueRef val, EagleComplexType *to, EagleComplexType *from)

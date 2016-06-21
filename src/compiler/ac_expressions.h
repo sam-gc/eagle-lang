@@ -10,6 +10,7 @@
 #define AC_EXPRESSIONS_H
 
 LLVMValueRef ac_compile_value(AST *ast, CompilerBundle *cb);
+LLVMValueRef ac_lookup_enum(EagleComplexType *et, char *item);
 LLVMValueRef ac_compile_identifier(AST *ast, CompilerBundle *cb);
 LLVMValueRef ac_compile_var_decl(AST *ast, CompilerBundle *cb);
 LLVMValueRef ac_compile_var_decl_ext(EagleComplexType *type, char *ident, CompilerBundle *cb, int noSetNil, int lineno);
