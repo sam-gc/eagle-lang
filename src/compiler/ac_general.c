@@ -361,6 +361,12 @@ void ac_add_early_declarations(AST *ast, CompilerBundle *cb)
         return;
     }
 
+    if(ast->type == ACLASSDECL)
+    {
+        ac_class_add_early_definitions(ast, cb);
+        return;
+    }
+
     if(ast->type != AFUNCDECL)
         return;
 

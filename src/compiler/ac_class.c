@@ -65,8 +65,9 @@ void ac_generate_interface_definitions(AST *ast, CompilerBundle *cb)
 
 void ac_prepare_methods_each(void *key, void *val, void *data)
 {
-    ClassHelper *h = (ClassHelper *)data;
-    ASTClassDecl *cd = (ASTClassDecl *)h->ast;
+    void **arr = data;
+    CompilerBundle *cb = (CompilerBundle *)arr[0];
+    ASTClassDecl *cd = (ASTClassDecl *)arr[1];
 
     ASTFuncDecl *fd = key;
     EagleFunctionType *ety = val;
@@ -80,9 +81,9 @@ void ac_prepare_methods_each(void *key, void *val, void *data)
     ((EaglePointerType *)ety->params[0])->counted = 1;
     LLVMTypeRef ft = ett_llvm_type((EagleComplexType *)ety);
 
-    LLVMValueRef func = LLVMAddFunction(h->cb->module, method_name, ft);
+    LLVMValueRef func = LLVMAddFunction(cb->module, method_name, ft);
 
-    if(h->linkage == VLLocal && !cd->ext)
+    if(cd->linkage == VLLocal && !cd->ext)
         LLVMSetLinkage(func, LLVMPrivateLinkage);
 
     ty_add_method(cd->name, fd->ident, (EagleComplexType *)ety);
@@ -90,9 +91,17 @@ void ac_prepare_methods_each(void *key, void *val, void *data)
     free(method_name);
 }
 
-void ac_class_add_early_definitions(ASTClassDecl *cd, CompilerBundle *cb, ClassHelper *h)
+void ac_class_add_early_definitions(AST *ast, CompilerBundle *cb)
 {
-    hst_for_each(&cd->method_types, ac_prepare_methods_each, h);
+    ASTClassDecl *cd = (ASTClassDecl *)ast;
+
+    VariableLinkage linkage = cd->linkage;
+    if(ec_allow(cb->exports, cd->name, TCLASS))
+        linkage = VLExport;
+    cd->linkage = linkage;
+
+    void *items[] = {cb, cd};
+    hst_for_each(&cd->method_types, ac_prepare_methods_each, items);
     ASTFuncDecl *fd = (ASTFuncDecl *)cd->initdecl;
     if(!fd)
         return;
@@ -106,7 +115,7 @@ void ac_class_add_early_definitions(ASTClassDecl *cd, CompilerBundle *cb, ClassH
     ((EaglePointerType *)ety->params[0])->counted = 1;
     LLVMTypeRef ft = ett_llvm_type((EagleComplexType *)ety);
     LLVMValueRef func = LLVMAddFunction(cb->module, method_name, ft);
-    if(h->linkage == VLLocal && !cd->ext)
+    if(linkage == VLLocal && !cd->ext)
         LLVMSetLinkage(func, LLVMPrivateLinkage);
 
     //ty_add_method(cd->name, fd->ident, (EagleComplexType *)ety);
@@ -250,12 +259,13 @@ void ac_make_class_definitions(AST *ast, CompilerBundle *cb)
         h.cb = cb;
 
         h.linkage = a->linkage;
-        if(ec_allow(cb->exports, a->name, TCLASS))
+        /*if(ec_allow(cb->exports, a->name, TCLASS))
             h.linkage = VLExport;
 
         // Set it back after checking with the other
         // exports
         a->linkage = h.linkage;
+        */
 
         LLVMTypeRef indirtype = ty_class_indirect();
         LLVMValueRef vtable = NULL;
@@ -274,7 +284,6 @@ void ac_make_class_definitions(AST *ast, CompilerBundle *cb)
                 char *interface = a->interfaces.items[i];
                 constnamesarr[i] = ac_make_floating_string(cb, interface, "_ifc");
 
-                // constnamesarr[i] = LLVMBuildGlobalStringPtr(cb->builder, a->interfaces.items[i], "iname");
                 offsetsarr[i] = LLVMConstInt(LLVMInt64TypeInContext(utl_get_current_context()), curoffset, 0);
                 curoffset += ty_interface_count(interface);
             }
@@ -303,7 +312,7 @@ void ac_make_class_definitions(AST *ast, CompilerBundle *cb)
 
         h.vtable = vtable;
 
-        ac_class_add_early_definitions(a, cb, &h);
+        // ac_class_add_early_definitions(a, cb);
         hst_for_each(&a->method_types, ac_compile_class_methods_each, &h);
         ac_compile_class_init(a, cb);
         ac_compile_class_destruct(a, cb);

@@ -14,7 +14,7 @@ func hst_djb2(byte* key) : long
     int hash = 5381
     for byte c = key[0]; c; key += 1
     {
-        hash = hash * 32 + hash + c
+        hash = ((hash << 5) + hash) + c
         c = key[0]
     }
 
