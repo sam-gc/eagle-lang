@@ -1,0 +1,43 @@
+extern func printf(byte*...) : int
+
+class Greeter
+{
+    byte* who
+    bool factoryCreated
+
+    static func makeGreeter(byte* who) : Greeter^
+    {
+        var greeter = new Greeter()
+        greeter.who = who
+        greeter.factoryCreated = yes
+
+        return greeter
+    }
+
+    func greet()
+    {
+        if !self.factoryCreated
+        {
+            printf('Greeter not created in factory!!\n')
+            return
+        }
+
+        printf('Hello, %s!\n', self.who)
+    }
+
+    init()
+    {
+        self.who = nil
+        self.factoryCreated = no
+    }
+}
+
+func main()
+{
+    var greeter = new Greeter()
+    greeter.greet()
+
+    greeter = Greeter.makeGreeter('World')
+    greeter.greet()
+}
+

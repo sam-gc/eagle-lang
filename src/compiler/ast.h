@@ -285,6 +285,7 @@ typedef struct {
 
     // Hashtable methods;
     Hashtable method_types;
+    Hashtable static_method_types;
 
     int ext;
 } ASTClassDecl;
@@ -371,6 +372,7 @@ AST *ast_make_interface_decl();
 AST *ast_class_set_init(AST *cls, AST *init);
 AST *ast_class_var_add(AST *ast, AST *var);
 AST *ast_class_method_add(AST *ast, AST *func);
+AST *ast_class_static_method_add(AST *ast, AST *func);
 AST *ast_class_name(AST *ast, char *name);
 void ast_class_set_extern(AST *ast);
 void ast_class_add_interface(AST *ast, AST *interfaces);

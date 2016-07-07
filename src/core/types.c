@@ -39,6 +39,7 @@ static Hashtable struct_table;
 static Hashtable types_table;
 static Hashtable counted_table;
 static Hashtable method_table;
+static Hashtable static_method_table;
 static Hashtable type_named_table;
 static Hashtable enum_named_table;
 static Hashtable init_table;
@@ -75,6 +76,9 @@ void ty_prepare()
 
     method_table = hst_create();
     method_table.duplicate_keys = 1;
+
+    static_method_table = hst_create();
+    static_method_table.duplicate_keys = 1;
 
     init_table = hst_create();
     init_table.duplicate_keys = 1;
@@ -117,6 +121,9 @@ void ty_teardown()
 
     hst_for_each(&method_table, ty_method_free, NULL);
     hst_free(&method_table);
+    hst_for_each(&static_method_table, ty_method_free, NULL);
+    hst_free(&static_method_table);
+
     hst_free(&init_table);
     hst_free(&generic_ident_table);
 
@@ -1005,6 +1012,11 @@ void ty_register_class(char *name)
     *lst = hst_create();
     lst->duplicate_keys = 1;
     hst_put(&method_table, name, lst, NULL, NULL);
+
+    lst = malloc(sizeof(Hashtable));
+    *lst = hst_create();
+    lst->duplicate_keys = 1;
+    hst_put(&static_method_table, name, lst, NULL, NULL);
 }
 
 void ty_register_interface(char *name)
@@ -1202,9 +1214,32 @@ void ty_add_method(char *name, char *method, EagleComplexType *ty)
     hst_put(lst, method, ty, NULL, NULL);
 }
 
+void ty_add_static_method(char *name, char *method, EagleComplexType *ty)
+{
+    Hashtable *lst = hst_get(&static_method_table, name, NULL, NULL);
+    if(!lst)
+    {
+        lst = malloc(sizeof(Hashtable));
+        *lst = hst_create();
+        lst->duplicate_keys = 1;
+        hst_put(&static_method_table, name, lst, NULL, NULL);
+    }
+
+    hst_put(lst, method, ty, NULL, NULL);
+}
+
 EagleComplexType *ty_method_lookup(char *name, char *method)
 {
     Hashtable *lst = hst_get(&method_table, name, NULL, NULL);
+    if(!lst)
+        return NULL;
+
+    return hst_get(lst, method, NULL, NULL);
+}
+
+EagleComplexType *ty_static_method_lookup(char *name, char *method)
+{
+    Hashtable *lst = hst_get(&static_method_table, name, NULL, NULL);
     if(!lst)
         return NULL;
 

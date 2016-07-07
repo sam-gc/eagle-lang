@@ -256,7 +256,6 @@ LLVMValueRef ac_compile_struct_member(AST *ast, CompilerBundle *cb, int keepPoin
         ast->resultantType = functionType;
         return func;
     }
-        //a->leftCompiled = a->left->type == AUNARY ? ((ASTUnary *)a->left)->savedWrapped : left;
 
     int index;
     EagleComplexType *type;
@@ -279,19 +278,31 @@ LLVMValueRef ac_compile_type_lookup(AST *ast, CompilerBundle *cb)
 {
     ASTTypeLookup *a = (ASTTypeLookup *)ast;
 
-    if(!ty_is_enum(a->name))
-        die(ALN, msgerr_invalid_type_lookup_type, a->name);
+    if(ty_is_enum(a->name))
+    {
+        EagleComplexType *et = ett_enum_type(a->name);
+        int valid;
+        long enum_val = ty_lookup_enum_item(et, a->item, &valid);
 
-    EagleComplexType *et = ett_enum_type(a->name);
-    int valid;
-    long enum_val = ty_lookup_enum_item(et, a->item, &valid);
+        if(!valid)
+            die(ALN, msgerr_item_not_in_enum, a->name, a->item);
 
-    if(!valid)
-        die(ALN, msgerr_item_not_in_enum, a->name, a->item);
+        a->resultantType = et;
 
-    a->resultantType = et;
+        return LLVMConstInt(LLVMInt64TypeInContext(utl_get_current_context()), enum_val, 0);
+    }
+    else if(ty_is_class(a->name))
+    {
+        char *name = ac_gen_static_method_name(a->name, a->item);
+        LLVMValueRef func = LLVMGetNamedFunction(cb->module, name);
+        if(!func) die(ALN, msgerr_internal_method_resolution);
+        free(name);
+        ast->resultantType = ty_static_method_lookup(a->name, a->item);
+        return func;
+    }
 
-    return LLVMConstInt(LLVMInt64TypeInContext(utl_get_current_context()), enum_val, 0);
+    die(ALN, msgerr_invalid_type_lookup_type, a->name);
+    return NULL;
 }
 
 LLVMValueRef ac_compile_malloc_counted_raw(LLVMTypeRef rt, LLVMTypeRef *out, CompilerBundle *cb)

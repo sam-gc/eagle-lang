@@ -20,6 +20,7 @@ typedef struct {
 } ClassHelper;
 
 char *ac_gen_method_name(char *class_name, char *method);
+char *ac_gen_static_method_name(char *class_name, char *method);
 void ac_add_class_declaration(AST *ast, CompilerBundle *cb);
 void ac_class_add_early_definitions(AST *ast, CompilerBundle *cb);
 void ac_generate_interface_definitions(AST *ast, CompilerBundle *cb);

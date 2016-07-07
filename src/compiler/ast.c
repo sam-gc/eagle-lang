@@ -384,8 +384,9 @@ AST *ast_make_class_decl()
     ast->name = NULL;
     ast->names = arr_create(10);
     ast->types = arr_create(10);
-    // ast->methods = hst_create();
+
     ast->method_types = hst_create();
+    ast->static_method_types = hst_create();
     ast->initdecl = NULL;
     ast->interfaces = arr_create(5);
     ast->destructdecl = NULL;
@@ -393,8 +394,8 @@ AST *ast_make_class_decl()
     pool_add(&ast_lst_mempool, &ast->names);
     pool_add(&ast_lst_mempool, &ast->types);
     pool_add(&ast_lst_mempool, &ast->interfaces);
-    // pool_add(&ast_hst_mempool, &ast->methods);
     pool_add(&ast_hst_mempool, &ast->method_types);
+    pool_add(&ast_hst_mempool, &ast->static_method_types);
 
     ast->ext = 0;
 
@@ -410,7 +411,6 @@ void ast_class_set_extern(AST *ast)
 void ast_class_add_interface(AST *ast, AST *interfaces)
 {
     ASTClassDecl *cls = (ASTClassDecl *)ast;
-    // arr_append(&cls->interfaces, name);
 
     ASTTypeDecl *i = (ASTTypeDecl *)interfaces;
     for(; i; i = (ASTTypeDecl *)i->next)
@@ -493,13 +493,30 @@ AST *ast_class_method_add(AST *ast, AST *func)
     }
 
     EagleComplexType *ttype = ett_function_type(((ASTTypeDecl *)f->retType)->etype, (EagleComplexType **)list.items, list.count);
-    ((EagleFunctionType *)ttype)->closure = 0;
     arr_free(&list);
 
-    // arr_append(&a->types, ett_pointer_type(ttype));
-    // arr_append(&a->names, f->ident);
-    // hst_put(&a->methods, (void *)a->types.count, f, ahhd, ahed);
     hst_put(&a->method_types, f, ttype, ahhd, ahed);
+
+    return ast;
+}
+
+AST *ast_class_static_method_add(AST *ast, AST *func)
+{
+    ASTClassDecl *a = (ASTClassDecl *)ast;
+    ASTFuncDecl *f = (ASTFuncDecl *)func;
+
+    Arraylist list = arr_create(10);
+    ASTVarDecl *vd = (ASTVarDecl *)f->params;
+    for(; vd; vd = (ASTVarDecl *)vd->next)
+    {
+        ASTTypeDecl *t = (ASTTypeDecl *)vd->atype;
+        arr_append(&list, t->etype);
+    }
+
+    EagleComplexType *ttype = ett_function_type(((ASTTypeDecl *)f->retType)->etype, (EagleComplexType **)list.items, list.count);
+    arr_free(&list);
+
+    hst_put(&a->static_method_types, f, ttype, ahhd, ahed);
 
     return ast;
 }

@@ -24,6 +24,13 @@ char *ac_gen_method_name(char *class_name, char *method)
     return name;
 }
 
+char *ac_gen_static_method_name(char *class_name, char *method)
+{
+    char *name = malloc(strlen(class_name) + strlen(method) + 4);
+    sprintf(name, "%s_s_%s", class_name, method);
+    return name;
+}
+
 char *ac_gen_vtable_name(char *class_name)
 {
     char *name = malloc(strlen(class_name) + 12);
@@ -44,9 +51,6 @@ void ac_generate_interface_methods_each(void *key, void *val, void *data)
     ASTFuncDecl *fd = key;
     EagleComplexType *ety = val;
 
-    // ASTFuncDecl *fd = val;
-    // EagleFunctionType *ety = (EagleFunctionType *)((EaglePointerType *)arr_get(&cd->types, idx - 1))->to;
-
     ty_add_interface_method(cd->name, fd->ident, ety);
 }
 
@@ -63,11 +67,11 @@ void ac_generate_interface_definitions(AST *ast, CompilerBundle *cb)
     }
 }
 
-void ac_prepare_methods_each(void *key, void *val, void *data)
+static void ac_prepare_methods_each(void *key, void *val, void *data)
 {
     void **arr = data;
     CompilerBundle *cb = (CompilerBundle *)arr[0];
-    ASTClassDecl *cd = (ASTClassDecl *)arr[1];
+    ASTClassDecl   *cd = (ASTClassDecl   *)arr[1];
 
     ASTFuncDecl *fd = key;
     EagleFunctionType *ety = val;
@@ -91,6 +95,28 @@ void ac_prepare_methods_each(void *key, void *val, void *data)
     free(method_name);
 }
 
+static void ac_prepare_static_methods_each(void *key, void *val, void *data)
+{
+    void **arr = data;
+    CompilerBundle *cb = (CompilerBundle *)arr[0];
+    ASTClassDecl *cd   = (ASTClassDecl   *)arr[1];
+
+    ASTFuncDecl *fd = key;
+    EagleComplexType *ety = val;
+
+    char *method_name = ac_gen_static_method_name(cd->name, fd->ident);
+    LLVMTypeRef ft = ett_llvm_type(ety);
+
+    LLVMValueRef func = LLVMAddFunction(cb->module, method_name, ft);
+
+    if(cd->linkage == VLLocal && !cd->ext)
+        LLVMSetLinkage(func, LLVMPrivateLinkage);
+
+    ty_add_static_method(cd->name, fd->ident, ety);
+
+    free(method_name);
+}
+
 void ac_class_add_early_definitions(AST *ast, CompilerBundle *cb)
 {
     ASTClassDecl *cd = (ASTClassDecl *)ast;
@@ -102,6 +128,7 @@ void ac_class_add_early_definitions(AST *ast, CompilerBundle *cb)
 
     void *items[] = {cb, cd};
     hst_for_each(&cd->method_types, ac_prepare_methods_each, items);
+    hst_for_each(&cd->static_method_types, ac_prepare_static_methods_each, items);
     ASTFuncDecl *fd = (ASTFuncDecl *)cd->initdecl;
     if(!fd)
         return;
@@ -118,7 +145,6 @@ void ac_class_add_early_definitions(AST *ast, CompilerBundle *cb)
     if(linkage == VLLocal && !cd->ext)
         LLVMSetLinkage(func, LLVMPrivateLinkage);
 
-    //ty_add_method(cd->name, fd->ident, (EagleComplexType *)ety);
     ty_add_init(cd->name, (EagleComplexType *)ety);
 
     free(method_name);
@@ -196,7 +222,7 @@ void ac_check_and_register_implementation(char *method, ClassHelper *h, char *cl
     }
 }
 
-void ac_compile_class_methods_each(void *key, void *val, void *data)
+static void ac_compile_class_methods_each(void *key, void *val, void *data)
 {
     ClassHelper *h = (ClassHelper *)data;
     ASTClassDecl *cd = (ASTClassDecl *)h->ast;
@@ -219,6 +245,24 @@ void ac_compile_class_methods_each(void *key, void *val, void *data)
 
     if(cd->interfaces.count && !cd->ext)
         ac_check_and_register_implementation(fd->ident, h, cd->name, func, cd);
+}
+
+static void ac_compile_class_static_methods_each(void *key, void *val, void *data)
+{
+    ClassHelper *h = (ClassHelper *)data;
+    ASTClassDecl *cd = (ASTClassDecl *)h->ast;
+
+    ASTFuncDecl *fd = key;
+    EagleFunctionType *ety = val;
+
+    char *method_name = ac_gen_static_method_name(cd->name, fd->ident);
+
+    LLVMValueRef func = LLVMGetNamedFunction(h->cb->module, method_name);
+
+    free(method_name);
+
+    if(!cd->ext)
+        ac_compile_function_ex((AST *)fd, h->cb, func, ety);
 }
 
 void ac_make_class_definitions(AST *ast, CompilerBundle *cb)
@@ -259,13 +303,6 @@ void ac_make_class_definitions(AST *ast, CompilerBundle *cb)
         h.cb = cb;
 
         h.linkage = a->linkage;
-        /*if(ec_allow(cb->exports, a->name, TCLASS))
-            h.linkage = VLExport;
-
-        // Set it back after checking with the other
-        // exports
-        a->linkage = h.linkage;
-        */
 
         LLVMTypeRef indirtype = ty_class_indirect();
         LLVMValueRef vtable = NULL;
@@ -312,8 +349,8 @@ void ac_make_class_definitions(AST *ast, CompilerBundle *cb)
 
         h.vtable = vtable;
 
-        // ac_class_add_early_definitions(a, cb);
         hst_for_each(&a->method_types, ac_compile_class_methods_each, &h);
+        hst_for_each(&a->static_method_types, ac_compile_class_static_methods_each, &h);
         ac_compile_class_init(a, cb);
         ac_compile_class_destruct(a, cb);
         ac_make_class_constructor(ast, cb, &h);

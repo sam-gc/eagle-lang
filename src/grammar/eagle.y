@@ -200,6 +200,7 @@ classlist           : classlist variabledecl TSEMI { $$ = $1; ast_class_var_add(
                     | classlist funcsident TSEMI { $$ = $1; ast_class_method_add($$, $2); }
                     | classlist viewident TSEMI { $$ = $1; ast_class_method_add($$, $2); }
                     | classlist viewdecl { $$ = $1; ast_class_method_add($$, $2); }
+                    | classlist TSTATIC funcdecl { $$ = $1; ast_class_static_method_add($$, $3); }
                     | variabledecl TSEMI { $$ = ast_make_class_decl(); ast_class_var_add($$, $1); }
                     | funcdecl { $$ = ast_make_class_decl(); ast_class_method_add($$, $1); }
                     | initdecl { $$ = ast_make_class_decl(); ast_class_set_init($$, $1); }
